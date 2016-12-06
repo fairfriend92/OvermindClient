@@ -1,0 +1,4 @@
+# ninja log v5
+0	169	0	CMakeFiles/native-lib.dir/src/main/cpp/native-lib.cpp.o	f38ecea90be9e517
+169	335	0	../../../../build/intermediates/cmake/debug/obj/arm64-v8a/libnative-lib.so	5c0adc4ee5beaff4
+0	143	0	CMakeFiles/hello-world.dir/src/main/cpp/hello_world_opencl.cpp.o	1ba0cfe6f9429de5

@@ -83,28 +83,11 @@ bool createCommandQueue(cl_context context, cl_command_queue* commandQueue, cl_d
     return true;
 }
 
-bool createProgram(cl_context context, cl_device_id device, std::string filename, cl_program* program)
+bool createProgram(cl_context context, cl_device_id device, const char* kernelString, cl_program* program)
 {
     cl_int  errorNumber = 0;
-    std::ifstream kernelFile(filename.c_str(), std::ios::in);
 
-    if (!kernelFile.is_open())
-    {
-        LOGE("Unable to open %s. ", filename.c_str());
-        return false;
-    }
-
-    /**
-     * Read the kernel file into an output stream. Convert this into a char array for passing
-     * to OpenCL
-     */
-
-    std::ostringstream outputStringStream;
-    outputStringStream << kernelFile.rdbuf();
-    std::string srcStdStr = outputStringStream.str();
-    const char* charSource = srcStdStr.c_str();
-
-    *program = clCreateProgramWithSource(context, 1, &charSource, NULL, &errorNumber);
+    *program = clCreateProgramWithSource(context, 1, &kernelString, NULL, &errorNumber);
     if (!checkSuccess(errorNumber) || program == NULL)
     {
         LOGE("Failed to create OpenCL program");
@@ -127,7 +110,8 @@ bool createProgram(cl_context context, cl_device_id device, std::string filename
         clGetProgramBuildInfo(*program, device, CL_PROGRAM_BUILD_LOG, logSize, log, NULL);
 
         std::string* stringChars = new std::string(log, logSize);
-        LOGD("Build log:\n %s", stringChars);
+        const char* cStringChars = stringChars->c_str();
+        LOGD("Build log:\n %s", cStringChars);
         delete [] log;
         delete stringChars;
     }

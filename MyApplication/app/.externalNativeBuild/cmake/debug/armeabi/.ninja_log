@@ -1,0 +1,9 @@
+# ninja log v5
+0	201	0	CMakeFiles/native-lib.dir/src/main/cpp/native-lib.cpp.o	7724275005607493
+201	320	0	../../../../build/intermediates/cmake/debug/obj/armeabi/libnative-lib.so	172aaada9b096ab7
+0	153	0	CMakeFiles/hello-world.dir/src/main/cpp/hello_world_opencl.cpp.o	5a41a342ebb0a650
+153	267	0	../../../../build/intermediates/cmake/debug/obj/armeabi/libhello-world.so	6e33d77a60054405
+0	200	0	CMakeFiles/native-lib.dir/src/main/cpp/native-lib.cpp.o	7724275005607493
+200	293	0	../../../../build/intermediates/cmake/debug/obj/armeabi/libnative-lib.so	172aaada9b096ab7
+1	161	0	CMakeFiles/hello-world.dir/src/main/cpp/hello_world_opencl.cpp.o	5a41a342ebb0a650
+161	270	0	../../../../build/intermediates/cmake/debug/obj/armeabi/libhello-world.so	6e33d77a60054405

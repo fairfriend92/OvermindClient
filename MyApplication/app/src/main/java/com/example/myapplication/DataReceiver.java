@@ -36,7 +36,7 @@ public class DataReceiver extends IntentService {
             // Wait before generating the new batch of presynaptic spikes
             try {
                 TimeUnit.MICROSECONDS.sleep(100);
-            } catch (InterruptedException e) {
+            } catch (InterruptedException interruptedException) {
                 Log.e("DataReceiver", "Sleep has been interrupted");
             }
         }

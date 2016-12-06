@@ -1,0 +1,14 @@
+# ninja log v5
+0	245	0	CMakeFiles/hello-world.dir/src/main/cpp/hello_world_opencl.cpp.o	aab8c52c55e53496
+0	231	0	CMakeFiles/hello-world.dir/src/main/cpp/common.cpp.o	a7a79251af574209
+246	343	0	../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libhello-world.so	965545731eb22da4
+1	226	0	CMakeFiles/hello-world.dir/src/main/cpp/common.cpp.o	a7a79251af574209
+226	325	0	../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libhello-world.so	965545731eb22da4
+0	242	0	CMakeFiles/hello-world.dir/src/main/cpp/hello_world_opencl.cpp.o	aab8c52c55e53496
+242	340	0	../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libhello-world.so	965545731eb22da4
+0	238	0	CMakeFiles/hello-world.dir/src/main/cpp/hello_world_opencl.cpp.o	aab8c52c55e53496
+238	336	0	../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libhello-world.so	965545731eb22da4
+0	254	0	CMakeFiles/hello-world.dir/src/main/cpp/hello_world_opencl.cpp.o	aab8c52c55e53496
+254	352	0	../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libhello-world.so	965545731eb22da4
+0	240	0	CMakeFiles/hello-world.dir/src/main/cpp/hello_world_opencl.cpp.o	aab8c52c55e53496
+240	336	0	../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libhello-world.so	965545731eb22da4

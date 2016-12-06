@@ -1,0 +1,67 @@
+
+{
+	"buildFiles" : 
+	[
+		"/home/rodolfo/AndroidStudioProjects/MyApplication/app/CMakeLists.txt"
+	],
+	"cleanCommands" : 
+	[
+		"/home/rodolfo/Android/Sdk/cmake/3.6.3155560/bin/cmake --build /home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/release/x86_64 --target clean"
+	],
+	"cppFileExtensions" : [ "cpp" ],
+	"libraries" : 
+	{
+		"OpenCL-Release-x86_64" : 
+		{
+			"abi" : "x86_64",
+			"artifactName" : "OpenCL",
+			"buildType" : "release",
+			"output" : "../../../../OpenCL/src/x86_64/GLES_mali.so",
+			"toolchain" : "989357106649298674"
+		},
+		"hello-world-opencl-Release-x86_64" : 
+		{
+			"abi" : "x86_64",
+			"artifactName" : "hello-world-opencl",
+			"buildCommand" : "/home/rodolfo/Android/Sdk/cmake/3.6.3155560/bin/cmake --build /home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/release/x86_64 --target hello-world-opencl",
+			"buildType" : "release",
+			"files" : 
+			[
+				
+				{
+					"flags" : "  -target x86_64-none-linux-android -gcc-toolchain /home/rodolfo/Android/Sdk/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64 --sysroot=/home/rodolfo/Android/Sdk/ndk-bundle/platforms/android-21/arch-x86_64  -Dhello_world_opencl_EXPORTS -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/x86_64/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include/backward  -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti  -O2 -DNDEBUG -O2 -DNDEBUG  -fPIC    -c ",
+					"src" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/src/main/cpp/hello_world_opencl.cpp",
+					"workingDirectory" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/release/x86_64"
+				}
+			],
+			"output" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/cmake/release/obj/x86_64/libhello-world-opencl.so",
+			"toolchain" : "989357106649298674"
+		},
+		"native-lib-Release-x86_64" : 
+		{
+			"abi" : "x86_64",
+			"artifactName" : "native-lib",
+			"buildCommand" : "/home/rodolfo/Android/Sdk/cmake/3.6.3155560/bin/cmake --build /home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/release/x86_64 --target native-lib",
+			"buildType" : "release",
+			"files" : 
+			[
+				
+				{
+					"flags" : "  -target x86_64-none-linux-android -gcc-toolchain /home/rodolfo/Android/Sdk/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64 --sysroot=/home/rodolfo/Android/Sdk/ndk-bundle/platforms/android-21/arch-x86_64  -Dnative_lib_EXPORTS -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/x86_64/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include/backward  -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti  -O2 -DNDEBUG -O2 -DNDEBUG  -fPIC    -c ",
+					"src" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/src/main/cpp/native-lib.cpp",
+					"workingDirectory" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/release/x86_64"
+				}
+			],
+			"output" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/cmake/release/obj/x86_64/libnative-lib.so",
+			"toolchain" : "989357106649298674"
+		}
+	},
+	"toolchains" : 
+	{
+		"989357106649298674" : 
+		{
+			"cCompilerExecutable" : "/home/rodolfo/Android/Sdk/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin/clang",
+			"cppCompilerExecutable" : "/home/rodolfo/Android/Sdk/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++"
+		}
+	}
+}

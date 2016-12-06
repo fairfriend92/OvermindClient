@@ -16,7 +16,7 @@
 extern "C"
 jboolean
 Java_com_example_myapplication_MainActivity_helloWorld(
-        JNIEnv *env, jobject, jbooleanArray presynapticSpikes) {
+        JNIEnv *env, jobject thiz, jbooleanArray presynapticSpikes, jstring jMacKernel) {
 
     bool result = true;
     jboolean jresult = (jboolean) result;
@@ -30,6 +30,8 @@ Java_com_example_myapplication_MainActivity_helloWorld(
     cl_int errorNumber = 0;
     int numberOfMemoryObjects = 3;
     cl_mem memoryObjects[3] = {0, 0, 0};
+
+    const char *kernelString = env->GetStringUTFChars(jMacKernel, JNI_FALSE);
 
     /* [Initialize OpenCL] */
     if (!createContext(&context))
@@ -46,7 +48,8 @@ Java_com_example_myapplication_MainActivity_helloWorld(
         return 1;
     }
 
-    if (!createProgram(context, device, "/home/rodolfo/AndroidStudioProjects/MyApplication/app/src/main/assets/mac_kernel_vec4.cl", &program))
+    /*
+    if (!createProgram(context, device, kernelString, &program))
     {
         cleanUpOpenCL(context, commandQueue, program, kernel, memoryObjects, numberOfMemoryObjects);
         LOGE("Failed to create OpenCL program");
@@ -114,9 +117,11 @@ Java_com_example_myapplication_MainActivity_helloWorld(
     {
         excSynapseInput[index + SYNAPSE_FILTER_ORDER] = excSynapseInput[index];
     }
-    for (index = 0; index < SYNAPSE_FILTER_ORDER; index++)
+    for (index = 0; index < NUMBER_OF_EXC_SYNAPSES; index++)
     {
         excSynapseInput[index] = jPresynapticSpikeTrain[index];
+        if (jPresynapticSpikeTrain[index] == true)
+            LOGD("%d true", index);
     }
     // TO_DO: initialize the coefficients array outside of the while loop?
     // Initialize the coefficients array by sampling the exponential kernel of the synapse filter
@@ -146,7 +151,10 @@ Java_com_example_myapplication_MainActivity_helloWorld(
     }
     /* [Un-map the buffers] */
 
+    /* [Clean-up operations] */
+    env->ReleaseStringUTFChars(jMacKernel, kernelString);
     cleanUpOpenCL(context, commandQueue, program, kernel, memoryObjects, numberOfMemoryObjects);
+    /* [Clean-up operations] */
 
     return jresult;
 }

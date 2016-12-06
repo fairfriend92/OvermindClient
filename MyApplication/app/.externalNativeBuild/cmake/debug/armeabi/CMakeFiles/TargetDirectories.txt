@@ -1,0 +1,4 @@
+/home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/debug/armeabi/CMakeFiles/rebuild_cache.dir
+/home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/debug/armeabi/CMakeFiles/edit_cache.dir
+/home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/debug/armeabi/CMakeFiles/hello-world.dir
+/home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/debug/armeabi/CMakeFiles/native-lib.dir

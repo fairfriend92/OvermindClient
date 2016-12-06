@@ -1,0 +1,4 @@
+/home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/release/mips64/CMakeFiles/rebuild_cache.dir
+/home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/release/mips64/CMakeFiles/hello-world-opencl.dir
+/home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/release/mips64/CMakeFiles/edit_cache.dir
+/home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/release/mips64/CMakeFiles/native-lib.dir
