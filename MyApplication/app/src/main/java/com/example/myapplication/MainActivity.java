@@ -8,7 +8,6 @@ import android.view.View;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
 public class MainActivity extends AppCompatActivity {
@@ -24,7 +23,6 @@ public class MainActivity extends AppCompatActivity {
      */
     static boolean openclLibraryFound = true;
     static {
-        System.loadLibrary( "hello-world" );
         try {
             System.load("/system/lib64/egl/libGLES_mali.so");
         }
@@ -55,32 +53,34 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Called when the user clicks the Start simulation button
      */
-   public void startSimulation(View view) {
+    public void startSimulation(View view) {
 
-       /**
+        /**
         * Setup the service to receive data from the connected peers.
         */
-       // Allocate memory to hold the presynaptic spikes
+       Intent dataReceiveIntent = new Intent(MainActivity.this, DataReceiver.class);
        boolean[] presynapticSpikes = new boolean[4];
-       // Create the intent to start the service which reads the incoming spikes and write them in presynapticSpikes
-       Intent serviceIntent = new Intent(this, DataReceiver.class);
-       serviceIntent.putExtra("Spikes", presynapticSpikes);
-       // Start the service
-       this.startService(serviceIntent);
+       dataReceiveIntent.putExtra("Spikes", presynapticSpikes);
+       this.startService(dataReceiveIntent);
 
        /**
-        * Native method call
+        * Setup the service which makes the call to the native C method
         */
+       Intent simultationIntent = new Intent(MainActivity.this, Simulation.class);
        // Get the content of the .cl file into a string to be passed to the native method
        String macKernelVec4 = loadKernelFromAsset(getInputStream("mac_kernel_vec4.cl"));
-       // Call the native method
-       boolean test = helloWorld(presynapticSpikes, macKernelVec4);
+       simultationIntent.putExtra("Kernel", macKernelVec4);
+       simultationIntent.putExtra("Spikes", presynapticSpikes);
+       this.startService(simultationIntent);
     }
 
     /**
-     * Java Native Interface
+     * Called when the user clicks the Stop simulation button
      */
-    public native boolean helloWorld(boolean[] presynapticSpikeTrains, String macKernel);
+    public void stopSimulation(View view) {
+       DataReceiver.shutDown();
+       Simulation.shutDown();
+    }
 }
 
 

@@ -22,23 +22,37 @@ public class DataReceiver extends IntentService {
         super("DataReceiver");
     }
 
+    /**
+     * Method called by MainActivity on button press to shut down the service
+     */
+    static boolean shutdown = false;
+    static public void shutDown () {
+        shutdown = true;
+    }
+
     @Override
     protected void onHandleIntent (Intent workIntent) {
         boolean[] presynapticSpikes = workIntent.getBooleanArrayExtra("Spikes");
+
         /**
          * For testing purposes we randomly generate the spikes instead of reading them from the connected peers
          */
         Random random = new Random();
-        while (true) {
+        while (!shutdown) {
             for (int index = 0; index < 4; index++) {
                 presynapticSpikes[index] = random.nextBoolean();
             }
+
             // Wait before generating the new batch of presynaptic spikes
             try {
                 TimeUnit.MICROSECONDS.sleep(100);
+                Log.d("DataReceiver", "Package received");
             } catch (InterruptedException interruptedException) {
                 Log.e("DataReceiver", "Sleep has been interrupted");
             }
         }
+
+        shutdown = false;
+        stopSelf();
     }
 }

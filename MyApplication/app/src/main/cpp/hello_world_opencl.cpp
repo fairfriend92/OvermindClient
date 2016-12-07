@@ -15,7 +15,7 @@
 
 extern "C"
 jboolean
-Java_com_example_myapplication_MainActivity_helloWorld(
+Java_com_example_myapplication_Simulation_helloWorld(
         JNIEnv *env, jobject thiz, jbooleanArray presynapticSpikes, jstring jMacKernel) {
 
     bool result = true;

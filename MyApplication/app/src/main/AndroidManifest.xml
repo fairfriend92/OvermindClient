@@ -18,6 +18,9 @@
         <service
             android:name=".DataReceiver"
             android:exported="false"/>
+        <service
+            android:name=".Simulation"
+            android:exported="false"/>
     </application>
 
 </manifest>
