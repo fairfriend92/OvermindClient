@@ -108,7 +108,7 @@ Java_com_example_myapplication_Simulation_helloWorld(
     }
     /* [Map the buffers to pointers] */
 
-    /* TO_DO: here we must start the while loop */
+    /* TODO: here we must start the while loop */
 
     /* [Initialize the data] */
     int index;
@@ -120,10 +120,10 @@ Java_com_example_myapplication_Simulation_helloWorld(
     for (index = 0; index < NUMBER_OF_EXC_SYNAPSES; index++)
     {
         excSynapseInput[index] = jPresynapticSpikeTrain[index];
-        if (jPresynapticSpikeTrain[index] == true)
+        if (jPresynapticSpikeTrain[index])
             LOGD("%d true", index);
     }
-    // TO_DO: initialize the coefficients array outside of the while loop?
+    // TODO: initialize the coefficients array outside of the while loop?
     // Initialize the coefficients array by sampling the exponential kernel of the synapse filter
     float tExc = SAMPLING_RATE / EXC_SYNAPSE_TIME_SCALE;
     for (index = 0; index < SYNAPSE_FILTER_ORDER; index++)
@@ -132,7 +132,7 @@ Java_com_example_myapplication_Simulation_helloWorld(
     }
     /* [Initialize the data] */
 
-    /* TO_DO: here ends the while loop */
+    /* TODO: here ends the while loop */
 
     /* [Un-map the buffers] */
     // Un-map the memory objects as we have finished using them from the CPU side

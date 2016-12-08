@@ -55,13 +55,10 @@ public class MainActivity extends AppCompatActivity {
      */
     public void startSimulation(View view) {
 
-        /**
-        * Setup the service to receive data from the connected peers.
-        */
-       Intent dataReceiveIntent = new Intent(MainActivity.this, DataReceiver.class);
-       boolean[] presynapticSpikes = new boolean[4];
-       dataReceiveIntent.putExtra("Spikes", presynapticSpikes);
-       this.startService(dataReceiveIntent);
+       /**
+       * Setup the service to receive data from the connected peers.
+       */
+       this.startService(new Intent(MainActivity.this, DataReceiver.class));
 
        /**
         * Setup the service which makes the call to the native C method
@@ -70,7 +67,6 @@ public class MainActivity extends AppCompatActivity {
        // Get the content of the .cl file into a string to be passed to the native method
        String macKernelVec4 = loadKernelFromAsset(getInputStream("mac_kernel_vec4.cl"));
        simultationIntent.putExtra("Kernel", macKernelVec4);
-       simultationIntent.putExtra("Spikes", presynapticSpikes);
        this.startService(simultationIntent);
     }
 
