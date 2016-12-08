@@ -53,21 +53,25 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Called when the user clicks the Start simulation button
      */
+    static boolean simulationIsStarted = false;
     public void startSimulation(View view) {
-
        /**
        * Setup the service to receive data from the connected peers.
        */
-       this.startService(new Intent(MainActivity.this, DataReceiver.class));
+        if (!simulationIsStarted) {
+            this.startService(new Intent(MainActivity.this, DataReceiver.class));
 
-       /**
-        * Setup the service which makes the call to the native C method
-        */
-       Intent simultationIntent = new Intent(MainActivity.this, Simulation.class);
-       // Get the content of the .cl file into a string to be passed to the native method
-       String macKernelVec4 = loadKernelFromAsset(getInputStream("mac_kernel_vec4.cl"));
-       simultationIntent.putExtra("Kernel", macKernelVec4);
-       this.startService(simultationIntent);
+            /**
+             * Setup the service which makes the call to the native C method
+             */
+            Intent simultationIntent = new Intent(MainActivity.this, Simulation.class);
+            // Get the content of the .cl file into a string to be passed to the native method
+            String macKernelVec4 = loadKernelFromAsset(getInputStream("mac_kernel_vec4.cl"));
+            simultationIntent.putExtra("Kernel", macKernelVec4);
+            this.startService(simultationIntent);
+
+            simulationIsStarted = true;
+        }
     }
 
     /**
@@ -76,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
     public void stopSimulation(View view) {
        DataReceiver.shutDown();
        Simulation.shutDown();
+       simulationIsStarted = false;
     }
 }
 

@@ -11,7 +11,8 @@ cmake_minimum_required(VERSION 3.4.1)
 
 add_library( hello-world
              SHARED
-             src/main/cpp/hello_world_opencl.cpp
+             src/main/cpp/native_method.cpp
+             src/main/cpp/native_method.h
              src/main/cpp/common.cpp
              src/main/cpp/common.h )
 include_directories( src/main/assets/ )

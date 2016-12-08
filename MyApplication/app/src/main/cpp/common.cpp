@@ -7,6 +7,7 @@
 bool cleanUpOpenCL(cl_context context, cl_command_queue commandQueue, cl_program program, cl_kernel kernel, cl_mem* memoryObjects, int numberOfMemoryObjects)
 {
     bool returnValue = true;
+
     if (context!= 0)
     {
         if (!checkSuccess(clReleaseContext(context)))

@@ -30,7 +30,7 @@
 				
 				{
 					"flags" : "  -target armv7-none-linux-androideabi -gcc-toolchain /home/rodolfo/Android/Sdk/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64 --sysroot=/home/rodolfo/Android/Sdk/ndk-bundle/platforms/android-15/arch-arm  -Dhello_world_EXPORTS -I../../../../src/main/assets -I../../../../OpenCL/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include/backward  -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -fno-integrated-as -mthumb -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -fno-integrated-as -mthumb -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -std=c++11 -Os -DNDEBUG -Os -DNDEBUG  -fPIC    -c ",
-					"src" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/src/main/cpp/hello_world_opencl.cpp",
+					"src" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/src/main/cpp/native_method.cpp",
 					"workingDirectory" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/release/armeabi-v7a"
 				},
 				

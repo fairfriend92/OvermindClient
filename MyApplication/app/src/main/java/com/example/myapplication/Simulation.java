@@ -54,20 +54,25 @@ public class Simulation extends IntentService{
     protected void onHandleIntent (Intent workIntent)
     {
         String macKernelVec4 = workIntent.getStringExtra("Kernel");
-
-        // Call the native method
-        // TODO: separate OpenCL initialization and buffer allocation from memory management and kernel call
-        boolean test = helloWorld(presynapticSpikes, macKernelVec4);
-        if (shutdown) {
-            shutdown = false;
-            stopSelf();
+        long openCLObject = initializeOpenCL(macKernelVec4);
+        if (openCLObject == -1) {
+            Log.e("Simulation service", "Failed to initialize OpenCL");
+            shutdown = true;
         }
+        while (!shutdown) {
+            openCLObject = simulateNetwork(presynapticSpikes, openCLObject);
+        }
+        if(closeOpenCL(openCLObject) == -1) { Log.e("Simulation service", "Failed to close OpenCL"); }
+        shutdown = false;
+        stopSelf();
     }
 
     /**
      * Java Native Interface
      */
-    public native boolean helloWorld(boolean[] presynapticSpikeTrains, String macKernel);
+    public native long simulateNetwork(boolean[] presynapticSpikes, long openCLObject);
+    public native long initializeOpenCL(String macKernel);
+    public native int closeOpenCL(long openCLObject);
 }
 
 

@@ -39,9 +39,8 @@ public class DataReceiver extends IntentService {
          */
         Random random = new Random();
         while (!shutdown) {
-            for (int index = 0; index < 4; index++) {
-                //presynapticSpikes[index] = random.nextBoolean();
-                presynapticSpikes[index] = true;
+            for (int index = 0; index < Constants.NUMBER_OF_EXC_SYNAPSES; index++) {
+                presynapticSpikes[index] = random.nextBoolean();
             }
 
             // Broadcast the received spikes to the Simulation service

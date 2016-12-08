@@ -51,12 +51,12 @@ build edit_cache: phony CMakeFiles/edit_cache.util
 # =============================================================================
 # Object build statements for SHARED_LIBRARY target hello-world
 
-build CMakeFiles/hello-world.dir/src/main/cpp/hello_world_opencl.cpp.o: CXX_COMPILER__hello-world ../../../../src/main/cpp/hello_world_opencl.cpp
+build CMakeFiles/hello-world.dir/src/main/cpp/native_method.cpp.o: CXX_COMPILER__hello-world ../../../../src/main/cpp/native_method.cpp
   DEFINES = -Dhello_world_EXPORTS
-  DEP_FILE = CMakeFiles/hello-world.dir/src/main/cpp/hello_world_opencl.cpp.o.d
+  DEP_FILE = CMakeFiles/hello-world.dir/src/main/cpp/native_method.cpp.o.d
   FLAGS = -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -fno-integrated-as -mthumb -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -fno-integrated-as -mthumb -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -std=c++11 -O0 -fno-limit-debug-info -O0 -fno-limit-debug-info  -fPIC
   INCLUDES = -I../../../../src/main/assets -I../../../../OpenCL/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include/backward
-  IN_ABS = /home/rodolfo/AndroidStudioProjects/MyApplication/app/src/main/cpp/hello_world_opencl.cpp
+  IN_ABS = /home/rodolfo/AndroidStudioProjects/MyApplication/app/src/main/cpp/native_method.cpp
   OBJECT_DIR = CMakeFiles/hello-world.dir
   OBJECT_FILE_DIR = CMakeFiles/hello-world.dir/src/main/cpp
 build CMakeFiles/hello-world.dir/src/main/cpp/common.cpp.o: CXX_COMPILER__hello-world ../../../../src/main/cpp/common.cpp
@@ -75,7 +75,7 @@ build CMakeFiles/hello-world.dir/src/main/cpp/common.cpp.o: CXX_COMPILER__hello-
 #############################################
 # Link the shared library ../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libhello-world.so
 
-build ../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libhello-world.so: CXX_SHARED_LIBRARY_LINKER__hello-world CMakeFiles/hello-world.dir/src/main/cpp/hello_world_opencl.cpp.o CMakeFiles/hello-world.dir/src/main/cpp/common.cpp.o | ../../../../OpenCL/src/armeabi-v7a/libGLES_mali.so
+build ../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libhello-world.so: CXX_SHARED_LIBRARY_LINKER__hello-world CMakeFiles/hello-world.dir/src/main/cpp/native_method.cpp.o CMakeFiles/hello-world.dir/src/main/cpp/common.cpp.o | ../../../../OpenCL/src/armeabi-v7a/libGLES_mali.so
   LANGUAGE_COMPILE_FLAGS = -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -fno-integrated-as -mthumb -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -fno-integrated-as -mthumb -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -std=c++11 -O0 -fno-limit-debug-info -O0 -fno-limit-debug-info
   LINK_FLAGS = -Wl,--build-id -Wl,--warn-shared-textrel -Wl,--fatal-warnings -Wl,--fix-cortex-a8 -Wl,--no-undefined -Wl,-z,noexecstack -Qunused-arguments -Wl,-z,relro -Wl,-z,now -Wl,--build-id -Wl,--warn-shared-textrel -Wl,--fatal-warnings -Wl,--fix-cortex-a8 -Wl,--no-undefined -Wl,-z,noexecstack -Qunused-arguments -Wl,-z,relro -Wl,-z,now
   LINK_LIBRARIES = -llog ../../../../OpenCL/src/armeabi-v7a/libGLES_mali.so -lm "/home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/libgnustl_static.a"
