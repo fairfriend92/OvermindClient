@@ -26,6 +26,24 @@ bool cleanUpOpenCL(cl_context context, cl_command_queue commandQueue, cl_program
         }
     }
 
+    if (kernel != 0)
+    {
+        if (!checkSuccess(clReleaseKernel(kernel)))
+        {
+            LOGE("Releasing the OpenCL kernel failed");
+            returnValue = false;
+        }
+    }
+
+    if (program != 0)
+    {
+        if (!checkSuccess(clReleaseProgram(program)))
+        {
+            LOGE("Releasing the OpenCL program failed");
+            returnValue = false;
+        }
+    }
+
     for (int index = 0; index < numberOfMemoryObjects; index++)
     {
         if (memoryObjects[index] != 0)

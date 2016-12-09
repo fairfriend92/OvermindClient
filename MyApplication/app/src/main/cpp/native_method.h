@@ -32,5 +32,5 @@ struct OpenCLObject {
 
     // Pointers to the memory buffers
     cl_float *excSynapseCoeff;
-    cl_bool *excSynapseInput;
+    cl_int *excSynapseInput;
 };

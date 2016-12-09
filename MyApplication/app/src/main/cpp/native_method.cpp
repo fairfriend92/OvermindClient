@@ -6,7 +6,7 @@
 
 // Size of the buffers needed to store data
 size_t excSynapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * sizeof(cl_float);
-size_t excSynapseInputBufferSize = SYNAPSE_FILTER_ORDER * NUMBER_OF_EXC_SYNAPSES * sizeof(cl_bool);
+size_t excSynapseInputBufferSize = SYNAPSE_FILTER_ORDER * NUMBER_OF_EXC_SYNAPSES * sizeof(cl_int);
 size_t synapseOutputBufferSize = sizeof(cl_uint);
 
 extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
@@ -35,6 +35,14 @@ extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
     {
         cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
         LOGE("Failed to create OpenCL program");
+        return -1;
+    }
+
+    obj->kernel = clCreateKernel(obj->program, "mac_kernel_vec4", &obj->errorNumber);
+    if (!checkSuccess(obj->errorNumber))
+    {
+        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+        LOGE("Failed to create OpenCL kernel");
         return -1;
     }
 
@@ -71,7 +79,7 @@ extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
     obj->excSynapseCoeff = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[0], CL_TRUE, CL_MAP_WRITE, 0, excSynapseCoeffBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-    obj->excSynapseInput = (cl_bool*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, excSynapseInputBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    obj->excSynapseInput = (cl_int*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, excSynapseInputBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     if (!mapMemoryObjectsSuccess)
@@ -102,10 +110,24 @@ extern "C" jlong Java_com_example_myapplication_Simulation_simulateNetwork(
     // Do the memory management for the synapse filter
     for (int index = 0; index < (SYNAPSE_FILTER_ORDER - 1) * NUMBER_OF_EXC_SYNAPSES; index++) {
         obj->excSynapseInput[index + NUMBER_OF_EXC_SYNAPSES] = obj->excSynapseInput[index];
+        //if(obj->excSynapseInput[index]) { LOGD("%d", index); } // uncomment for testing
     }
     for (int index = 0; index < NUMBER_OF_EXC_SYNAPSES; index++) {
         obj->excSynapseInput[index] = presynapticSpikes[index];
-        //if(obj->excSynapseInput[index]) { LOGD("%d", index); }
+        //if(obj->excSynapseInput[index]) { LOGD("%d", index); } // uncomment for testing
+    }
+
+    // Tell the kernels which data to use before they are scheduled
+    bool setKernelArgumentSuccess = true;
+    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 0, sizeof(cl_mem), &obj->memoryObjects[0]));
+    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 1, sizeof(cl_mem), &obj->memoryObjects[1]));
+    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 2, sizeof(cl_mem), &obj->memoryObjects[2]));
+
+    if (!setKernelArgumentSuccess)
+    {
+        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+        LOGE("Failed to set OpenCL kernel arguments");
+        return -1;
     }
 
     return (long) obj;
