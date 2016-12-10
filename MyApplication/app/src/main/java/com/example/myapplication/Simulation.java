@@ -54,6 +54,7 @@ public class Simulation extends IntentService{
     protected void onHandleIntent (Intent workIntent)
     {
         String macKernelVec4 = workIntent.getStringExtra("Kernel");
+        // Create the object used to hold the information passed from one native call to the other
         long openCLObject = initializeOpenCL(macKernelVec4);
         if (openCLObject == -1) {
             Log.e("Simulation service", "Failed to initialize OpenCL");

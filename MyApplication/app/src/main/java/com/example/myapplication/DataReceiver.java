@@ -32,15 +32,27 @@ public class DataReceiver extends IntentService {
 
     @Override
     protected void onHandleIntent (Intent workIntent) {
-        boolean[] presynapticSpikes = new boolean[4];
+        boolean[] presynapticSpikes = new boolean[Constants.NUMBER_OF_EXC_SYNAPSES];
 
         /**
          * For testing purposes we randomly generate the spikes instead of reading them from the connected peers
          */
         Random random = new Random();
         while (!shutdown) {
+            // We account for the Absolute Refractory Period by decreasing a counter, one for each synapse
+            int[] waitARP = new int[Constants.NUMBER_OF_EXC_SYNAPSES];
             for (int index = 0; index < Constants.NUMBER_OF_EXC_SYNAPSES; index++) {
-                presynapticSpikes[index] = random.nextBoolean();
+                // A new spike is randomly generated only if the wait for the ARP has ended
+                if (waitARP[index] == 0) {
+                    presynapticSpikes[index] = random.nextBoolean();
+                    // Reset the ARP counter if a new spike is emitted
+                    if (presynapticSpikes[index]) {
+                        waitARP[index] = (int) (Constants.ABSOLUTE_REFRACTORY_PERIOD / Constants.SAMPLING_RATE);
+                    }
+                } else {
+                    presynapticSpikes[index] = false;
+                    waitARP[index] = waitARP[index] - 1;
+                }
             }
 
             // Broadcast the received spikes to the Simulation service

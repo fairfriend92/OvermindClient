@@ -4,10 +4,12 @@
 
 #include "native_method.h"
 
+// Maximum number of multiplications needed to compute the current response of a synapse
+int maxNumberMultiplications = (int) (ABSOLUTE_REFRACTORY_PERIOD / SAMPLING_RATE ) + 1;
 // Size of the buffers needed to store data
 size_t excSynapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * sizeof(cl_float);
-size_t excSynapseInputBufferSize = SYNAPSE_FILTER_ORDER * NUMBER_OF_EXC_SYNAPSES * sizeof(cl_int);
-size_t synapseOutputBufferSize = sizeof(cl_uint);
+size_t excSynapseInputBufferSize = maxNumberMultiplications * NUMBER_OF_EXC_SYNAPSES * sizeof(cl_int);
+size_t synapseOutputBufferSize = NUMBER_OF_EXC_SYNAPSES * sizeof(cl_float);
 
 extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
         JNIEnv *env, jobject thiz, jstring jMacKernel) {
@@ -38,6 +40,10 @@ extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
         return -1;
     }
 
+    // Query the device to find out its preferred integer vector width
+    clGetDeviceInfo(obj->device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT, sizeof(cl_uint), &obj->integerVectorWidth, NULL);
+    LOGD("Preferred vector width for integers: %d ", obj->integerVectorWidth);
+
     obj->kernel = clCreateKernel(obj->program, "mac_kernel_vec4", &obj->errorNumber);
     if (!checkSuccess(obj->errorNumber))
     {
@@ -48,10 +54,6 @@ extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
 
     // Release the string containing the kernel since it has been passed already to createProgram
     env->ReleaseStringUTFChars(jMacKernel, kernelString);
-
-    // Query the device to find out its preferred integer vector width
-    clGetDeviceInfo(obj->device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT, sizeof(cl_uint), &obj->integerVectorWidth, NULL);
-    LOGD("Preferred vector width for integers: %d ", obj->integerVectorWidth);
 
     bool createMemoryObjectsSuccess = true;
     obj->numberOfMemoryObjects= 3;
@@ -90,7 +92,8 @@ extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
     }
 
     // Initialize the coefficients array by sampling the exponential kernel of the synapse filter
-    float tExc = SAMPLING_RATE / EXC_SYNAPSE_TIME_SCALE;
+    // TODO: initialize coefficients array using OpenCL kernel
+    float tExc = (float) (SAMPLING_RATE / EXC_SYNAPSE_TIME_SCALE);
     for (int index = 0; index < SYNAPSE_FILTER_ORDER; index++)
     {
         obj->excSynapseCoeff[index] = (index * tExc) * expf( - index * tExc);
@@ -107,7 +110,8 @@ extern "C" jlong Java_com_example_myapplication_Simulation_simulateNetwork(
     struct OpenCLObject *obj;
     obj = (struct OpenCLObject *)jOpenCLObject;
 
-    // Do the memory management for the synapse filter
+    // Initialization for classic kernel (uncomment code in kernel too)
+    /*
     for (int index = 0; index < (SYNAPSE_FILTER_ORDER - 1) * NUMBER_OF_EXC_SYNAPSES; index++) {
         obj->excSynapseInput[index + NUMBER_OF_EXC_SYNAPSES] = obj->excSynapseInput[index];
         //if(obj->excSynapseInput[index]) { LOGD("%d", index); } // uncomment for testing
@@ -115,6 +119,21 @@ extern "C" jlong Java_com_example_myapplication_Simulation_simulateNetwork(
     for (int index = 0; index < NUMBER_OF_EXC_SYNAPSES; index++) {
         obj->excSynapseInput[index] = presynapticSpikes[index];
         //if(obj->excSynapseInput[index]) { LOGD("%d", index); } // uncomment for testing
+    }
+     */
+
+    // Initialize the input of the kernel
+    for (int indexI = 0; indexI < NUMBER_OF_EXC_SYNAPSES; indexI++)
+    {
+        // Advance the inputs in the filter pipeline if needed
+        if (presynapticSpikes[indexI] || obj->excSynapseInput[indexI * maxNumberMultiplications - 1] == SYNAPSE_FILTER_ORDER - 1)
+        {
+            for (int indexJ = 1; indexJ < maxNumberMultiplications; indexJ++)
+            {
+                obj->excSynapseInput[indexJ + indexI * maxNumberMultiplications] =
+                obj->excSynapseInput[indexJ + indexI * maxNumberMultiplications - 1];
+            }
+        }
     }
 
     // Tell the kernels which data to use before they are scheduled

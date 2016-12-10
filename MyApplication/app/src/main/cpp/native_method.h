@@ -10,7 +10,8 @@
 #define SAMPLING_RATE 0.1
 #define SYNAPSE_FILTER_ORDER 64
 #define EXC_SYNAPSE_TIME_SCALE 1
-#define NUMBER_OF_EXC_SYNAPSES 4
+#define NUMBER_OF_EXC_SYNAPSES 512
+#define ABSOLUTE_REFRACTORY_PERIOD 2
 
 #include <android/log.h>
 #include <jni.h>
