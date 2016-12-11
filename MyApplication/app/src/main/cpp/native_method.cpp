@@ -123,6 +123,7 @@ extern "C" jlong Java_com_example_myapplication_Simulation_simulateNetwork(
      */
 
     // Initialize the input of the kernel
+
     for (int indexI = 0; indexI < NUMBER_OF_EXC_SYNAPSES; indexI++)
     {
         // Advance the inputs in the filter pipeline if needed

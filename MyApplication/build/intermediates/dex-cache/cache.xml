@@ -12,30 +12,12 @@
     </item>
     <item
         is-multidex="false"
-        jar="/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/exploded-aar/com.android.support/animated-vector-drawable/23.4.0/jars/classes.jar"
-        jumboMode="false"
-        optimize="true"
-        revision="25.0.1"
-        sha1="de4db3785756bfb0915a9f59a9b3f2fea7407be4">
-        <dex dex="/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/pre-dexed/debug/com.android.support-animated-vector-drawable-23.4.0_d0694fdee7676a4d912b5094072332ede1f20142.jar" />
-    </item>
-    <item
-        is-multidex="false"
         jar="/home/rodolfo/Android/Sdk/extras/android/m2repository/com/android/support/support-annotations/23.4.0/support-annotations-23.4.0.jar"
         jumboMode="false"
         optimize="true"
         revision="25.0.1"
         sha1="ffbe55fdb2bb456b1485831706a9eac3300bb6b8">
         <dex dex="/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/pre-dexed/debug/support-annotations-23.4.0_e57d5a37d973e26ee595c0949aaafc9f28b9a71f.jar" />
-    </item>
-    <item
-        is-multidex="false"
-        jar="/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/exploded-aar/com.android.support/appcompat-v7/23.4.0/jars/classes.jar"
-        jumboMode="false"
-        optimize="true"
-        revision="25.0.1"
-        sha1="548f06de403a9409f00554b3ee12a9fdea0e236c">
-        <dex dex="/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/pre-dexed/debug/com.android.support-appcompat-v7-23.4.0_9bbfc187c9eab5b43a08324d05efa9c77a065a49.jar" />
     </item>
     <item
         is-multidex="false"
@@ -54,6 +36,24 @@
         revision="25.0.1"
         sha1="c2c594cace5d83a3227b2b6e658ecbfd586d3ed9">
         <dex dex="/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/pre-dexed/debug/com.android.support-support-vector-drawable-23.4.0_fb7408527273f3e847a3dd7857443f3b606283d6.jar" />
+    </item>
+    <item
+        is-multidex="false"
+        jar="/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/exploded-aar/com.android.support/animated-vector-drawable/23.4.0/jars/classes.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="25.0.1"
+        sha1="de4db3785756bfb0915a9f59a9b3f2fea7407be4">
+        <dex dex="/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/pre-dexed/debug/com.android.support-animated-vector-drawable-23.4.0_d0694fdee7676a4d912b5094072332ede1f20142.jar" />
+    </item>
+    <item
+        is-multidex="false"
+        jar="/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/exploded-aar/com.android.support/appcompat-v7/23.4.0/jars/classes.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="25.0.1"
+        sha1="548f06de403a9409f00554b3ee12a9fdea0e236c">
+        <dex dex="/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/pre-dexed/debug/com.android.support-appcompat-v7-23.4.0_9bbfc187c9eab5b43a08324d05efa9c77a065a49.jar" />
     </item>
 
 </items>

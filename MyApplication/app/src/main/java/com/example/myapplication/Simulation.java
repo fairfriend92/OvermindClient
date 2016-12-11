@@ -4,7 +4,10 @@ import android.app.IntentService;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Bundle;
 import android.provider.SyncStateContract;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 /**
@@ -36,18 +39,35 @@ public class Simulation extends IntentService{
 
     static boolean[] presynapticSpikes = new boolean[Constants.NUMBER_OF_EXC_SYNAPSES];
 
+
+    @Override
+    public void onCreate() {
+        /**
+         * Register an observer (mMessageReceiver) to receive Intents with actions named
+         * "com.example.BROADCAST_SPIKES"
+         */
+        LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
+                new IntentFilter("com.example.BROADCAST_SPIKES"));
+        super.onCreate();
+    }
+
     /**
-     * Receive spikes broadcasted by the DataReceiver service
+     * Handler for received Intents: called wheneve an Intent  with action named
+     * "com.example.BROADCAST_SPIKES" is broadcast.
      */
-    static public class MyReceiver extends BroadcastReceiver {
+    private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            Log.d("MyReceiver", "Broadcast received " + action);
-            if (action.equals("com.example.BROADCAST_SPIKES")) {
-                presynapticSpikes = intent.getExtras().getBooleanArray("Presynaptic spikes");
-            }
+            // Get data included in the Intent
+            presynapticSpikes = intent.getBooleanArrayExtra("Presynaptic spikes");
         }
+    };
+
+    @Override
+    public void onDestroy() {
+        // Unregister the receiver since the service is about to be closed
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
+        super.onDestroy();
     }
 
     @Override

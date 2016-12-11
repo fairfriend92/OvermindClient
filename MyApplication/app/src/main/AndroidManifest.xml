@@ -21,11 +21,6 @@
         <service
             android:name=".Simulation"
             android:exported="false"/>
-        <receiver android:name=".Simulation$MyReceiver">
-            <intent-filter>
-                <action android:name="com.example.BROADCAST_SPIKES"/>
-            </intent-filter>
-        </receiver>
     </application>
 
 </manifest>
