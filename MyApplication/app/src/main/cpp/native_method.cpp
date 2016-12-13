@@ -5,10 +5,11 @@
 #include "native_method.h"
 
 // Maximum number of multiplications needed to compute the current response of a synapse
-int maxNumberMultiplications = (int) (ABSOLUTE_REFRACTORY_PERIOD / SAMPLING_RATE ) + 1;
+ int maxNumberMultiplications = (int) (ABSOLUTE_REFRACTORY_PERIOD / SAMPLING_RATE ) - 1;
 // Size of the buffers needed to store data
-size_t excSynapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * sizeof(cl_float);
 size_t excSynapseInputBufferSize = maxNumberMultiplications * NUMBER_OF_EXC_SYNAPSES * sizeof(cl_int);
+size_t excSynapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * sizeof(cl_float);
+//size_t excSynapseInputBufferSize = SYNAPSE_FILTER_ORDER * NUMBER_OF_EXC_SYNAPSES * sizeof(cl_int);
 size_t synapseOutputBufferSize = NUMBER_OF_EXC_SYNAPSES * sizeof(cl_float);
 
 extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
@@ -40,6 +41,7 @@ extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
         return -1;
     }
 
+    // TODO: use vector information to load appropriate kernel using case:switch
     // Query the device to find out its preferred integer vector width
     clGetDeviceInfo(obj->device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT, sizeof(cl_uint), &obj->integerVectorWidth, NULL);
     LOGD("Preferred vector width for integers: %d ", obj->integerVectorWidth);
@@ -92,11 +94,20 @@ extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
     }
 
     // Initialize the coefficients array by sampling the exponential kernel of the synapse filter
-    // TODO: initialize coefficients array using OpenCL kernel
     float tExc = (float) (SAMPLING_RATE / EXC_SYNAPSE_TIME_SCALE);
-    for (int index = 0; index < SYNAPSE_FILTER_ORDER; index++)
+    // Extend the loop beyond the synapse filter order to account for possible overflows of the filter input
+    for (int index = 0; index < SYNAPSE_FILTER_ORDER * 2; index++)
     {
         obj->excSynapseCoeff[index] = (index * tExc) * expf( - index * tExc);
+    }
+
+    /**
+     * Initialize every element of the input array with -1. This allows to use simple multiplications
+     * instead of if statements in the OpenCL kernel
+     */
+    for (int index = 0; index < maxNumberMultiplications; index++)
+    {
+        obj->excSynapseInput[index] = -1;
     }
 
     return (long) obj;
@@ -110,32 +121,27 @@ extern "C" jlong Java_com_example_myapplication_Simulation_simulateNetwork(
     struct OpenCLObject *obj;
     obj = (struct OpenCLObject *)jOpenCLObject;
 
-    // Initialization for classic kernel (uncomment code in kernel too)
-    /*
-    for (int index = 0; index < (SYNAPSE_FILTER_ORDER - 1) * NUMBER_OF_EXC_SYNAPSES; index++) {
-        obj->excSynapseInput[index + NUMBER_OF_EXC_SYNAPSES] = obj->excSynapseInput[index];
-        //if(obj->excSynapseInput[index]) { LOGD("%d", index); } // uncomment for testing
-    }
-    for (int index = 0; index < NUMBER_OF_EXC_SYNAPSES; index++) {
-        obj->excSynapseInput[index] = presynapticSpikes[index];
-        //if(obj->excSynapseInput[index]) { LOGD("%d", index); } // uncomment for testing
-    }
-     */
-
+    // TODO: move input initialization in a separate thread
     // Initialize the input of the kernel
-
     for (int indexI = 0; indexI < NUMBER_OF_EXC_SYNAPSES; indexI++)
     {
-        // Advance the inputs in the filter pipeline if needed
-        if (presynapticSpikes[indexI] || obj->excSynapseInput[indexI * maxNumberMultiplications - 1] == SYNAPSE_FILTER_ORDER - 1)
+        /**
+         * Advance the inputs in the filter pipeline if needed. We do not account for the case when an
+         * input exceeds the synapse filter order. Instead we sample the exponential a number of time
+         * greater than the synapse filter order.
+         */
+        if (presynapticSpikes[indexI])
         {
             for (int indexJ = 1; indexJ < maxNumberMultiplications; indexJ++)
             {
                 obj->excSynapseInput[indexJ + indexI * maxNumberMultiplications] =
                 obj->excSynapseInput[indexJ + indexI * maxNumberMultiplications - 1];
+
             }
+            obj->excSynapseInput[indexI*maxNumberMultiplications] = 1;
         }
     }
+
 
     // Tell the kernels which data to use before they are scheduled
     bool setKernelArgumentSuccess = true;
@@ -149,6 +155,11 @@ extern "C" jlong Java_com_example_myapplication_Simulation_simulateNetwork(
         LOGE("Failed to set OpenCL kernel arguments");
         return -1;
     }
+
+    //  An event to associate with the kernel. Allows us to to retrieve profiling information later
+    cl_event event = 0;
+
+    // Number of kernel instances
 
     return (long) obj;
 }

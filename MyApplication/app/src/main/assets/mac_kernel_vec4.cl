@@ -4,19 +4,22 @@ __kernel void mac_kernel_vec4(__global float* restrict coefficient,
 {
   // Set i to be the ID of the kernel instance.
   int i = get_global_id(0);
-
+  
   int4 input4 = vload4(i, input);
-  float4 coeff4 = (float4)(input[input4.x], input[input4.y], input[input4.z], input[input4.w]);
+
+  // Define the vector storing the indexes used to access the coefficients array
+  int4 index4 = (input4 + (int4)(abs(input4.x), abs(input4.y), abs(input4.z), abs(input4.w))) / 2;
+
+  // Retrieve the coefficients using the previously defined indexes 
+  float4 coeff4 = (float4)(coefficient[index4.x], coefficient[index4.y], coefficient[index4.z], coefficient[index4.w]);
+
+  // Sum the coefficients and store the result in the output array
   output[i] = dot(coeff4, (float4)(1.0f, 1.0f, 1.0f, 1.0f));
-  vstore4(input4, i, input);
 
+  // Define the vector storing the increments to the indexes
+  index4 = (int4)(index4.x/input4.x, index4.y/input4.y, index4.z/input4.z, index4.w/input4.w);
 
-  // Classic kernel, uncomment initialization code in native_method.cpp too
-  /* 
-  int4 spike4 = vload4(i, spike);
-  float4 coefficient4 = vload4(i, coefficient);
-  float4 spikeFloat4 = convert_float4(spike4);
-  output[i] = dot(spikeFloat4 * coefficient4, (float4)(1.0f, 1.0f, 1.0f, 1.0f));
-  */
+  // Increment the indexes and store them in the input array
+  vstore4(input4 + index4, i, input);
 }
   
