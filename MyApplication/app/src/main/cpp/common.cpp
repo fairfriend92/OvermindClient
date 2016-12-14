@@ -4,6 +4,45 @@
 
 #include "common.h"
 
+bool printProfilingInfo(cl_event event)
+{
+
+    cl_ulong queuedTime = 0;
+    if (!checkSuccess(clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_QUEUED, sizeof(cl_ulong), &queuedTime, NULL)))
+    {
+        LOGE("Retrieving CL_PROFILING_COMMAND_QUEUED OpenCL profiling information failed");
+        return false;
+    }
+
+    cl_ulong submittedTime = 0;
+    if (!checkSuccess(clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_SUBMIT, sizeof(cl_ulong), &submittedTime, NULL)))
+    {
+        LOGE("Retrieving CL_PROFILING_COMMAND_SUBMIT OpenCL profiling information failed");
+        return false;
+    }
+
+    cl_ulong startTime = 0;
+    if (!checkSuccess(clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &startTime, NULL)))
+    {
+        LOGE("Retrieving CL_PROFILING_COMMAND_START OpenCL profiling information failed");
+        return false;
+    }
+
+    cl_ulong endTime = 0;
+    if (!checkSuccess(clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &endTime, NULL)))
+    {
+        LOGE("Retrieving CL_PROFILING_COMMAND_END OpenCL profiling information failed");
+        return false;
+    }
+
+    LOGD("Profiling information \n");
+    LOGD("Queued time: \t%lu ns\n", (unsigned long) (submittedTime - queuedTime));
+    LOGD("Wait time: \t%lu ns\n", (unsigned long) (startTime - submittedTime));
+    LOGD("Run time: \t%lu ns\n", (unsigned long) (endTime - startTime));
+
+    return true;
+}
+
 bool cleanUpOpenCL(cl_context context, cl_command_queue commandQueue, cl_program program, cl_kernel kernel, cl_mem* memoryObjects, int numberOfMemoryObjects)
 {
     bool returnValue = true;

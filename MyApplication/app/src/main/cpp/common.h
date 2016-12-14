@@ -21,6 +21,7 @@
   __android_log_print(ANDROID_LOG_ERROR,"OpenCL error", "%s | %s:%i", buf, __FILE__, __LINE__); \
 } while (0)
 
+bool printProfilingInfo(cl_event event);
 bool cleanUpOpenCL(cl_context context, cl_command_queue commandQueue, cl_program program, cl_kernel kernel, cl_mem* memoryObjects, int numberOfMemoryObjects);
 bool createContext(cl_context* context);
 bool createCommandQueue(cl_context context, cl_command_queue* commandQueue, cl_device_id* device);

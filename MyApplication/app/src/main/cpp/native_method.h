@@ -8,9 +8,9 @@
 #endif //MYAPPLICATION_NATIVE_METHOD_H_H
 
 #define SAMPLING_RATE 0.1
-#define SYNAPSE_FILTER_ORDER 512
+#define SYNAPSE_FILTER_ORDER 64
 #define EXC_SYNAPSE_TIME_SCALE 1
-#define NUMBER_OF_EXC_SYNAPSES 64
+#define NUMBER_OF_EXC_SYNAPSES 512
 #define ABSOLUTE_REFRACTORY_PERIOD 2
 
 #include <android/log.h>
@@ -33,5 +33,5 @@ struct OpenCLObject {
 
     // Pointers to the memory buffers
     cl_float *excSynapseCoeff;
-    cl_int *excSynapseInput;
+    cl_ushort *excSynapseInput;
 };

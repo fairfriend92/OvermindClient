@@ -5,9 +5,9 @@
 #include "native_method.h"
 
 // Maximum number of multiplications needed to compute the current response of a synapse
- int maxNumberMultiplications = (int) (ABSOLUTE_REFRACTORY_PERIOD / SAMPLING_RATE ) - 1;
+ int maxNumberMultiplications = (int) (ABSOLUTE_REFRACTORY_PERIOD / SAMPLING_RATE );
 // Size of the buffers needed to store data
-size_t excSynapseInputBufferSize = maxNumberMultiplications * NUMBER_OF_EXC_SYNAPSES * sizeof(cl_int);
+size_t excSynapseInputBufferSize = maxNumberMultiplications * NUMBER_OF_EXC_SYNAPSES * sizeof(cl_ushort);
 size_t excSynapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * sizeof(cl_float);
 //size_t excSynapseInputBufferSize = SYNAPSE_FILTER_ORDER * NUMBER_OF_EXC_SYNAPSES * sizeof(cl_int);
 size_t synapseOutputBufferSize = NUMBER_OF_EXC_SYNAPSES * sizeof(cl_float);
@@ -61,10 +61,10 @@ extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
     obj->numberOfMemoryObjects= 3;
 
     // Ask the OpenCL implementation to allocate buffers to pass data to and from the kernels
-    obj->memoryObjects[0] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, excSynapseCoeffBufferSize, NULL, &obj->errorNumber);
+    obj->memoryObjects[0] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY| CL_MEM_ALLOC_HOST_PTR, excSynapseCoeffBufferSize, NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-    obj->memoryObjects[1] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, excSynapseInputBufferSize, NULL, &obj->errorNumber);
+    obj->memoryObjects[1] = clCreateBuffer(obj->context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, excSynapseInputBufferSize, NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     obj->memoryObjects[2] = clCreateBuffer(obj->context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, synapseOutputBufferSize, NULL, &obj->errorNumber);
@@ -83,7 +83,7 @@ extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
     obj->excSynapseCoeff = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[0], CL_TRUE, CL_MAP_WRITE, 0, excSynapseCoeffBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-    obj->excSynapseInput = (cl_int*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, excSynapseInputBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    obj->excSynapseInput = (cl_ushort *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, excSynapseInputBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     if (!mapMemoryObjectsSuccess)
@@ -105,9 +105,9 @@ extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
      * Initialize every element of the input array with -1. This allows to use simple multiplications
      * instead of if statements in the OpenCL kernel
      */
-    for (int index = 0; index < maxNumberMultiplications; index++)
+    for (int index = 0; index < maxNumberMultiplications * NUMBER_OF_EXC_SYNAPSES; index++)
     {
-        obj->excSynapseInput[index] = -1;
+        obj->excSynapseInput[index] = 0;
     }
 
     return (long) obj;
@@ -138,7 +138,7 @@ extern "C" jlong Java_com_example_myapplication_Simulation_simulateNetwork(
                 obj->excSynapseInput[indexJ + indexI * maxNumberMultiplications - 1];
 
             }
-            obj->excSynapseInput[indexI*maxNumberMultiplications] = 1;
+            obj->excSynapseInput[indexI*maxNumberMultiplications] = 0;
         }
     }
 
@@ -160,6 +160,38 @@ extern "C" jlong Java_com_example_myapplication_Simulation_simulateNetwork(
     cl_event event = 0;
 
     // Number of kernel instances
+    size_t globalWorksize[1] = {NUMBER_OF_EXC_SYNAPSES};
+    // Enqueue kernel
+    if (!checkSuccess(clEnqueueNDRangeKernel(obj->commandQueue, obj->kernel, 1, NULL, globalWorksize, NULL, 0, NULL, &event)))
+    {
+        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+        LOGE("Failed to enqueue OpenCL kernel");
+        return -1;
+    }
+
+    // Wait for kernel execution completion
+    if (!checkSuccess(clFinish(obj->commandQueue)))
+    {
+        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+        LOGE("Failed waiting for kernel execution to finish");
+        return -1;
+    }
+
+    // Print the profiling information for the event
+    if(!printProfilingInfo(event))
+    {
+        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+        LOGE("Failed to print profiling info");
+        return -1;
+    }
+
+    // Release the event object
+    if (!checkSuccess(clReleaseEvent(event)))
+    {
+        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+        LOGE("Failed releasing the event");
+        return -1;
+    }
 
     return (long) obj;
 }

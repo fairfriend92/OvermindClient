@@ -16,10 +16,6 @@ import android.util.Log;
 
 public class Simulation extends IntentService{
 
-    static {
-        System.loadLibrary( "hello-world" );
-    }
-
     /**
      * An IntentService must always have a constructor that calls the super constructor. The
      * string supplied to the super constructor is used to give a name to the IntentService's
@@ -82,8 +78,9 @@ public class Simulation extends IntentService{
         }
         while (!shutdown) {
             openCLObject = simulateNetwork(presynapticSpikes, openCLObject);
+            if(openCLObject == -1) shutDown();
         }
-        if(closeOpenCL(openCLObject) == -1) { Log.e("Simulation service", "Failed to close OpenCL"); }
+        if(openCLObject != -1 ) { closeOpenCL(openCLObject); }
         shutdown = false;
         stopSelf();
     }

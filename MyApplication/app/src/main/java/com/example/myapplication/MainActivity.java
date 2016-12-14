@@ -21,15 +21,18 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Load the needed libraries. OpenCL lib location depends on the GPU vendor
      */
-    static boolean openclLibraryFound = true;
     static {
         try {
-            System.load("/system/lib64/egl/libGLES_mali.so");
+            System.load("libGLES_mali.so");
         }
         catch (UnsatisfiedLinkError linkError) {
-            Log.e("Unsatsfied link", "libGLES_mali.so not found");
-            openclLibraryFound = false;
+            Log.e("Unsatisfied link", "libGLES_mali.so not found");
         }
+    }
+
+
+    static {
+        System.loadLibrary( "hello-world" );
     }
 
     /**
