@@ -76,8 +76,13 @@ public class Simulation extends IntentService{
             Log.e("Simulation service", "Failed to initialize OpenCL");
             shutdown = true;
         }
+        long startTime = 0, endTime = 0, elapsedTime = 0;
         while (!shutdown) {
+            //startTime = System.nanoTime();
             openCLObject = simulateNetwork(presynapticSpikes, openCLObject);
+            /*endTime = System.nanoTime();
+            elapsedTime = endTime - startTime;
+            Log.d("Simulation", "Elapsed time in nanoseconds: " + Long.toString(elapsedTime));*/
             if(openCLObject == -1) shutDown();
         }
         if(openCLObject != -1 ) { closeOpenCL(openCLObject); }

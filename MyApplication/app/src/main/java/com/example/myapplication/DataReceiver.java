@@ -70,7 +70,7 @@ public class DataReceiver extends IntentService {
             endTime = System.nanoTime();
             elapsedTime = endTime - startTime;
 
-            Log.d("DataReceiver", "Elapsed time in microseconds: " + Long.toString(elapsedTime));
+            Log.d("DataReceiver", "Elapsed time in nanoseconds: " + Long.toString(elapsedTime));
 
             // Wait before generating the new batch of presynaptic spikes
             if (elapsedTime / 1000 < 100) {

@@ -7,10 +7,10 @@
 // Maximum number of multiplications needed to compute the current response of a synapse
  int maxNumberMultiplications = (int) (ABSOLUTE_REFRACTORY_PERIOD / SAMPLING_RATE );
 // Size of the buffers needed to store data
-size_t excSynapseInputBufferSize = maxNumberMultiplications * NUMBER_OF_EXC_SYNAPSES * sizeof(cl_ushort);
-size_t excSynapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * sizeof(cl_float);
+size_t excSynapseInputBufferSize = maxNumberMultiplications * NUMBER_OF_EXC_SYNAPSES * sizeof(cl_uchar);
+size_t excSynapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * sizeof(cl_uint);
 //size_t excSynapseInputBufferSize = SYNAPSE_FILTER_ORDER * NUMBER_OF_EXC_SYNAPSES * sizeof(cl_int);
-size_t synapseOutputBufferSize = NUMBER_OF_EXC_SYNAPSES * sizeof(cl_float);
+size_t synapseOutputBufferSize = NUMBER_OF_EXC_SYNAPSES * sizeof(cl_uint);
 
 extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
         JNIEnv *env, jobject thiz, jstring jMacKernel) {
@@ -41,18 +41,25 @@ extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
         return -1;
     }
 
-    // TODO: use vector information to load appropriate kernel using case:switch
     // Query the device to find out its preferred integer vector width
-    clGetDeviceInfo(obj->device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT, sizeof(cl_uint), &obj->integerVectorWidth, NULL);
-    LOGD("Preferred vector width for integers: %d ", obj->integerVectorWidth);
+    clGetDeviceInfo(obj->device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT, sizeof(cl_uint), &obj->intVectorWidth, NULL);
+    LOGD("Preferred vector width for integers: %d ", obj->intVectorWidth);
 
-    obj->kernel = clCreateKernel(obj->program, "mac_kernel_vec4", &obj->errorNumber);
-    if (!checkSuccess(obj->errorNumber))
+    switch (obj->intVectorWidth)
     {
-        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-        LOGE("Failed to create OpenCL kernel");
-        return -1;
+        case 4:
+            obj->kernel = clCreateKernel(obj->program, "mac_kernel_vec4", &obj->errorNumber);
+            if (!checkSuccess(obj->errorNumber))
+            {
+                cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+                LOGE("Failed to create OpenCL kernel");
+                return -1;
+            }
+            break;
+        default :
+            LOGE("Failed to load kernel for device vector width");
     }
+
 
     // Release the string containing the kernel since it has been passed already to createProgram
     env->ReleaseStringUTFChars(jMacKernel, kernelString);
@@ -80,10 +87,10 @@ extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
     // Map the memory buffers created by the OpenCL implementation so we can access them on the CPU
     bool mapMemoryObjectsSuccess = true;
 
-    obj->excSynapseCoeff = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[0], CL_TRUE, CL_MAP_WRITE, 0, excSynapseCoeffBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    obj->excSynapseCoeff = (cl_uint*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[0], CL_TRUE, CL_MAP_WRITE, 0, excSynapseCoeffBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-    obj->excSynapseInput = (cl_ushort *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, excSynapseInputBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    obj->excSynapseInput = (cl_uchar *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, excSynapseInputBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     if (!mapMemoryObjectsSuccess)
@@ -98,7 +105,8 @@ extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
     // Extend the loop beyond the synapse filter order to account for possible overflows of the filter input
     for (int index = 0; index < SYNAPSE_FILTER_ORDER * 2; index++)
     {
-        obj->excSynapseCoeff[index] = (index * tExc) * expf( - index * tExc);
+        obj->excSynapseCoeff[index] = (cl_uint)(index * tExc * expf( - index * tExc) * pow(2, SHIFT_FACTOR));
+        //LOGD("The excitatory synapse coefficients are: \tcoefficient %d \tvalue %f", index, (float) (obj->excSynapseCoeff[index] / pow(2, SHIFT_FACTOR)));
     }
 
     /**

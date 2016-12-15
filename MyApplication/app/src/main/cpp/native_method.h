@@ -13,6 +13,8 @@
 #define NUMBER_OF_EXC_SYNAPSES 512
 #define ABSOLUTE_REFRACTORY_PERIOD 2
 
+#define SHIFT_FACTOR 15
+
 #include <android/log.h>
 #include <jni.h>
 #include <math.h>
@@ -29,9 +31,9 @@ struct OpenCLObject {
     cl_int errorNumber = 0;
     int numberOfMemoryObjects = 3;
     cl_mem memoryObjects[3] = {0, 0, 0};
-    cl_uint integerVectorWidth = 0;
+    cl_uint intVectorWidth = 0;
 
     // Pointers to the memory buffers
-    cl_float *excSynapseCoeff;
-    cl_ushort *excSynapseInput;
+    cl_uint *excSynapseCoeff;
+    cl_uchar *excSynapseInput;
 };
