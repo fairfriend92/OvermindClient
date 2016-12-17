@@ -7,10 +7,10 @@
 // Maximum number of multiplications needed to compute the current response of a synapse
  int maxNumberMultiplications = (int) (ABSOLUTE_REFRACTORY_PERIOD / SAMPLING_RATE );
 // Size of the buffers needed to store data
-size_t excSynapseInputBufferSize = maxNumberMultiplications * NUMBER_OF_EXC_SYNAPSES * sizeof(cl_uchar);
+size_t synapseInputBufferSize = maxNumberMultiplications * (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * sizeof(cl_uchar);
 size_t excSynapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * sizeof(cl_uint);
-//size_t excSynapseInputBufferSize = SYNAPSE_FILTER_ORDER * NUMBER_OF_EXC_SYNAPSES * sizeof(cl_int);
-size_t synapseOutputBufferSize = NUMBER_OF_EXC_SYNAPSES * sizeof(cl_uint);
+size_t inhSynapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * sizeof(cl_uint);
+size_t synapseOutputBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * sizeof(cl_int);
 
 extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
         JNIEnv *env, jobject thiz, jstring jMacKernel) {
@@ -71,10 +71,13 @@ extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
     obj->memoryObjects[0] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY| CL_MEM_ALLOC_HOST_PTR, excSynapseCoeffBufferSize, NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-    obj->memoryObjects[1] = clCreateBuffer(obj->context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, excSynapseInputBufferSize, NULL, &obj->errorNumber);
+    obj->memoryObjects[1] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY| CL_MEM_ALLOC_HOST_PTR, inhSynapseCoeffBufferSize, NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-    obj->memoryObjects[2] = clCreateBuffer(obj->context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, synapseOutputBufferSize, NULL, &obj->errorNumber);
+    obj->memoryObjects[2] = clCreateBuffer(obj->context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, synapseInputBufferSize, NULL, &obj->errorNumber);
+    createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
+    obj->memoryObjects[3] = clCreateBuffer(obj->context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, synapseOutputBufferSize, NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     if (!createMemoryObjectsSuccess)
@@ -90,7 +93,10 @@ extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
     obj->excSynapseCoeff = (cl_uint*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[0], CL_TRUE, CL_MAP_WRITE, 0, excSynapseCoeffBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-    obj->excSynapseInput = (cl_uchar *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, excSynapseInputBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    obj->inhSynapseCoeff = (cl_uint*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, inhSynapseCoeffBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
+    obj->synapseInput = (cl_uchar *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[2], CL_TRUE, CL_MAP_WRITE, 0, synapseInputBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     if (!mapMemoryObjectsSuccess)
@@ -109,13 +115,21 @@ extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
         //LOGD("The excitatory synapse coefficients are: \tcoefficient %d \tvalue %f", index, (float) (obj->excSynapseCoeff[index] / pow(2, SHIFT_FACTOR)));
     }
 
+    float tInh = (float) (SAMPLING_RATE / INH_SYNAPSE_TIME_SCALE);
+    // Extend the loop beyond the synapse filter order to account for possible overflows of the filter input
+    for (int index = 0; index < SYNAPSE_FILTER_ORDER * 2; index++)
+    {
+        obj->inhSynapseCoeff[index] = (cl_uint)(index * tInh * expf( - index * tInh) * pow(2, SHIFT_FACTOR));
+        //LOGD("The excitatory synapse coefficients are: \tcoefficient %d \tvalue %f", index, (float) (obj->excSynapseCoeff[index] / pow(2, SHIFT_FACTOR)));
+    }
+
     /**
      * Initialize every element of the input array with -1. This allows to use simple multiplications
      * instead of if statements in the OpenCL kernel
      */
     for (int index = 0; index < maxNumberMultiplications * NUMBER_OF_EXC_SYNAPSES; index++)
     {
-        obj->excSynapseInput[index] = 0;
+        obj->synapseInput[index] = 0;
     }
 
     return (long) obj;
@@ -131,7 +145,7 @@ extern "C" jlong Java_com_example_myapplication_Simulation_simulateNetwork(
 
     // TODO: move input initialization in a separate thread
     // Initialize the input of the kernel
-    for (int indexI = 0; indexI < NUMBER_OF_EXC_SYNAPSES; indexI++)
+    for (int indexI = 0; indexI < NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES; indexI++)
     {
         /**
          * Advance the inputs in the filter pipeline if needed. We do not account for the case when an
@@ -142,11 +156,11 @@ extern "C" jlong Java_com_example_myapplication_Simulation_simulateNetwork(
         {
             for (int indexJ = 1; indexJ < maxNumberMultiplications; indexJ++)
             {
-                obj->excSynapseInput[indexJ + indexI * maxNumberMultiplications] =
-                obj->excSynapseInput[indexJ + indexI * maxNumberMultiplications - 1];
+                obj->synapseInput[indexJ + indexI * maxNumberMultiplications] =
+                obj->synapseInput[indexJ + indexI * maxNumberMultiplications - 1];
 
             }
-            obj->excSynapseInput[indexI*maxNumberMultiplications] = 0;
+            obj->synapseInput[indexI*maxNumberMultiplications] = 0;
         }
     }
 
@@ -156,6 +170,7 @@ extern "C" jlong Java_com_example_myapplication_Simulation_simulateNetwork(
     setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 0, sizeof(cl_mem), &obj->memoryObjects[0]));
     setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 1, sizeof(cl_mem), &obj->memoryObjects[1]));
     setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 2, sizeof(cl_mem), &obj->memoryObjects[2]));
+    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 3, sizeof(cl_mem), &obj->memoryObjects[3]));
 
     if (!setKernelArgumentSuccess)
     {
@@ -218,7 +233,14 @@ extern "C" int Java_com_example_myapplication_Simulation_closeOpenCL(
         return -1;
     }
 
-    if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[1], obj->excSynapseInput, 0, NULL, NULL)))
+    if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[1], obj->inhSynapseCoeff, 0, NULL, NULL)))
+    {
+        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+        LOGE("Unmap memory objects failed");
+        return -1;
+    }
+
+    if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[2], obj->synapseInput, 0, NULL, NULL)))
     {
         cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
         LOGE("Unmap memory objects failed");

@@ -10,7 +10,10 @@
 #define SAMPLING_RATE 0.1
 #define SYNAPSE_FILTER_ORDER 64
 #define EXC_SYNAPSE_TIME_SCALE 1
+#define INH_SYNAPSE_TIME_SCALE 3
 #define NUMBER_OF_EXC_SYNAPSES 512
+#define NUMBER_OF_INH_SYNAPSES 512
+#define NUMBER_OF_NEURONS 12
 #define ABSOLUTE_REFRACTORY_PERIOD 2
 
 #define SHIFT_FACTOR 15
@@ -29,11 +32,12 @@ struct OpenCLObject {
     cl_device_id device = 0;
     cl_kernel kernel = 0;
     cl_int errorNumber = 0;
-    int numberOfMemoryObjects = 3;
-    cl_mem memoryObjects[3] = {0, 0, 0};
+    int numberOfMemoryObjects = 4;
+    cl_mem memoryObjects[4] = {0, 0, 0, 0};
     cl_uint intVectorWidth = 0;
 
     // Pointers to the memory buffers
     cl_uint *excSynapseCoeff;
-    cl_uchar *excSynapseInput;
+    cl_uint *inhSynapseCoeff;
+    cl_uchar *synapseInput;
 };

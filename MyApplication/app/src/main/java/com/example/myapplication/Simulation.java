@@ -33,7 +33,7 @@ public class Simulation extends IntentService{
         shutdown = true;
     }
 
-    static boolean[] presynapticSpikes = new boolean[Constants.NUMBER_OF_EXC_SYNAPSES];
+    static boolean[] presynapticSpikes = new boolean[Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES];
 
 
     @Override
