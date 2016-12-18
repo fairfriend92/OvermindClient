@@ -4,7 +4,7 @@ android {
     compileSdkVersion 23
     buildToolsVersion "25.0.1"
     defaultConfig {
-        applicationId "com.example.myapplication"
+        applicationId 'com.example.overmind'
         minSdkVersion 15
         targetSdkVersion 23
         versionCode 1
@@ -17,7 +17,7 @@ android {
         }
         ndk {
             moduleName 'hello-world'
-            abiFilters  'armeabi-v7a'
+            abiFilters 'armeabi-v7a'
         }
     }
     buildTypes {
@@ -34,11 +34,12 @@ android {
             path "CMakeLists.txt"
         }
     }
-
+    productFlavors {
+    }
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile fileTree(include: ['*.jar'], dir: 'libs')
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })

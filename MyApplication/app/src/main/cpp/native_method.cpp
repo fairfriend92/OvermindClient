@@ -12,13 +12,13 @@ size_t excSynapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * sizeof(cl_uint);
 size_t inhSynapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * sizeof(cl_uint);
 size_t synapseOutputBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * sizeof(cl_int);
 
-extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
-        JNIEnv *env, jobject thiz, jstring jMacKernel) {
+extern "C" jlong Java_com_example_overmind_Simulation_initializeOpenCL (
+        JNIEnv *env, jobject thiz, jstring jSynapseKernel) {
 
     struct OpenCLObject *obj;
     obj = (struct OpenCLObject *)malloc(sizeof(struct OpenCLObject));
 
-    const char *kernelString = env->GetStringUTFChars(jMacKernel, JNI_FALSE);
+    const char *kernelString = env->GetStringUTFChars(jSynapseKernel, JNI_FALSE);
 
     if (!createContext(&obj->context))
     {
@@ -48,7 +48,7 @@ extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
     switch (obj->intVectorWidth)
     {
         case 4:
-            obj->kernel = clCreateKernel(obj->program, "mac_kernel_vec4", &obj->errorNumber);
+            obj->kernel = clCreateKernel(obj->program, "synapse_vec4", &obj->errorNumber);
             if (!checkSuccess(obj->errorNumber))
             {
                 cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
@@ -62,7 +62,7 @@ extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
 
 
     // Release the string containing the kernel since it has been passed already to createProgram
-    env->ReleaseStringUTFChars(jMacKernel, kernelString);
+    env->ReleaseStringUTFChars(jSynapseKernel, kernelString);
 
     bool createMemoryObjectsSuccess = true;
     obj->numberOfMemoryObjects= 3;
@@ -74,7 +74,7 @@ extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
     obj->memoryObjects[1] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY| CL_MEM_ALLOC_HOST_PTR, inhSynapseCoeffBufferSize, NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-    obj->memoryObjects[2] = clCreateBuffer(obj->context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, synapseInputBufferSize, NULL, &obj->errorNumber);
+    obj->memoryObjects[2] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, synapseInputBufferSize, NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     obj->memoryObjects[3] = clCreateBuffer(obj->context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, synapseOutputBufferSize, NULL, &obj->errorNumber);
@@ -135,7 +135,7 @@ extern "C" jlong Java_com_example_myapplication_Simulation_initializeOpenCL (
     return (long) obj;
 }
 
-extern "C" jlong Java_com_example_myapplication_Simulation_simulateNetwork(
+extern "C" jlong Java_com_example_overmind_Simulation_simulateNetwork(
         JNIEnv *env, jobject thiz, jbooleanArray jPresynapticSpikes, jlong jOpenCLObject) {
 
     jboolean *presynapticSpikes = env->GetBooleanArrayElements(jPresynapticSpikes, 0);
@@ -143,7 +143,7 @@ extern "C" jlong Java_com_example_myapplication_Simulation_simulateNetwork(
     struct OpenCLObject *obj;
     obj = (struct OpenCLObject *)jOpenCLObject;
 
-    // TODO: move input initialization in a separate thread
+    // TODO: move input initialization in a separate thread.
     // Initialize the input of the kernel
     for (int indexI = 0; indexI < NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES; indexI++)
     {
@@ -156,8 +156,9 @@ extern "C" jlong Java_com_example_myapplication_Simulation_simulateNetwork(
         {
             for (int indexJ = 1; indexJ < maxNumberMultiplications; indexJ++)
             {
+                // TODO: check if new increment method outside kernel works. Look out for overflow of uchar.
                 obj->synapseInput[indexJ + indexI * maxNumberMultiplications] =
-                obj->synapseInput[indexJ + indexI * maxNumberMultiplications - 1];
+                obj->synapseInput[indexJ + indexI * maxNumberMultiplications - 1] ? (obj->synapseInput[indexJ + indexI*maxNumberMultiplications - 1] + 1) : 0;
 
             }
             obj->synapseInput[indexI*maxNumberMultiplications] = 0;
@@ -219,7 +220,7 @@ extern "C" jlong Java_com_example_myapplication_Simulation_simulateNetwork(
     return (long) obj;
 }
 
-extern "C" int Java_com_example_myapplication_Simulation_closeOpenCL(
+extern "C" int Java_com_example_overmind_Simulation_closeOpenCL(
         JNIEnv *env, jobject thiz,  jlong jOpenCLObject) {
 
     struct OpenCLObject *obj;
