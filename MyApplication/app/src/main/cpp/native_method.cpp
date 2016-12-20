@@ -5,7 +5,7 @@
 #include "native_method.h"
 
 // Maximum number of multiplications needed to compute the current response of a synapse
- int maxNumberMultiplications = (int) (ABSOLUTE_REFRACTORY_PERIOD / SAMPLING_RATE );
+ int maxNumberMultiplications = (int) (SYNAPSE_FILTER_ORDER * SAMPLING_RATE / ABSOLUTE_REFRACTORY_PERIOD + 1);
 // Size of the buffers needed to store data
 size_t synapseInputBufferSize = maxNumberMultiplications * (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * sizeof(cl_uchar);
 size_t excSynapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * sizeof(cl_uint);
