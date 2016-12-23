@@ -18,7 +18,7 @@
 ANDROID_ABI:UNINITIALIZED=armeabi-v7a
 
 //No help, variable specified on the command line.
-ANDROID_NATIVE_API_LEVEL:UNINITIALIZED=15
+ANDROID_NATIVE_API_LEVEL:UNINITIALIZED=19
 
 //No help, variable specified on the command line.
 ANDROID_NDK:UNINITIALIZED=/home/rodolfo/Android/Sdk/ndk-bundle
@@ -187,7 +187,7 @@ Project_SOURCE_DIR:STATIC=/home/rodolfo/AndroidStudioProjects/MyApplication/app
 hello-world_LIB_DEPENDS:STATIC=general;log;general;GLES_mali;
 
 //Path to a library.
-log-lib:FILEPATH=/home/rodolfo/Android/Sdk/ndk-bundle/platforms/android-15/arch-arm/usr/lib/liblog.so
+log-lib:FILEPATH=/home/rodolfo/Android/Sdk/ndk-bundle/platforms/android-19/arch-arm/usr/lib/liblog.so
 
 
 ########################

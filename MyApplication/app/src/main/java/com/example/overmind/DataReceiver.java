@@ -4,11 +4,11 @@ import android.app.IntentService;
 import android.content.Intent;
 import android.util.Log;
 
+import java.io.DataInputStream;
 import java.io.IOException;
-import java.net.InetAddress;
+import java.io.UnsupportedEncodingException;
 import java.net.Socket;
-import java.net.UnknownHostException;
-import java.util.Random;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -31,27 +31,42 @@ public class DataReceiver extends IntentService {
         shutdown = true;
     }
 
-    //long startTime = 0, endTime = 0, elapsedTime = 0;
+    long lastTime = 0, newTime = 0;
 
-    private static final String SERVER_IP = "10.0.2.2";
-    private static final int SERVER_PORT = 5000;
+    private static final String SERVER_IP = "192.168.1.213";
+    private static final int SERVER_PORT = 4194;
 
+    /**
+     * Used to print a byte[] as a hex string
+     */
+    final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
+    public static String bytesToHex(byte[] bytes) {
+        char[] hexChars = new char[bytes.length * 2];
+        for ( int j = 0; j < bytes.length; j++ ) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 2] = hexArray[v >>> 4];
+            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+        }
+        return new String(hexChars);
+    }
 
     @Override
     protected void onHandleIntent (Intent workIntent) {
-
         String stackTrace;
+        Socket clientSocket = null;
+        DataInputStream input = null;
+        byte[] presynapticSpikes = new byte[(Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES) / 8];
 
         try {
-            InetAddress serverAddr = InetAddress.getByName(SERVER_IP);
-            Socket socket = new Socket(serverAddr, SERVER_PORT);
-        } catch (UnknownHostException e)
-        {
+            clientSocket = new Socket(SERVER_IP, SERVER_PORT);
+        } catch (IOException e) {
             stackTrace = Log.getStackTraceString(e);
             Log.e("DataReceiver", stackTrace);
+        }
 
-        } catch (IOException e)
-        {
+        try {
+            input = new DataInputStream(clientSocket.getInputStream());
+        } catch (IOException e) {
             stackTrace = Log.getStackTraceString(e);
             Log.e("DataReceiver", stackTrace);
         }
@@ -65,6 +80,17 @@ public class DataReceiver extends IntentService {
         //int[] waitARP = new int[Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES];
 
         while (!shutdown) {
+            try {
+                input.readFully(presynapticSpikes, 0, (Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES) / 8);
+            } catch (IOException e) {
+                stackTrace = Log.getStackTraceString(e);
+                Log.e("DataReceiver", stackTrace);
+            }
+
+            Log.d("DataReceiver", this.bytesToHex(presynapticSpikes));
+            lastTime = newTime;
+            newTime = System.nanoTime();
+            Log.d("DataReceiver", "Elapsed time in nanoseconds: " + Long.toString(newTime - lastTime));
 
             //startTime = System.nanoTime();
 
@@ -109,8 +135,6 @@ public class DataReceiver extends IntentService {
             } else { Log.e("DataReceiver", "Error: could not send presynaptic spikes in time to the Simulation service"); }
             */
         }
-
-
 
         shutdown = false;
         stopSelf();
