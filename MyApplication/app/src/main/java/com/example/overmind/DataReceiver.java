@@ -6,10 +6,8 @@ import android.util.Log;
 
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.TimeUnit;
+import java.util.Arrays;
 
 /**
  * Created by rodolfo on 05/12/16.
@@ -56,6 +54,7 @@ public class DataReceiver extends IntentService {
         Socket clientSocket = null;
         DataInputStream input = null;
         byte[] presynapticSpikes = new byte[(Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES) / 8];
+        //byte[] oldPresynapticSpikes;
 
         try {
             clientSocket = new Socket(SERVER_IP, SERVER_PORT);
@@ -76,10 +75,9 @@ public class DataReceiver extends IntentService {
         Intent broadcastSpikes = new Intent("com.example.BROADCAST_SPIKES");
         broadcastSpikes.putExtra("Presynaptic spikes", presynapticSpikes);
         */
-        //Random random = new Random();
-        //int[] waitARP = new int[Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES];
 
         while (!shutdown) {
+            //oldPresynapticSpikes = presynapticSpikes.clone();
             try {
                 input.readFully(presynapticSpikes, 0, (Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES) / 8);
             } catch (IOException e) {
@@ -87,53 +85,24 @@ public class DataReceiver extends IntentService {
                 Log.e("DataReceiver", stackTrace);
             }
 
-            Log.d("DataReceiver", this.bytesToHex(presynapticSpikes));
+            /**
+             * Debugging code
+             */
+            /*
+            if (Arrays.equals(oldPresynapticSpikes, presynapticSpikes)) {
+                Log.d("DataReceiver", "New data is not different");
+            } else {
+                Log.d("DataReceiver", "New data is different");
+            }
+            Log.d("DataReceiver", bytesToHex(oldPresynapticSpikes));
+            Log.d("DataReceiver", bytesToHex(presynapticSpikes));
             lastTime = newTime;
             newTime = System.nanoTime();
             Log.d("DataReceiver", "Elapsed time in nanoseconds: " + Long.toString(newTime - lastTime));
-
-            //startTime = System.nanoTime();
-
-            /**
-             * For testing purposes we randomly generate the spikes instead of reading them from the connected peers
-             */
-            /*
-            for (int index = 0; index < Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES; index++) {
-                // A new spike is randomly generated only if the wait for the ARP has ended
-                if (waitARP[index] == 0) {
-                    presynapticSpikes[index] = random.nextBoolean();
-                    // Reset the ARP counter if a new spike is emitted
-                    if (presynapticSpikes[index]) {
-                        waitARP[index] = (int) (Constants.ABSOLUTE_REFRACTORY_PERIOD / Constants.SAMPLING_RATE);
-                    }
-                } else {
-                    presynapticSpikes[index] = false;
-                    // We account for the Absolute Refractory Period by decreasing a counter, one for each synapse
-                    waitARP[index] = waitARP[index] - 1;
-                }
-            }
             */
-
-
 
             // Broadcast the received spikes to the Simulation service
             //LocalBroadcastManager.getInstance(this).sendBroadcast(broadcastSpikes);
-
-            /*
-            endTime = System.nanoTime();
-            elapsedTime = endTime - startTime;
-
-            Log.d("DataReceiver", "Elapsed time in nanoseconds: " + Long.toString(elapsedTime));
-
-            // Wait before generating the new batch of presynaptic spikes
-            if (elapsedTime / 1000 < 100) {
-                try {
-                    TimeUnit.MICROSECONDS.sleep((int)(100 - elapsedTime));
-                } catch (InterruptedException interruptedException) {
-                    Log.e("DataReceiver", "Sleep has been interrupted");
-                }
-            } else { Log.e("DataReceiver", "Error: could not send presynaptic spikes in time to the Simulation service"); }
-            */
         }
 
         shutdown = false;
