@@ -19,10 +19,7 @@
             </intent-filter>
         </activity>
         <service
-            android:name="com.example.overmind.DataReceiver"
-            android:exported="false"/>
-        <service
-            android:name="com.example.overmind.Simulation"
+            android:name="com.example.overmind.SimulationService"
             android:exported="false"/>
     </application>
 

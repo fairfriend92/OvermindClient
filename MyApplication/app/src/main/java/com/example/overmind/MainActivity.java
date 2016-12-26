@@ -11,16 +11,12 @@ import java.io.InputStream;
 import java.util.Scanner;
 
 public class MainActivity extends AppCompatActivity {
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
     }
 
-    /**
-     * Load the needed libraries. OpenCL lib location depends on the GPU vendor
-     */
     static {
         try {
             System.load("libGLES_mali.so");
@@ -30,15 +26,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
     static {
         System.loadLibrary( "hello-world" );
     }
 
-    /**
-     * Load the OpenCL kernel into a string so that it can be passed to the native method
-     */
-    // Get the asset in the input stream
     public InputStream getInputStream(String kernelName) {
         try {
             return getAssets().open(kernelName);
@@ -47,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
             return null;
         }
     }
-    // Translate the input stream into a string
+
     static String loadKernelFromAsset(InputStream inputStream) {
             Scanner scanner = new Scanner(inputStream).useDelimiter("\\A");
             return scanner.hasNext() ? scanner.next() : " ";
@@ -58,23 +49,15 @@ public class MainActivity extends AppCompatActivity {
      */
     static boolean simulationIsStarted = false;
     public void startSimulation(View view) {
-       /**
-       * Setup the service to receive data from the connected peers.
-       */
         if (!simulationIsStarted) {
-            this.startService(new Intent(MainActivity.this, DataReceiver.class));
-
-            /**
-            * Setup the service which makes the call to the native C method
-            */
-            /*
-            Intent simultationIntent = new Intent(MainActivity.this, Simulation.class);
-            // Get the content of the .cl file into a string to be passed to the native method
+            // The SimulationService Intent
+            Intent simulationIntent = new Intent(MainActivity.this, SimulationService.class);
+            // The string used to hold the .cl kernel file
             String synapseKernelVec4 = loadKernelFromAsset(getInputStream("synapse_vec4.cl"));
-            simultationIntent.putExtra("Kernel", synapseKernelVec4);
-            this.startService(simultationIntent);
-            */
-
+            // Put the string holding the kernel in the simulation Intent
+            simulationIntent.putExtra("Kernel", synapseKernelVec4);
+            // Start the service
+            this.startService(simulationIntent);
             simulationIsStarted = true;
         }
     }
@@ -83,8 +66,7 @@ public class MainActivity extends AppCompatActivity {
      * Called when the user clicks the Stop simulation button
      */
     public void stopSimulation(View view) {
-       DataReceiver.shutDown();
-       //Simulation.shutDown();
+       SimulationService.shutDown();
        simulationIsStarted = false;
     }
 }

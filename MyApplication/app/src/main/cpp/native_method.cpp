@@ -12,7 +12,7 @@ size_t excSynapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * sizeof(cl_uint);
 size_t inhSynapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * sizeof(cl_uint);
 size_t synapseOutputBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * sizeof(cl_int);
 
-extern "C" jlong Java_com_example_overmind_Simulation_initializeOpenCL (
+extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
         JNIEnv *env, jobject thiz, jstring jSynapseKernel) {
 
     struct OpenCLObject *obj;
@@ -59,7 +59,6 @@ extern "C" jlong Java_com_example_overmind_Simulation_initializeOpenCL (
         default :
             LOGE("Failed to load kernel for device vector width");
     }
-
 
     // Release the string containing the kernel since it has been passed already to createProgram
     env->ReleaseStringUTFChars(jSynapseKernel, kernelString);
@@ -138,33 +137,8 @@ extern "C" jlong Java_com_example_overmind_Simulation_initializeOpenCL (
 extern "C" jlong Java_com_example_overmind_Simulation_simulateNetwork(
         JNIEnv *env, jobject thiz, jbooleanArray jPresynapticSpikes, jlong jOpenCLObject) {
 
-    jboolean *presynapticSpikes = env->GetBooleanArrayElements(jPresynapticSpikes, 0);
-
     struct OpenCLObject *obj;
     obj = (struct OpenCLObject *)jOpenCLObject;
-
-    // TODO: move input initialization in a separate thread.
-    // Initialize the input of the kernel
-    for (int indexI = 0; indexI < NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES; indexI++)
-    {
-        /**
-         * Advance the inputs in the filter pipeline if needed. We do not account for the case when an
-         * input exceeds the synapse filter order. Instead we sample the exponential a number of time
-         * greater than the synapse filter order.
-         */
-        if (presynapticSpikes[indexI])
-        {
-            for (int indexJ = 1; indexJ < maxNumberMultiplications; indexJ++)
-            {
-                // TODO: check if new increment method outside kernel works. Look out for overflow of uchar.
-                obj->synapseInput[indexJ + indexI * maxNumberMultiplications] =
-                obj->synapseInput[indexJ + indexI * maxNumberMultiplications - 1] ? (obj->synapseInput[indexJ + indexI*maxNumberMultiplications - 1] + 1) : 0;
-
-            }
-            obj->synapseInput[indexI*maxNumberMultiplications] = 0;
-        }
-    }
-
 
     // Tell the kernels which data to use before they are scheduled
     bool setKernelArgumentSuccess = true;
@@ -220,7 +194,7 @@ extern "C" jlong Java_com_example_overmind_Simulation_simulateNetwork(
     return (long) obj;
 }
 
-extern "C" int Java_com_example_overmind_Simulation_closeOpenCL(
+extern "C" int Java_com_example_overmind_SimulationService_closeOpenCL(
         JNIEnv *env, jobject thiz,  jlong jOpenCLObject) {
 
     struct OpenCLObject *obj;
@@ -256,4 +230,40 @@ extern "C" int Java_com_example_overmind_Simulation_closeOpenCL(
 
     free(obj);
     return 1;
+}
+
+extern "C" jcharArray Java_com_example_overmind_InitKernelWorkerThread_initializeSynapseKernel(
+        JNIEnv *env, jobject thiz, jbyteArray jPresynapticSpikes, jcharArray jSynapseInput) {
+
+    jbyte *presynapticSpikes = env->GetByteArrayElements(jPresynapticSpikes, 0);
+    jchar *synapseInput = env->GetCharArrayElements(jSynapseInput, 0);
+    jchar newSynapseInput[(NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * maxNumberMultiplications];
+    jcharArray result = env->NewCharArray((NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_EXC_SYNAPSES) * maxNumberMultiplications);
+
+    unsigned short byteIndex;
+    unsigned char bitValue;
+
+
+    for (int indexI = 0; indexI < NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES; indexI++)
+    {
+        // Calculate the byte to which the current indexI belongs
+        byteIndex = (unsigned short) indexI / 8;
+        // Check whether the indexI-th synapse has fired or not
+        bitValue = (presynapticSpikes[byteIndex] >> (indexI - byteIndex * 8)) & 1;
+        // Increment the synapse inputs and advance them in the filter pipe only in case of firing
+        for (int indexJ = 1; indexJ < maxNumberMultiplications; indexJ++)
+        {
+            // Increment the input only if different from zero to begin with. Advance it if the synapse carries an action potential (bitValue = 1)
+            newSynapseInput[indexJ + indexI * maxNumberMultiplications] =
+                    synapseInput[indexJ + indexI * maxNumberMultiplications - bitValue] ? (synapseInput[indexJ + indexI*maxNumberMultiplications - bitValue] + 1) : 0;
+        }
+        // Make room for the new input in case bitValue = 1
+        newSynapseInput[indexI*maxNumberMultiplications] = (1 - bitValue) * synapseInput[indexI*maxNumberMultiplications];
+
+    }
+
+    env->ReleaseByteArrayElements(jPresynapticSpikes, presynapticSpikes, 0);
+    env->ReleaseCharArrayElements(jSynapseInput, synapseInput, 0);
+    env->SetCharArrayRegion(result, 0, (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * maxNumberMultiplications, newSynapseInput);
+    return result;
 }

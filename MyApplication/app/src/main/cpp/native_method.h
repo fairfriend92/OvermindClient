@@ -41,3 +41,4 @@ struct OpenCLObject {
     cl_uint *inhSynapseCoeff;
     cl_uchar *synapseInput;
 };
+

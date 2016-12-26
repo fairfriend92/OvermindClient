@@ -67,6 +67,7 @@ public class Simulation extends IntentService{
     @Override
     protected void onHandleIntent (Intent workIntent)
     {
+        /*
         String synapseKernelVec4 = workIntent.getStringExtra("Kernel");
         // Create the object used to hold the information passed from one native call to the other
         long openCLObject = initializeOpenCL(synapseKernelVec4);
@@ -78,22 +79,25 @@ public class Simulation extends IntentService{
         while (!shutdown) {
             //startTime = System.nanoTime();
             openCLObject = simulateNetwork(presynapticSpikes, openCLObject);
-            /*endTime = System.nanoTime();
+            endTime = System.nanoTime();
             elapsedTime = endTime - startTime;
-            Log.d("Simulation", "Elapsed time in nanoseconds: " + Long.toString(elapsedTime));*/
+            Log.d("Simulation", "Elapsed time in nanoseconds: " + Long.toString(elapsedTime));
             if(openCLObject == -1) shutDown();
         }
         if(openCLObject != -1 ) { closeOpenCL(openCLObject); }
         shutdown = false;
         stopSelf();
+        */
     }
 
     /**
      * Java Native Interface
      */
+    /*
     public native long simulateNetwork(boolean[] presynapticSpikes, long openCLObject);
     public native long initializeOpenCL(String synapseKernel);
     public native int closeOpenCL(long openCLObject);
+    */
 }
 
 
