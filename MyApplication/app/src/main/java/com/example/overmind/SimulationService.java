@@ -7,7 +7,15 @@ import android.util.Log;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.Arrays;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by rodolfo on 05/12/16.
@@ -26,7 +34,7 @@ public class SimulationService extends IntentService {
 
     long lastTime = 0, newTime = 0;
 
-    private static final String SERVER_IP = "82.59.179.122";
+    private static final String SERVER_IP = "192.168.1.213";
     private static final int SERVER_PORT = 4194;
 
     /**
@@ -48,8 +56,14 @@ public class SimulationService extends IntentService {
         String stackTrace;
         Socket clientSocket = null;
         DataInputStream input = null;
+
         byte[] presynapticSpikes = new byte[(Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES) / 8];
         //byte[] oldPresynapticSpikes;
+        char[] synapseInput = new char[(Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES) * Constants.MAX_MULTIPLICATIONS];
+
+        BlockingQueue initKernelQueue = new ArrayBlockingQueue(4);
+        ThreadPoolExecutor initKernelExecutor = new ThreadPoolExecutor(1, 1, 10, TimeUnit.MILLISECONDS, initKernelQueue);
+        Future<char[]> futureSynapseInput;
 
         /**
          * Get the string holding the kernel and initialize the OpenCL implementation
@@ -81,6 +95,18 @@ public class SimulationService extends IntentService {
                 Log.e("SimulationService", stackTrace);
             }
 
+            try {
+                futureSynapseInput = initKernelExecutor.submit(new InitKernelWorkerThread(presynapticSpikes, synapseInput));
+                synapseInput = futureSynapseInput.get();
+            } catch (RejectedExecutionException|InterruptedException|ExecutionException e) {
+                stackTrace = Log.getStackTraceString(e);
+                Log.e("SimulationService", stackTrace);
+            }
+
+            lastTime = newTime;
+            newTime = System.nanoTime();
+            Log.d("SimulationService", "Elapsed time in nanoseconds: " + Long.toString(newTime - lastTime));
+
             /**
              * Debugging code
              */
@@ -92,9 +118,6 @@ public class SimulationService extends IntentService {
             }
             Log.d("SimulationService", bytesToHex(oldPresynapticSpikes));
             Log.d("SimulationService", bytesToHex(presynapticSpikes));
-            lastTime = newTime;
-            newTime = System.nanoTime();
-            Log.d("SimulationService", "Elapsed time in nanoseconds: " + Long.toString(newTime - lastTime));
             */
 
         }

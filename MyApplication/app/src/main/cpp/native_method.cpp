@@ -231,39 +231,3 @@ extern "C" int Java_com_example_overmind_SimulationService_closeOpenCL(
     free(obj);
     return 1;
 }
-
-extern "C" jcharArray Java_com_example_overmind_InitKernelWorkerThread_initializeSynapseKernel(
-        JNIEnv *env, jobject thiz, jbyteArray jPresynapticSpikes, jcharArray jSynapseInput) {
-
-    jbyte *presynapticSpikes = env->GetByteArrayElements(jPresynapticSpikes, 0);
-    jchar *synapseInput = env->GetCharArrayElements(jSynapseInput, 0);
-    jchar newSynapseInput[(NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * maxNumberMultiplications];
-    jcharArray result = env->NewCharArray((NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_EXC_SYNAPSES) * maxNumberMultiplications);
-
-    unsigned short byteIndex;
-    unsigned char bitValue;
-
-
-    for (int indexI = 0; indexI < NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES; indexI++)
-    {
-        // Calculate the byte to which the current indexI belongs
-        byteIndex = (unsigned short) indexI / 8;
-        // Check whether the indexI-th synapse has fired or not
-        bitValue = (presynapticSpikes[byteIndex] >> (indexI - byteIndex * 8)) & 1;
-        // Increment the synapse inputs and advance them in the filter pipe only in case of firing
-        for (int indexJ = 1; indexJ < maxNumberMultiplications; indexJ++)
-        {
-            // Increment the input only if different from zero to begin with. Advance it if the synapse carries an action potential (bitValue = 1)
-            newSynapseInput[indexJ + indexI * maxNumberMultiplications] =
-                    synapseInput[indexJ + indexI * maxNumberMultiplications - bitValue] ? (synapseInput[indexJ + indexI*maxNumberMultiplications - bitValue] + 1) : 0;
-        }
-        // Make room for the new input in case bitValue = 1
-        newSynapseInput[indexI*maxNumberMultiplications] = (1 - bitValue) * synapseInput[indexI*maxNumberMultiplications];
-
-    }
-
-    env->ReleaseByteArrayElements(jPresynapticSpikes, presynapticSpikes, 0);
-    env->ReleaseCharArrayElements(jSynapseInput, synapseInput, 0);
-    env->SetCharArrayRegion(result, 0, (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * maxNumberMultiplications, newSynapseInput);
-    return result;
-}
