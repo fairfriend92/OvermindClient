@@ -9,16 +9,12 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
- * Created by rodolfo on 05/12/16.
+ * Background service used to initialize the OpenCL implementation and execute the Thread pool managers
+ * for data reception, Kernel initialization, Kernel execution and data sending.
  */
 
 public class SimulationService extends IntentService {
@@ -31,8 +27,6 @@ public class SimulationService extends IntentService {
     static public void shutDown () {
         shutdown = true;
     }
-
-    long lastTime = 0, newTime = 0;
 
     private static final String SERVER_IP = "192.168.1.213";
     private static final int SERVER_PORT = 4194;
@@ -53,17 +47,13 @@ public class SimulationService extends IntentService {
 
     @Override
     protected void onHandleIntent (Intent workIntent) {
-        String stackTrace;
         Socket clientSocket = null;
         DataInputStream input = null;
 
-        byte[] presynapticSpikes = new byte[(Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES) / 8];
-        //byte[] oldPresynapticSpikes;
-        char[] synapseInput = new char[(Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES) * Constants.MAX_MULTIPLICATIONS];
-
-        BlockingQueue initKernelQueue = new ArrayBlockingQueue(4);
-        ThreadPoolExecutor initKernelExecutor = new ThreadPoolExecutor(1, 1, 10, TimeUnit.MILLISECONDS, initKernelQueue);
-        Future<char[]> futureSynapseInput;
+        BlockingQueue<byte[]> dataReceiverQueue = new ArrayBlockingQueue<>(4);
+        ExecutorService dataReceiverExecutor = Executors.newSingleThreadExecutor();
+        BlockingQueue<char[]> initKernelQueue = new ArrayBlockingQueue<>(4);
+        ExecutorService initKernelExecutor = Executors.newSingleThreadExecutor();
 
         /**
          * Get the string holding the kernel and initialize the OpenCL implementation
@@ -74,57 +64,64 @@ public class SimulationService extends IntentService {
         try {
             clientSocket = new Socket(SERVER_IP, SERVER_PORT);
         } catch (IOException e) {
-            stackTrace = Log.getStackTraceString(e);
+            String stackTrace = Log.getStackTraceString(e);
             Log.e("SimulationService", stackTrace);
         }
 
-        try {
-            input = new DataInputStream(clientSocket.getInputStream());
-        } catch (IOException e) {
-            stackTrace = Log.getStackTraceString(e);
-            Log.e("SimulationService", stackTrace);
-        }
-
-        while (!shutdown) {
-            //oldPresynapticSpikes = presynapticSpikes.clone();
-
+        if (clientSocket != null) {
             try {
-                input.readFully(presynapticSpikes, 0, (Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES) / 8);
-            } catch (IOException e) {
-                stackTrace = Log.getStackTraceString(e);
+                input = new DataInputStream(clientSocket.getInputStream());
+            } catch (IOException | NullPointerException e) {
+                String stackTrace = Log.getStackTraceString(e);
                 Log.e("SimulationService", stackTrace);
             }
-
-            try {
-                futureSynapseInput = initKernelExecutor.submit(new InitKernelWorkerThread(presynapticSpikes, synapseInput));
-                synapseInput = futureSynapseInput.get();
-            } catch (RejectedExecutionException|InterruptedException|ExecutionException e) {
-                stackTrace = Log.getStackTraceString(e);
-                Log.e("SimulationService", stackTrace);
-            }
-
-            lastTime = newTime;
-            newTime = System.nanoTime();
-            Log.d("SimulationService", "Elapsed time in nanoseconds: " + Long.toString(newTime - lastTime));
-
-            /**
-             * Debugging code
-             */
-            /*
-            if (Arrays.equals(oldPresynapticSpikes, presynapticSpikes)) {
-                Log.d("SimulationService", "New data is not different");
-            } else {
-                Log.d("SimulationService", "New data is different");
-            }
-            Log.d("SimulationService", bytesToHex(oldPresynapticSpikes));
-            Log.d("SimulationService", bytesToHex(presynapticSpikes));
-            */
-
         }
+
+        dataReceiverExecutor.execute(new DataReceiver(dataReceiverQueue, input));
+        initKernelExecutor.execute(new InitializeKernel(dataReceiverQueue, initKernelQueue));
+
+        while (!shutdown) { boolean a = true; }
 
         closeOpenCL(openCLObject);
+        dataReceiverExecutor.shutdown();
+        initKernelExecutor.shutdown();
+        if (clientSocket != null && input != null) {
+            try {
+                clientSocket.close();
+                input.close();
+            } catch (IOException | NullPointerException e) {
+                String stackTrace = Log.getStackTraceString(e);
+                Log.e("SimulationService", stackTrace);
+            }
+        }
         shutdown = false;
         stopSelf();
+    }
+
+    public class DataReceiver implements Runnable {
+
+        private BlockingQueue<byte[]> dataReceiverQueue;
+        private DataInputStream input;
+        private byte[] presynapticSpikes = new byte[(Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES) / 8];
+
+        DataReceiver (BlockingQueue<byte[]> b, DataInputStream d) {
+            this.dataReceiverQueue = b;
+            this.input = d;
+        }
+
+        @Override
+        public void run () {
+            while (!shutdown) {
+                try {
+                    input.readFully(presynapticSpikes, 0, (Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES) / 8);
+                    //Log.d("DataReceiver", "SS " + SimulationService.bytesToHex(presynapticSpikes));
+                    dataReceiverQueue.put(presynapticSpikes);
+                } catch (IOException | InterruptedException e) {
+                    String stackTrace = Log.getStackTraceString(e);
+                    Log.e("DataReceiver", stackTrace);
+                }
+            }
+        }
     }
 
     public native long initializeOpenCL(String synapseKernel);
