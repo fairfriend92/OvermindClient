@@ -9,8 +9,11 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Background service used to initialize the OpenCL implementation and execute the Thread pool managers
@@ -52,8 +55,11 @@ public class SimulationService extends IntentService {
 
         BlockingQueue<byte[]> dataReceiverQueue = new ArrayBlockingQueue<>(4);
         ExecutorService dataReceiverExecutor = Executors.newSingleThreadExecutor();
-        BlockingQueue<char[]> initKernelQueue = new ArrayBlockingQueue<>(4);
-        ExecutorService initKernelExecutor = Executors.newSingleThreadExecutor();
+        BlockingQueue<char[]> kernelInitQueue = new ArrayBlockingQueue<>(4);
+        ExecutorService kernelInitExecutor = Executors.newSingleThreadExecutor();
+        BlockingQueue<byte[]> kernelExcQueue = new ArrayBlockingQueue<>(4);
+        ExecutorService kernelExcExecutor = Executors.newSingleThreadExecutor();
+        Future<Long> newOpenCLObject;
 
         /**
          * Get the string holding the kernel and initialize the OpenCL implementation
@@ -78,13 +84,21 @@ public class SimulationService extends IntentService {
         }
 
         dataReceiverExecutor.execute(new DataReceiver(dataReceiverQueue, input));
-        initKernelExecutor.execute(new InitializeKernel(dataReceiverQueue, initKernelQueue));
+        kernelInitExecutor.execute(new KernelInitializer(dataReceiverQueue, kernelInitQueue));
+        newOpenCLObject = kernelExcExecutor.submit(new KernelExecutor(kernelInitQueue, kernelExcQueue, openCLObject));
 
         while (!shutdown) { boolean a = true; }
 
+        try {
+            openCLObject = newOpenCLObject.get();
+        } catch (InterruptedException|ExecutionException e) {
+            String stackTrace = Log.getStackTraceString(e);
+            Log.e("SimulationService", stackTrace);
+        }
+
         closeOpenCL(openCLObject);
         dataReceiverExecutor.shutdown();
-        initKernelExecutor.shutdown();
+        kernelInitExecutor.shutdown();
         if (clientSocket != null && input != null) {
             try {
                 clientSocket.close();
@@ -104,7 +118,7 @@ public class SimulationService extends IntentService {
         private DataInputStream input;
         private byte[] presynapticSpikes = new byte[(Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES) / 8];
 
-        DataReceiver (BlockingQueue<byte[]> b, DataInputStream d) {
+        public DataReceiver (BlockingQueue<byte[]> b, DataInputStream d) {
             this.dataReceiverQueue = b;
             this.input = d;
         }
@@ -124,6 +138,35 @@ public class SimulationService extends IntentService {
         }
     }
 
+    public class KernelExecutor implements Callable<Long> {
+
+        private BlockingQueue<char[]> kernelInitQueue;
+        private BlockingQueue<byte[]> kernelExcQueue;
+        private long openCLObject;
+        private char[] synapseInput = new char[(Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES) * Constants.MAX_MULTIPLICATIONS];
+
+        public KernelExecutor(BlockingQueue<char[]> b, BlockingQueue<byte[]> b1, long l) {
+            this.kernelInitQueue = b;
+            this.kernelExcQueue = b1;
+            this.openCLObject = l;
+        }
+
+        @Override
+        public Long call () {
+            while (!shutdown) {
+                try {
+                    synapseInput = kernelInitQueue.take();
+                } catch (InterruptedException e) {
+                    String stackTrace = Log.getStackTraceString(e);
+                    Log.e("SimulationService", stackTrace);
+                }
+                openCLObject = simulateDynamics(synapseInput, openCLObject);
+            }
+            return openCLObject;
+        }
+    }
+
     public native long initializeOpenCL(String synapseKernel);
+    public native long simulateDynamics(char[] synapseInput, long openCLObject);
     public native int closeOpenCL(long openCLObject);
 }

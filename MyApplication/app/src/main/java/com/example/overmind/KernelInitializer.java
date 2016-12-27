@@ -9,16 +9,16 @@ import java.util.concurrent.BlockingQueue;
  * which is stored in the initKernelQueue and consumed by the ExecuteKernel worker thread.
  */
 
-public class InitializeKernel implements Runnable {
+public class KernelInitializer implements Runnable {
 
     private BlockingQueue<byte[]> dataReceiverQueue;
-    private BlockingQueue<char[]> initKernelQueue;
+    private BlockingQueue<char[]> kernelInitQueue;
     private byte[] presynapticSpikes = new byte[(Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES) / 8];
     private char[] synapseInput = new char[(Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES) * Constants.MAX_MULTIPLICATIONS];
 
-    public InitializeKernel(BlockingQueue<byte[]> b, BlockingQueue<char[]> b1) {
+    public KernelInitializer(BlockingQueue<byte[]> b, BlockingQueue<char[]> b1) {
         this.dataReceiverQueue = b;
-        this.initKernelQueue = b1;
+        this.kernelInitQueue = b1;
     }
 
     @Override
@@ -51,14 +51,12 @@ public class InitializeKernel implements Runnable {
                 synapseInput[indexI * Constants.MAX_MULTIPLICATIONS] = bitValue == 1 ? 1 : synapseInput[indexI * Constants.MAX_MULTIPLICATIONS];
             }
 
-            /*
             try {
-                initKernelQueue.put(synapseInput);
+                kernelInitQueue.put(synapseInput);
             } catch (InterruptedException e) {
                 String stackTrace = Log.getStackTraceString(e);
                 Log.e("SimulationService", stackTrace);
             }
-            */
         }
 
     }

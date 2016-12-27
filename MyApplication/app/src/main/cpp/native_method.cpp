@@ -134,11 +134,20 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     return (long) obj;
 }
 
-extern "C" jlong Java_com_example_overmind_Simulation_simulateNetwork(
-        JNIEnv *env, jobject thiz, jbooleanArray jPresynapticSpikes, jlong jOpenCLObject) {
+extern "C" jlong Java_com_example_overmind_SimulationService_simulateDynamics(
+        JNIEnv *env, jobject thiz, jcharArray jSynapseInput, jlong jOpenCLObject) {
 
     struct OpenCLObject *obj;
     obj = (struct OpenCLObject *)jOpenCLObject;
+
+    jchar *synapseInput = env->GetCharArrayElements(jSynapseInput, JNI_FALSE);
+
+    for (int index = 0; index < maxNumberMultiplications * (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES); index++)
+    {
+        obj->synapseInput[index] = (cl_uchar)synapseInput[index];
+    }
+
+    env->ReleaseCharArrayElements(jSynapseInput, synapseInput, 0);
 
     // Tell the kernels which data to use before they are scheduled
     bool setKernelArgumentSuccess = true;
