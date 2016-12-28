@@ -32,13 +32,14 @@ struct OpenCLObject {
     cl_device_id device = 0;
     cl_kernel kernel = 0;
     cl_int errorNumber = 0;
-    int numberOfMemoryObjects = 4;
-    cl_mem memoryObjects[4] = {0, 0, 0, 0};
+    int numberOfMemoryObjects = 5;
+    cl_mem memoryObjects[5] = {0, 0, 0, 0, 0};
     cl_uint intVectorWidth = 0;
 
     // Pointers to the memory buffers
     cl_uint *excSynapseCoeff;
     cl_uint *inhSynapseCoeff;
+    cl_uint *synapseWeights;
     cl_uchar *synapseInput;
 };
 

@@ -8,9 +8,10 @@
  int maxNumberMultiplications = (int) (SYNAPSE_FILTER_ORDER * SAMPLING_RATE / ABSOLUTE_REFRACTORY_PERIOD + 1);
 // Size of the buffers needed to store data
 size_t synapseInputBufferSize = maxNumberMultiplications * (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * sizeof(cl_uchar);
-size_t excSynapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * sizeof(cl_uint);
-size_t inhSynapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * sizeof(cl_uint);
-size_t synapseOutputBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * sizeof(cl_int);
+size_t excSynapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * 2 * sizeof(cl_uint);
+size_t inhSynapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * 2 * sizeof(cl_uint);
+size_t synapseWeightsBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * sizeof(cl_uint);
+size_t synapseOutputBufferSize =  sizeof(cl_int);
 
 extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
         JNIEnv *env, jobject thiz, jstring jSynapseKernel) {
@@ -73,10 +74,13 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     obj->memoryObjects[1] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY| CL_MEM_ALLOC_HOST_PTR, inhSynapseCoeffBufferSize, NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-    obj->memoryObjects[2] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, synapseInputBufferSize, NULL, &obj->errorNumber);
+    obj->memoryObjects[2] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, synapseWeightsBufferSize, NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-    obj->memoryObjects[3] = clCreateBuffer(obj->context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, synapseOutputBufferSize, NULL, &obj->errorNumber);
+    obj->memoryObjects[3] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, synapseInputBufferSize, NULL, &obj->errorNumber);
+    createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
+    obj->memoryObjects[4] = clCreateBuffer(obj->context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, synapseOutputBufferSize, NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     if (!createMemoryObjectsSuccess)
@@ -95,7 +99,10 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     obj->inhSynapseCoeff = (cl_uint*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, inhSynapseCoeffBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-    obj->synapseInput = (cl_uchar *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[2], CL_TRUE, CL_MAP_WRITE, 0, synapseInputBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    obj->synapseWeights = (cl_uint*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[2], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
+    obj->synapseInput = (cl_uchar *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[3], CL_TRUE, CL_MAP_WRITE, 0, synapseInputBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     if (!mapMemoryObjectsSuccess)
@@ -122,13 +129,10 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
         //LOGD("The excitatory synapse coefficients are: \tcoefficient %d \tvalue %f", index, (float) (obj->excSynapseCoeff[index] / pow(2, SHIFT_FACTOR)));
     }
 
-    /**
-     * Initialize every element of the input array with -1. This allows to use simple multiplications
-     * instead of if statements in the OpenCL kernel
-     */
-    for (int index = 0; index < maxNumberMultiplications * NUMBER_OF_EXC_SYNAPSES; index++)
+    // For testing purposes we initialize the synapses weights here
+    for (int index = 0; index < NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES; index++)
     {
-        obj->synapseInput[index] = 0;
+        obj->synapseWeights[index] = 1;
     }
 
     return (long) obj;
@@ -155,6 +159,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_simulateDynamics(
     setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 1, sizeof(cl_mem), &obj->memoryObjects[1]));
     setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 2, sizeof(cl_mem), &obj->memoryObjects[2]));
     setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 3, sizeof(cl_mem), &obj->memoryObjects[3]));
+    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 4, sizeof(cl_mem), &obj->memoryObjects[4]));
 
     if (!setKernelArgumentSuccess)
     {
@@ -167,7 +172,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_simulateDynamics(
     cl_event event = 0;
 
     // Number of kernel instances
-    size_t globalWorksize[1] = {NUMBER_OF_EXC_SYNAPSES};
+    size_t globalWorksize[1] = {NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES};
     // Enqueue kernel
     if (!checkSuccess(clEnqueueNDRangeKernel(obj->commandQueue, obj->kernel, 1, NULL, globalWorksize, NULL, 0, NULL, &event)))
     {
@@ -224,7 +229,14 @@ extern "C" int Java_com_example_overmind_SimulationService_closeOpenCL(
         return -1;
     }
 
-    if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[2], obj->synapseInput, 0, NULL, NULL)))
+    if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[2], obj->synapseWeights, 0, NULL, NULL)))
+    {
+        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+        LOGE("Unmap memory objects failed");
+        return -1;
+    }
+
+    if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[3], obj->synapseInput, 0, NULL, NULL)))
     {
         cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
         LOGE("Unmap memory objects failed");

@@ -53,6 +53,9 @@ public class SimulationService extends IntentService {
         Socket clientSocket = null;
         DataInputStream input = null;
 
+        /**
+         * Queues and Thread executors used to parallelize the computation
+         */
         BlockingQueue<byte[]> dataReceiverQueue = new ArrayBlockingQueue<>(4);
         ExecutorService dataReceiverExecutor = Executors.newSingleThreadExecutor();
         BlockingQueue<char[]> kernelInitQueue = new ArrayBlockingQueue<>(4);
@@ -83,12 +86,18 @@ public class SimulationService extends IntentService {
             }
         }
 
+        /**
+         * Launch the Threads pool managers
+         */
         dataReceiverExecutor.execute(new DataReceiver(dataReceiverQueue, input));
         kernelInitExecutor.execute(new KernelInitializer(dataReceiverQueue, kernelInitQueue));
+        // Save the last update of the OpenCLObject in the Future newOpenCLObject
         newOpenCLObject = kernelExcExecutor.submit(new KernelExecutor(kernelInitQueue, kernelExcQueue, openCLObject));
 
+        // Let the threads do the computations until the service receives the shutdown command from MainActivity
         while (!shutdown) { boolean a = true; }
 
+        // Retrieve from the Future object the last updated openCLObject
         try {
             openCLObject = newOpenCLObject.get();
         } catch (InterruptedException|ExecutionException e) {
@@ -96,6 +105,9 @@ public class SimulationService extends IntentService {
             Log.e("SimulationService", stackTrace);
         }
 
+        /**
+         * Shut down the Threads and the Sockets
+         */
         closeOpenCL(openCLObject);
         dataReceiverExecutor.shutdown();
         kernelInitExecutor.shutdown();
