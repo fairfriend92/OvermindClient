@@ -2,6 +2,7 @@ package com.example.overmind;
 
 import android.app.IntentService;
 import android.content.Intent;
+import android.os.Process;
 import android.util.Log;
 
 import java.io.DataInputStream;
@@ -14,6 +15,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
+import static android.os.Process.THREAD_PRIORITY_DEFAULT;
 
 /**
  * Background service used to initialize the OpenCL implementation and execute the Thread pool managers
@@ -165,6 +168,7 @@ public class SimulationService extends IntentService {
 
         @Override
         public Long call () {
+            Process.setThreadPriority(-20);
             while (!shutdown) {
                 try {
                     synapseInput = kernelInitQueue.take();

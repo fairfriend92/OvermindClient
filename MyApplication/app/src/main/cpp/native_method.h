@@ -11,12 +11,11 @@
 #define SYNAPSE_FILTER_ORDER 64
 #define EXC_SYNAPSE_TIME_SCALE 1
 #define INH_SYNAPSE_TIME_SCALE 3
-#define NUMBER_OF_EXC_SYNAPSES 4
-#define NUMBER_OF_INH_SYNAPSES 4
-#define NUMBER_OF_NEURONS 8
+#define NUMBER_OF_EXC_SYNAPSES 512
+#define NUMBER_OF_INH_SYNAPSES 512
+#define NUMBER_OF_NEURONS 16
 #define ABSOLUTE_REFRACTORY_PERIOD 2
 
-#define SHIFT_FACTOR 15
 
 #include <android/log.h>
 #include <jni.h>
@@ -34,12 +33,12 @@ struct OpenCLObject {
     cl_int errorNumber = 0;
     int numberOfMemoryObjects = 5;
     cl_mem memoryObjects[5] = {0, 0, 0, 0, 0};
-    cl_uint intVectorWidth = 0;
 
     // Pointers to the memory buffers
-    cl_uint *excSynapseCoeff;
-    cl_uint *inhSynapseCoeff;
-    cl_uint *synapseWeights;
+    cl_float *synapseCoeff;
+    cl_half *synapseWeights;
     cl_uchar *synapseInput;
+    cl_int *localData;
+    cl_float *neuronalDynVar;
 };
 
