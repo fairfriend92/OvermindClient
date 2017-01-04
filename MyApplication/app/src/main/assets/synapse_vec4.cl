@@ -25,7 +25,7 @@ int synaptic_current (uchar localId, ushort workId, uchar16 index,
   
 __kernel void synapse_vec4(__constant float* coeff, __constant half* weights,
 			   __constant uchar* input, __global int* localData,
-			   __global float* neuronalDynVar)
+			   __global float* neuronalDynVar, __global uchar* actionPotentials)
 {  
   uchar localId = get_local_id(0);
   ushort workId = (ushort)(get_global_id(0) / get_local_size(0));
@@ -45,9 +45,24 @@ __kernel void synapse_vec4(__constant float* coeff, __constant half* weights,
       
       potential = 0.04f * pown(oldPotential, 2)  + 5 * oldPotential + 140 - oldRecovery + (float)(current << SHIFT_FACTOR);
       recovery = 0.02f * (0.2f * oldPotential - oldRecovery);
+      /*
+      if (potential >= 15.0f)
+	{
+	  actionPotentials[(ushort)(workId / 8)] |= 1 << workId - (ushort)(workId / 8) * 8;
+	  recovery = recovery + 6.0f;
+	  potential = -65.0f;
+	}
+      else
+	{
+	  actionPotentials[(ushort)(workId / 8)] &= ~(1 << workId - (ushort)(workId / 8) * 8);
+	}
+      */
 
+      actionPotentials[0] ^= 1 << 1; 
+      
       current = counter = 0;
     }
+  
 }
     
   

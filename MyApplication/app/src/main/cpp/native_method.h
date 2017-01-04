@@ -13,7 +13,7 @@
 #define INH_SYNAPSE_TIME_SCALE 3
 #define NUMBER_OF_EXC_SYNAPSES 512
 #define NUMBER_OF_INH_SYNAPSES 512
-#define NUMBER_OF_NEURONS 16
+#define NUMBER_OF_NEURONS 1
 #define ABSOLUTE_REFRACTORY_PERIOD 2
 
 
@@ -31,8 +31,8 @@ struct OpenCLObject {
     cl_device_id device = 0;
     cl_kernel kernel = 0;
     cl_int errorNumber = 0;
-    int numberOfMemoryObjects = 5;
-    cl_mem memoryObjects[5] = {0, 0, 0, 0, 0};
+    int numberOfMemoryObjects = 6;
+    cl_mem memoryObjects[6] = {0, 0, 0, 0, 0, 0};
 
     // Pointers to the memory buffers
     cl_float *synapseCoeff;
@@ -40,5 +40,6 @@ struct OpenCLObject {
     cl_uchar *synapseInput;
     cl_int *localData;
     cl_float *neuronalDynVar;
+    cl_uchar *actionPotentials;
 };
 

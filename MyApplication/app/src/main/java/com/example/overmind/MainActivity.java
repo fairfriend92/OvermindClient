@@ -10,6 +10,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Scanner;
 
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL10;
+
 public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -18,12 +21,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     static {
+
         try {
             System.load("libGLES_mali.so");
         }
         catch (UnsatisfiedLinkError linkError) {
             Log.e("Unsatisfied link", "libGLES_mali.so not found");
         }
+        /*
+        try {
+            System.load("libOpenCL.so");
+        } catch (UnsatisfiedLinkError linkError) {
+            Log.e("Unsatisfied link", "libGLES_mali.so not found");
+        }
+        */
     }
 
     static {

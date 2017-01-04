@@ -25,6 +25,13 @@ set_target_properties( GLES_mali
              ../../../../OpenCL/src/${ANDROID_ABI}/libGLES_mali.so )
 include_directories( OpenCL/include/ )
 
+#add_library( OpenCL_adreno
+#             SHARED
+#             IMPORTED )
+#set_target_properties( OpenCL_adreno
+#             PROPERTIES IMPORTED_LOCATION
+#             ../../../../OpenCL/src/${ANDROID_ABI}/libOpenCL.so )
+
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because system libraries are included in the search path by
 # default, you only need to specify the name of the public NDK library
