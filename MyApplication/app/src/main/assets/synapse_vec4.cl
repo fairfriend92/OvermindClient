@@ -2,28 +2,26 @@
 
 #define potential neuronalDynVar[workId * 2]
 #define recovery neuronalDynVar[workId * 2 + 1]
-#define current localData[workId]
-#define counter localData[workId]
-
-#pragma OPENCL EXTENSION cl_khr_fp16 : enable
+#define current localData[workId * 2]
+#define counter localData[workId * 2 + 1]
 
 int synaptic_current (uchar localId, ushort workId, uchar16 index,
-		      __constant half* weights, __constant float* coeff)
+		      __constant float* weights, __constant float* coeff)
 {
   float4 coeffVec = (float4)(coeff[index.s0] + coeff[index.s1] + coeff[index.s2] + coeff[index.s3],
 			     coeff[index.s4] + coeff[index.s5] + coeff[index.s6] + coeff[index.s7],
 			     coeff[index.s8] + coeff[index.s9] + coeff[index.sa] + coeff[index.sb],
 			     coeff[index.sc] + coeff[index.sd] + coeff[index.se] + coeff[index.sf]);
 
-  half4 weightsVec = (half4)(weights[workId * 1024 + localId * 4],
-			     weights[workId * 1024 + localId * 4 + 1],
-			     weights[workId * 1024 + localId * 4 + 2],
-			     weights[workId * 1024 + localId * 4 + 3]);
+  float4 weightsVec = (float4)(weights[workId * 1024 + localId * 4],
+			       weights[workId * 1024 + localId * 4 + 1],
+			       weights[workId * 1024 + localId * 4 + 2],
+			       weights[workId * 1024 + localId * 4 + 3]);
 
-  return (int)(dot(coeffVec, convert_float4(weightsVec)) * pown(2.0f, SHIFT_FACTOR));
+  return (int)(dot(coeffVec, weightsVec) * pown(2.0f, 15));
 }
   
-__kernel void synapse_vec4(__constant float* coeff, __constant half* weights,
+__kernel void synapse_vec4(__constant float* coeff, __constant float* weights,
 			   __constant uchar* input, __global int* localData,
 			   __global float* neuronalDynVar, __global uchar* actionPotentials)
 {  
@@ -36,33 +34,30 @@ __kernel void synapse_vec4(__constant float* coeff, __constant half* weights,
   
   atomic_inc(&counter);
 
-  mem_fence(CLK_LOCAL_MEM_FENCE);
-  
-  if (counter == get_local_size(0) - 1)
-    {
+  mem_fence(CLK_LOCAL_MEM_FENCE); 
+ 
+  if (counter == get_local_size(0))
+    {      
       float oldPotential = potential;
       float oldRecovery = recovery;
       
-      potential = 0.04f * pown(oldPotential, 2)  + 5 * oldPotential + 140 - oldRecovery + (float)(current << SHIFT_FACTOR);
+      potential = 0.04f * pown(oldPotential, 2)  + 5 * oldPotential + 110 - oldRecovery + (float)(current) / pown(2.0f, 15);
       recovery = 0.02f * (0.2f * oldPotential - oldRecovery);
-      /*
-      if (potential >= 15.0f)
+      
+      if (potential >= 30.0f)
 	{
-	  actionPotentials[(ushort)(workId / 8)] |= 1 << workId - (ushort)(workId / 8) * 8;
-	  recovery = recovery + 6.0f;
+	  actionPotentials[(ushort)(workId / 8)] |= (1 << (workId - (ushort)(workId / 8) * 8));
+	  recovery = recovery + 8.0f;
 	  potential = -65.0f;
 	}
       else
 	{
-	  actionPotentials[(ushort)(workId / 8)] &= ~(1 << workId - (ushort)(workId / 8) * 8);
-	}
-      */
+	  actionPotentials[(ushort)(workId / 8)] &= ~(1 << (workId - (ushort)(workId / 8) * 8));
+	}      
 
-      actionPotentials[0] ^= 1 << 1; 
-      
-      current = counter = 0;
+      current = 0;
+      counter = 0;
     }
-  
 }
     
   

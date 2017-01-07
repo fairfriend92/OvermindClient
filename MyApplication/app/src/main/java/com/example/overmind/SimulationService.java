@@ -2,13 +2,11 @@ package com.example.overmind;
 
 import android.app.IntentService;
 import android.content.Intent;
-import android.os.Process;
 import android.util.Log;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -17,8 +15,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
-import static android.os.Process.THREAD_PRIORITY_DEFAULT;
 
 /**
  * Background service used to initialize the OpenCL implementation and execute the Thread pool managers
@@ -36,7 +32,7 @@ public class SimulationService extends IntentService {
         shutdown = true;
     }
 
-    private static final String SERVER_IP = "82.59.179.2";
+    private static final String SERVER_IP = "82.49.183.176";
     private static final int SERVER_PORT = 4194;
 
     /**
@@ -57,8 +53,6 @@ public class SimulationService extends IntentService {
     protected void onHandleIntent (Intent workIntent) {
         Socket clientSocket = null;
         DataInputStream input = null;
-
-        ServerSocket serverSocket = null;
         DataOutputStream output = null;
 
         /**
@@ -68,8 +62,9 @@ public class SimulationService extends IntentService {
         ExecutorService dataReceiverExecutor = Executors.newSingleThreadExecutor();
         BlockingQueue<char[]> kernelInitQueue = new ArrayBlockingQueue<>(4);
         ExecutorService kernelInitExecutor = Executors.newSingleThreadExecutor();
-        BlockingQueue<Long> kernelExcQueue = new ArrayBlockingQueue<>(4);
-        ExecutorService kernelExcExecutor = Executors.newFixedThreadPool(4);
+        BlockingQueue<byte[]> kernelExcQueue = new ArrayBlockingQueue<>(4);
+        ExecutorService kernelExcExecutor = Executors.newSingleThreadExecutor();
+        // Future object which holds the pointer to the OpenCL structure defined in native_method.h
         Future<Long> newOpenCLObject;
         ExecutorService dataSenderExecutor = Executors.newSingleThreadExecutor();
 
@@ -84,6 +79,8 @@ public class SimulationService extends IntentService {
          */
         try {
             clientSocket = new Socket(SERVER_IP, SERVER_PORT);
+            //clientSocket.setTrafficClass(0x08);
+            //clientSocket.setTcpNoDelay(true);
         } catch (IOException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("SimulationService", stackTrace);
@@ -169,11 +166,12 @@ public class SimulationService extends IntentService {
     public class KernelExecutor implements Callable<Long> {
 
         private BlockingQueue<char[]> kernelInitQueue;
-        private BlockingQueue<Long> kernelExcQueue;
+        private BlockingQueue<byte[]> kernelExcQueue;
         private long openCLObject;
+        private byte[] outputSpikes;
         private char[] synapseInput = new char[(Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES) * Constants.MAX_MULTIPLICATIONS];
 
-        public KernelExecutor(BlockingQueue<char[]> b, BlockingQueue<Long> b1, long l) {
+        public KernelExecutor(BlockingQueue<char[]> b, BlockingQueue<byte[]> b1, long l) {
             this.kernelInitQueue = b;
             this.kernelExcQueue = b1;
             this.openCLObject = l;
@@ -181,7 +179,6 @@ public class SimulationService extends IntentService {
 
         @Override
         public Long call () {
-            Process.setThreadPriority(-20);
             while (!shutdown) {
                 try {
                     synapseInput = kernelInitQueue.take();
@@ -189,9 +186,9 @@ public class SimulationService extends IntentService {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("KernelExecutor", stackTrace);
                 }
-                openCLObject = simulateDynamics(synapseInput, openCLObject);
+                outputSpikes = simulateDynamics(synapseInput, openCLObject);
                 try {
-                    kernelExcQueue.put(openCLObject);
+                    kernelExcQueue.put(outputSpikes);
                 } catch (InterruptedException e) {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("KernelExecutor", stackTrace);
@@ -203,13 +200,11 @@ public class SimulationService extends IntentService {
 
     public class DataSender implements Runnable {
 
-        private BlockingQueue<Long> kernelExcQueue;
-        private long openCLObject;
+        private BlockingQueue<byte[]> kernelExcQueue;
         private byte[] outputSpikes;
         private DataOutputStream output;
-        private int i = 0;
 
-        public DataSender(BlockingQueue<Long> b, DataOutputStream d) {
+        public DataSender(BlockingQueue<byte[]> b, DataOutputStream d) {
             this.kernelExcQueue = b;
             this.output = d;
         }
@@ -218,28 +213,22 @@ public class SimulationService extends IntentService {
         public void run () {
             while (!shutdown) {
                 try {
-                    openCLObject = kernelExcQueue.take();
+                    outputSpikes= kernelExcQueue.take();
                 } catch (InterruptedException e) {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("DataSender", stackTrace);
                 }
-                outputSpikes = retrieveOutputSpikes(openCLObject);
-
-                if (i < 30) {
-                    try {
-                        output.write(outputSpikes, 0, Constants.NUMBER_OF_NEURONS / 8 + 1);
-                    } catch (IOException e) {
-                        String stackTrace = Log.getStackTraceString(e);
-                        Log.e("DataSender", stackTrace);
-                    }
-                    i++;
+                try {
+                    output.write(outputSpikes, 0, 1);
+                } catch (IOException e) {
+                    String stackTrace = Log.getStackTraceString(e);
+                    Log.e("DataSender", stackTrace);
                 }
             }
         }
     }
 
     public native long initializeOpenCL(String synapseKernel);
-    public native long simulateDynamics(char[] synapseInput, long openCLObject);
-    public native byte[] retrieveOutputSpikes(long openCLObject);
-    public native int closeOpenCL(long openCLObject);
+    public native byte[] simulateDynamics(char[] synapseInput, long openCLObject);
+    public native void closeOpenCL(long openCLObject);
 }

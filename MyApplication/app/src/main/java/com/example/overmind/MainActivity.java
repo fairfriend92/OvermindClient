@@ -10,9 +10,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Scanner;
 
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.opengles.GL10;
-
 public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
