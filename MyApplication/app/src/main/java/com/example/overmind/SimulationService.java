@@ -32,7 +32,7 @@ public class SimulationService extends IntentService {
         shutdown = true;
     }
 
-    private static final String SERVER_IP = "82.49.183.176";
+    private static final String SERVER_IP = "95.251.27.5";
     private static final int SERVER_PORT = 4194;
 
     /**
@@ -79,8 +79,6 @@ public class SimulationService extends IntentService {
          */
         try {
             clientSocket = new Socket(SERVER_IP, SERVER_PORT);
-            //clientSocket.setTrafficClass(0x08);
-            //clientSocket.setTcpNoDelay(true);
         } catch (IOException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("SimulationService", stackTrace);
@@ -158,6 +156,7 @@ public class SimulationService extends IntentService {
                 } catch (IOException | InterruptedException e) {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("DataReceiver", stackTrace);
+                    SimulationService.shutDown();
                 }
             }
         }
