@@ -19,6 +19,14 @@
 			"output" : "../../../../OpenCL/src/armeabi-v7a/libGLES_mali.so",
 			"toolchain" : "989357106649298674"
 		},
+		"OpenCL_adreno-Debug-armeabi-v7a" : 
+		{
+			"abi" : "armeabi-v7a",
+			"artifactName" : "OpenCL_adreno",
+			"buildType" : "debug",
+			"output" : "../../../../OpenCL/src/armeabi-v7a/libOpenCL.so",
+			"toolchain" : "989357106649298674"
+		},
 		"hello-world-Debug-armeabi-v7a" : 
 		{
 			"abi" : "armeabi-v7a",

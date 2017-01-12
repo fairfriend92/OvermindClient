@@ -20,6 +20,9 @@ import javax.microedition.khronos.opengles.GL10;
 
 public class MainActivity extends AppCompatActivity {
 
+    /**
+     * Class which provides GPU info
+     */
     private class MyGLRenderer implements GLSurfaceView.Renderer {
 
         @Override
@@ -30,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d("GL info", "gl version: "+gl.glGetString(GL10.GL_VERSION));
             Log.d("GL info", "gl extensions: "+gl.glGetString(GL10.GL_EXTENSIONS));
 
+            // Store the needed GPU info in the preferences
             SharedPreferences.Editor editor = prefs.edit();
             editor.putString("VENDOR", gl.glGetString(GL10.GL_VENDOR));
             editor.apply();
@@ -50,6 +54,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * OpenGL surface view called at app startup to retrieve GPU info
+     */
     class MyGLSurfaceView extends GLSurfaceView {
         public MyGLRenderer mRenderer;
 
@@ -66,15 +73,22 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // Used to store GPU info by the renderer class
     private static SharedPreferences prefs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Used to get the GPU info stored by the OpenGL renderer
         prefs = this.getSharedPreferences("GPUinfo", Context.MODE_PRIVATE);
+        // OpenGL surface view
         MyGLSurfaceView mGlSurfaceView = new MyGLSurfaceView(this);
+        // Set on display the OpenGL surface view in order to call the OpenGL renderer and retrieve the GPU info
         setContentView(mGlSurfaceView);
 
+        new IpChecker().execute(getApplicationContext());
+
+        // Uncomment if more time is needed to retrieve the relevant info
         /*
         final Intent intent = new Intent(this, MainActivity.class);
         new CountDownTimer(3000, 9999)
@@ -89,11 +103,15 @@ public class MainActivity extends AppCompatActivity {
         }.start();
         */
 
+        // Now that the GPU info are available display the proper application layout
         setContentView(R.layout.activity_main);
         loadGLLibrary();
     }
 
 
+    /**
+     * Load the proper OpenGL library based on GPU vendor info provided by the OpenGL renderer
+     */
     public void loadGLLibrary () {
         SharedPreferences prefs =getSharedPreferences("GPUinfo",Context.MODE_PRIVATE);
         String vendor = prefs.getString("VENDOR", null);
@@ -107,6 +125,7 @@ public class MainActivity extends AppCompatActivity {
                     Log.e("Unsatisfied link", "libGLES_mali.so not found");
                 }
                 break;
+            // TODO default means no OpenCL support, exit application
             default:
                 try {
                     System.load("libOpenCL.so");
@@ -141,13 +160,13 @@ public class MainActivity extends AppCompatActivity {
     public void startSimulation(View view) {
         if (!simulationIsStarted) {
             // The SimulationService Intent
-            Intent simulationIntent = new Intent(MainActivity.this, SimulationService.class);
+            //Intent simulationIntent = new Intent(MainActivity.this, SimulationService.class);
             // The string used to hold the .cl kernel file
-            String synapseKernelVec4 = loadKernelFromAsset(getInputStream("synapse_vec4.cl"));
+            //String synapseKernelVec4 = loadKernelFromAsset(getInputStream("synapse_vec4.cl"));
             // Put the string holding the kernel in the simulation Intent
-            simulationIntent.putExtra("Kernel", synapseKernelVec4);
+            //simulationIntent.putExtra("Kernel", synapseKernelVec4);
             // Start the service
-            this.startService(simulationIntent);
+            //this.startService(simulationIntent);
             simulationIsStarted = true;
         }
     }
