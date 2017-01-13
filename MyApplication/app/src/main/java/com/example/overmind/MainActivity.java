@@ -36,7 +36,8 @@ public class MainActivity extends AppCompatActivity {
             // Store the needed GPU info in the preferences
             SharedPreferences.Editor editor = prefs.edit();
             editor.putString("VENDOR", gl.glGetString(GL10.GL_VENDOR));
-            editor.apply();
+            editor.putString("RENDERER", gl.glGetString(GL10.GL_RENDERER));
+            editor.commit();
 
             // Set the background frame color
             GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -76,6 +77,8 @@ public class MainActivity extends AppCompatActivity {
     // Used to store GPU info by the renderer class
     private static SharedPreferences prefs;
 
+    static String renderer;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -86,26 +89,21 @@ public class MainActivity extends AppCompatActivity {
         // Set on display the OpenGL surface view in order to call the OpenGL renderer and retrieve the GPU info
         setContentView(mGlSurfaceView);
 
-        new IpChecker().execute(getApplicationContext());
-
-        // Uncomment if more time is needed to retrieve the relevant info
-        /*
-        final Intent intent = new Intent(this, MainActivity.class);
-        new CountDownTimer(3000, 9999)
+        new CountDownTimer(5000, 500)
         {
             public void onTick(long millisUntilFinished) {
-                // Not used
+                if (millisUntilFinished < 4500 && millisUntilFinished > 4000) {
+                    SharedPreferences prefs =getSharedPreferences("GPUinfo",Context.MODE_PRIVATE);
+                    renderer = prefs.getString("RENDERER", null);
+                    loadGLLibrary();
+                    new IpChecker().execute(getApplicationContext());
+                }
             }
             public void onFinish() {
-                startActivity(intent);
-                finish();
+                // Now that the GPU info are available display the proper application layout
+                setContentView(R.layout.activity_main);
             }
         }.start();
-        */
-
-        // Now that the GPU info are available display the proper application layout
-        setContentView(R.layout.activity_main);
-        loadGLLibrary();
     }
 
 
@@ -125,7 +123,7 @@ public class MainActivity extends AppCompatActivity {
                     Log.e("Unsatisfied link", "libGLES_mali.so not found");
                 }
                 break;
-            // TODO default means no OpenCL support, exit application
+            // TODO default means no OpenCL support, exit application.
             default:
                 try {
                     System.load("libOpenCL.so");
