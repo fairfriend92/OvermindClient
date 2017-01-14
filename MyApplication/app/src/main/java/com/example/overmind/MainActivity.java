@@ -1,7 +1,6 @@
 package com.example.overmind;
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
@@ -14,6 +13,7 @@ import android.view.View;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Scanner;
+import java.util.concurrent.ExecutionException;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
             SharedPreferences.Editor editor = prefs.edit();
             editor.putString("VENDOR", gl.glGetString(GL10.GL_VENDOR));
             editor.putString("RENDERER", gl.glGetString(GL10.GL_RENDERER));
-            editor.commit();
+            editor.apply();
 
             // Set the background frame color
             GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -77,6 +77,8 @@ public class MainActivity extends AppCompatActivity {
     // Used to store GPU info by the renderer class
     private static SharedPreferences prefs;
 
+    public localNetwork thisDevice;
+
     static String renderer;
 
     @Override
@@ -89,17 +91,28 @@ public class MainActivity extends AppCompatActivity {
         // Set on display the OpenGL surface view in order to call the OpenGL renderer and retrieve the GPU info
         setContentView(mGlSurfaceView);
 
-        new CountDownTimer(5000, 500)
+        // Use this countdown timer to give enough time to the renderer to retrieve the info
+        new CountDownTimer(1000, 500)
         {
             public void onTick(long millisUntilFinished) {
-                if (millisUntilFinished < 4500 && millisUntilFinished > 4000) {
-                    SharedPreferences prefs =getSharedPreferences("GPUinfo",Context.MODE_PRIVATE);
-                    renderer = prefs.getString("RENDERER", null);
-                    loadGLLibrary();
-                    new IpChecker().execute(getApplicationContext());
-                }
             }
             public void onFinish() {
+                // Get the GPU model to set the number of neurons of the local network
+                SharedPreferences prefs =getSharedPreferences("GPUinfo",Context.MODE_PRIVATE);
+                renderer = prefs.getString("RENDERER", null);
+                // Load the appropriate OpenCL library based on the GPU vendor
+                loadGLLibrary();
+                // Create and launch the AsyncTask to retrieve the global IP of the device and to send the info
+                // of the local network to the Overmind server
+                IpChecker ipChecker = new IpChecker();
+                ipChecker.execute(getApplicationContext());
+                // Get from the AsyncTask the struct holding all the info regardinf the local network
+                try {
+                    thisDevice = ipChecker.get();
+                } catch (InterruptedException|ExecutionException e) {
+                    String stackTrace = Log.getStackTraceString(e);
+                    Log.e("MainActivity", stackTrace);
+                }
                 // Now that the GPU info are available display the proper application layout
                 setContentView(R.layout.activity_main);
             }
@@ -117,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
         switch (vendor) {
             case "ARM":
                 try {
-                    System.load("libGLES_mali.so");
+                    System.loadLibrary("libGLES_mali.so");
                 }
                 catch (UnsatisfiedLinkError linkError) {
                     Log.e("Unsatisfied link", "libGLES_mali.so not found");
@@ -126,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
             // TODO default means no OpenCL support, exit application.
             default:
                 try {
-                    System.load("libOpenCL.so");
+                    System.loadLibrary("libOpenCL.so");
                 } catch (UnsatisfiedLinkError linkError) {
                     Log.e("Unsatisfied link", "libGLES_mali.so not found");
                 }
