@@ -77,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
     // Used to store GPU info by the renderer class
     private static SharedPreferences prefs;
 
-    public localNetwork thisDevice;
+    public LocalNetwork thisDevice;
 
     static String renderer;
 

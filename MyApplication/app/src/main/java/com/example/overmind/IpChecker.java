@@ -9,18 +9,18 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-class IpChecker extends AsyncTask<Context, Integer, localNetwork> {
+class IpChecker extends AsyncTask<Context, Integer, LocalNetwork> {
 
-    private static final String SERVER_IP = "82.59.179.73";
+    private static final String SERVER_IP = "82.49.192.21";
     private static final int SERVER_PORT = 4194;
 
     private Context context;
     static short numOfNeurons;
-    private localNetwork thisDevice = new localNetwork();
+    private LocalNetwork thisDevice = new LocalNetwork();
     private Socket clientSocket = null;
     private ObjectOutputStream output = null;
 
-    protected localNetwork doInBackground(Context ... contexts) {
+    protected LocalNetwork doInBackground(Context ... contexts) {
 
         /**
          * Retrieve the global IP of this device
@@ -106,7 +106,7 @@ class IpChecker extends AsyncTask<Context, Integer, localNetwork> {
         }
     }
 
-    protected void onPostExecute(localNetwork result) {
+    protected void onPostExecute(LocalNetwork result) {
         Log.d("IpChecker", "My current IP address is " + result.ip);
     }
 }
