@@ -8,10 +8,11 @@ import android.widget.Toast;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
 
 class IpChecker extends AsyncTask<Context, Integer, LocalNetwork> {
 
-    private static final String SERVER_IP = "82.49.192.21";
+    private static final String SERVER_IP = MainActivity.serverIP;
     private static final int SERVER_PORT = 4194;
 
     private Context context;
@@ -37,7 +38,7 @@ class IpChecker extends AsyncTask<Context, Integer, LocalNetwork> {
         publishProgress(0);
 
         /**
-         * Choose the number of neurons of the local network based on GPU performance
+         * Choose the number of neurons of the local network based on GPU performance and set the other info
          */
         switch (MainActivity.renderer) {
             case "Mali-T720":
@@ -48,6 +49,10 @@ class IpChecker extends AsyncTask<Context, Integer, LocalNetwork> {
                 numOfNeurons = 1;
         }
         thisDevice.numOfNeurons = numOfNeurons;
+        thisDevice.numOfDendrites = 1024;
+        thisDevice.numOfSynapses = 1024;
+        thisDevice.presynapticNodes = new ArrayList<>();
+        thisDevice.postsynapticNodes = new ArrayList<>();
         publishProgress(1);
 
         /**

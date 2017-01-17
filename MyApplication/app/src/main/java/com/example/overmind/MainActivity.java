@@ -9,6 +9,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -79,13 +80,15 @@ public class MainActivity extends AppCompatActivity {
 
     public LocalNetwork thisDevice;
 
+    static String serverIP;
     static String renderer;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        // Used to get the GPU info stored by the OpenGL renderer
-        prefs = this.getSharedPreferences("GPUinfo", Context.MODE_PRIVATE);
+    public void confirmServerIP(View view) {
+
+        EditText editText = (EditText) findViewById(R.id.edit_ip);
+        assert editText != null;
+        serverIP = editText.getText().toString();
+
         // OpenGL surface view
         MyGLSurfaceView mGlSurfaceView = new MyGLSurfaceView(this);
         // Set on display the OpenGL surface view in order to call the OpenGL renderer and retrieve the GPU info
@@ -117,6 +120,14 @@ public class MainActivity extends AppCompatActivity {
                 setContentView(R.layout.activity_main);
             }
         }.start();
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // Used to get the GPU info stored by the OpenGL renderer
+        prefs = this.getSharedPreferences("GPUinfo", Context.MODE_PRIVATE);
+        setContentView(R.layout.pre_connection);
     }
 
 
