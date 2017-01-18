@@ -7,6 +7,7 @@ import android.util.Log;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.net.Socket;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -32,7 +33,7 @@ public class SimulationService extends IntentService {
         shutdown = true;
     }
 
-    private static final String SERVER_IP = "95.251.27.5";
+    private static final String SERVER_IP = MainActivity.serverIP;
     private static final int SERVER_PORT = 4194;
 
     /**
@@ -52,67 +53,90 @@ public class SimulationService extends IntentService {
     @Override
     protected void onHandleIntent (Intent workIntent) {
         Socket clientSocket = null;
-        DataInputStream input = null;
+        ObjectInputStream input = null;
         DataOutputStream output = null;
 
         /**
          * Queues and Thread executors used to parallelize the computation
          */
         BlockingQueue<byte[]> dataReceiverQueue = new ArrayBlockingQueue<>(4);
-        ExecutorService dataReceiverExecutor = Executors.newSingleThreadExecutor();
+        ExecutorService dataReceiverExecutor = Executors.newCachedThreadPool();
         BlockingQueue<char[]> kernelInitQueue = new ArrayBlockingQueue<>(4);
         ExecutorService kernelInitExecutor = Executors.newSingleThreadExecutor();
         BlockingQueue<byte[]> kernelExcQueue = new ArrayBlockingQueue<>(4);
         ExecutorService kernelExcExecutor = Executors.newSingleThreadExecutor();
         // Future object which holds the pointer to the OpenCL structure defined in native_method.h
         Future<Long> newOpenCLObject;
-        ExecutorService dataSenderExecutor = Executors.newSingleThreadExecutor();
+        ExecutorService dataSenderExecutor = Executors.newCachedThreadPool();
 
         /**
          * Get the string holding the kernel and initialize the OpenCL implementation
          */
         String synapseKernelVec4 = workIntent.getStringExtra("Kernel");
+        clientSocket = MainActivity.thisClient;
         long openCLObject = initializeOpenCL(synapseKernelVec4);
 
         /**
          * Client initialization
          */
+        /*
         try {
             clientSocket = new Socket(SERVER_IP, SERVER_PORT);
         } catch (IOException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("SimulationService", stackTrace);
         }
+        */
 
-        if (clientSocket != null) {
-            try {
-                input = new DataInputStream(clientSocket.getInputStream());
-                output = new DataOutputStream(clientSocket.getOutputStream());
-            } catch (IOException | NullPointerException e) {
-                String stackTrace = Log.getStackTraceString(e);
-                Log.e("SimulationService", stackTrace);
-            }
+        assert clientSocket != null;
+
+        LocalNetwork thisDevice = null;
+
+        try {
+            input = new ObjectInputStream(clientSocket.getInputStream());
+            //output = new DataOutputStream(clientSocket.getOutputStream());
+            thisDevice = (LocalNetwork) input.readObject();
+            Constants.updateConstants(thisDevice);
+        } catch (IOException | NullPointerException | ClassNotFoundException e) {
+            String stackTrace = Log.getStackTraceString(e);
+            Log.e("SimulationService", stackTrace);
         }
 
         /**
          * Launch the Threads pool managers
          */
+        /*
         dataReceiverExecutor.execute(new DataReceiver(dataReceiverQueue, input));
         kernelInitExecutor.execute(new KernelInitializer(dataReceiverQueue, kernelInitQueue));
         // Save the last update of the OpenCLObject in the Future newOpenCLObject
         newOpenCLObject = kernelExcExecutor.submit(new KernelExecutor(kernelInitQueue, kernelExcQueue, openCLObject));
         dataSenderExecutor.execute(new DataSender(kernelExcQueue, output));
+        */
 
         // Let the threads do the computations until the service receives the shutdown command from MainActivity
-        while (!shutdown) { boolean a = true; }
+
+        assert input != null;
+
+        while (!shutdown) {
+            Log.d("SimulationService", "# synapses " + Constants.NUMBER_OF_SYNAPSES + "# neurons " + Constants.NUMBER_OF_NEURONS + "# dendrites " + Constants.NUMBER_OF_DENDRITES);
+            try {
+                thisDevice = (LocalNetwork) input.readObject();
+                Constants.updateConstants(thisDevice);
+            } catch (IOException | ClassNotFoundException e) {
+                String stackTrace = Log.getStackTraceString(e);
+                Log.e("SimulationService", stackTrace);
+            }
+        }
 
         // Retrieve from the Future object the last updated openCLObject
+        /*
         try {
             openCLObject = newOpenCLObject.get();
         } catch (InterruptedException|ExecutionException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("SimulationService", stackTrace);
         }
+        */
 
         /**
          * Shut down the Threads and the Sockets
@@ -121,7 +145,7 @@ public class SimulationService extends IntentService {
         dataReceiverExecutor.shutdown();
         kernelInitExecutor.shutdown();
         dataSenderExecutor.shutdownNow();
-        if (clientSocket != null && input != null && output != null) {
+        if (output != null) {
             try {
                 clientSocket.close();
                 input.close();
@@ -139,7 +163,7 @@ public class SimulationService extends IntentService {
 
         private BlockingQueue<byte[]> dataReceiverQueue;
         private DataInputStream input;
-        private byte[] presynapticSpikes = new byte[(Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES) / 8];
+        private byte[] presynapticSpikes = new byte[(Constants.NUMBER_OF_SYNAPSES) / 8];
 
         public DataReceiver (BlockingQueue<byte[]> b, DataInputStream d) {
             this.dataReceiverQueue = b;
@@ -150,7 +174,7 @@ public class SimulationService extends IntentService {
         public void run () {
             while (!shutdown) {
                 try {
-                    input.readFully(presynapticSpikes, 0, (Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES) / 8);
+                    input.readFully(presynapticSpikes, 0, (Constants.NUMBER_OF_SYNAPSES) / 8);
                     //Log.d("DataReceiver", "SS " + SimulationService.bytesToHex(presynapticSpikes));
                     dataReceiverQueue.put(presynapticSpikes);
                 } catch (IOException | InterruptedException e) {
@@ -168,7 +192,7 @@ public class SimulationService extends IntentService {
         private BlockingQueue<byte[]> kernelExcQueue;
         private long openCLObject;
         private byte[] outputSpikes;
-        private char[] synapseInput = new char[(Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES) * Constants.MAX_MULTIPLICATIONS];
+        private char[] synapseInput = new char[(Constants.NUMBER_OF_SYNAPSES) * Constants.MAX_MULTIPLICATIONS];
 
         public KernelExecutor(BlockingQueue<char[]> b, BlockingQueue<byte[]> b1, long l) {
             this.kernelInitQueue = b;

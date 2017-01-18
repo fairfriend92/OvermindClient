@@ -13,8 +13,8 @@ public class KernelInitializer implements Runnable {
 
     private BlockingQueue<byte[]> dataReceiverQueue;
     private BlockingQueue<char[]> kernelInitQueue;
-    private byte[] presynapticSpikes = new byte[(Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES) / 8];
-    private char[] synapseInput = new char[(Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES) * Constants.MAX_MULTIPLICATIONS];
+    private byte[] presynapticSpikes = new byte[(Constants.NUMBER_OF_SYNAPSES) / 8];
+    private char[] synapseInput = new char[(Constants.NUMBER_OF_SYNAPSES) * Constants.MAX_MULTIPLICATIONS];
 
     public KernelInitializer(BlockingQueue<byte[]> b, BlockingQueue<char[]> b1) {
         this.dataReceiverQueue = b;
@@ -36,7 +36,7 @@ public class KernelInitializer implements Runnable {
                 Log.e("SimulationService", stackTrace);
             }
 
-            for (int indexI = 0; indexI < Constants.NUMBER_OF_EXC_SYNAPSES + Constants.NUMBER_OF_INH_SYNAPSES; indexI++) {
+            for (int indexI = 0; indexI < Constants.NUMBER_OF_SYNAPSES; indexI++) {
                 // Calculate the byte to which the current indexI belongs
                 byteIndex = (short) (indexI / 8);
                 // Check whether the indexI-th synapse has fired or not

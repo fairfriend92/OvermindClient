@@ -10,7 +10,7 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
 
-class IpChecker extends AsyncTask<Context, Integer, LocalNetwork> {
+class IpChecker extends AsyncTask<Context, Integer, Socket> {
 
     private static final String SERVER_IP = MainActivity.serverIP;
     private static final int SERVER_PORT = 4194;
@@ -21,7 +21,7 @@ class IpChecker extends AsyncTask<Context, Integer, LocalNetwork> {
     private Socket clientSocket = null;
     private ObjectOutputStream output = null;
 
-    protected LocalNetwork doInBackground(Context ... contexts) {
+    protected Socket doInBackground(Context ... contexts) {
 
         /**
          * Retrieve the global IP of this device
@@ -80,7 +80,8 @@ class IpChecker extends AsyncTask<Context, Integer, LocalNetwork> {
         /**
          * Since relevant info have been sent we can close the connection and the ObjectStream
          */
-        if (clientSocket != null && output != null) {
+        /*
+        if (output != null) {
             try {
                 clientSocket.close();
                 output.close();
@@ -89,9 +90,9 @@ class IpChecker extends AsyncTask<Context, Integer, LocalNetwork> {
                 Log.e("IpChecker", stackTrace);
             }
         }
-
+        */
         assert ip != null;
-        return thisDevice;
+        return clientSocket;
     }
 
     protected void onProgressUpdate(Integer... progress) {

@@ -1,6 +1,7 @@
 package com.example.overmind;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
@@ -13,6 +14,8 @@ import android.widget.EditText;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
+import java.net.Socket;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
 
@@ -78,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
     // Used to store GPU info by the renderer class
     private static SharedPreferences prefs;
 
-    public LocalNetwork thisDevice;
+    public static Socket thisClient;
 
     static String serverIP;
     static String renderer;
@@ -111,11 +114,12 @@ public class MainActivity extends AppCompatActivity {
                 ipChecker.execute(getApplicationContext());
                 // Get from the AsyncTask the struct holding all the info regardinf the local network
                 try {
-                    thisDevice = ipChecker.get();
+                    thisClient = ipChecker.get();
                 } catch (InterruptedException|ExecutionException e) {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("MainActivity", stackTrace);
                 }
+                assert thisClient != null;
                 // Now that the GPU info are available display the proper application layout
                 setContentView(R.layout.activity_main);
             }
@@ -182,13 +186,13 @@ public class MainActivity extends AppCompatActivity {
     public void startSimulation(View view) {
         if (!simulationIsStarted) {
             // The SimulationService Intent
-            //Intent simulationIntent = new Intent(MainActivity.this, SimulationService.class);
+            Intent simulationIntent = new Intent(MainActivity.this, SimulationService.class);
             // The string used to hold the .cl kernel file
-            //String synapseKernelVec4 = loadKernelFromAsset(getInputStream("synapse_vec4.cl"));
+            String synapseKernelVec4 = loadKernelFromAsset(getInputStream("synapse_vec4.cl"));
             // Put the string holding the kernel in the simulation Intent
-            //simulationIntent.putExtra("Kernel", synapseKernelVec4);
+            simulationIntent.putExtra("Kernel", synapseKernelVec4);
             // Start the service
-            //this.startService(simulationIntent);
+            this.startService(simulationIntent);
             simulationIsStarted = true;
         }
     }
