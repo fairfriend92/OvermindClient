@@ -8,7 +8,9 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.net.DatagramSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -59,10 +61,10 @@ public class SimulationService extends IntentService {
         /**
          * Queues and Thread executors used to parallelize the computation
          */
-        BlockingQueue<byte[]> dataReceiverQueue = new ArrayBlockingQueue<>(4);
-        ExecutorService dataReceiverExecutor = Executors.newCachedThreadPool();
+        //BlockingQueue<byte[]> dataReceiverQueue = new ArrayBlockingQueue<>(4);
+        //ExecutorService dataReceiverExecutor = Executors.newCachedThreadPool();
         BlockingQueue<char[]> kernelInitQueue = new ArrayBlockingQueue<>(4);
-        ExecutorService kernelInitExecutor = Executors.newSingleThreadExecutor();
+        ExecutorService kernelInitExecutor = Executors.newCachedThreadPool();
         BlockingQueue<byte[]> kernelExcQueue = new ArrayBlockingQueue<>(4);
         ExecutorService kernelExcExecutor = Executors.newSingleThreadExecutor();
         // Future object which holds the pointer to the OpenCL structure defined in native_method.h
@@ -105,20 +107,19 @@ public class SimulationService extends IntentService {
         /**
          * Launch the Threads pool managers
          */
-        /*
-        dataReceiverExecutor.execute(new DataReceiver(dataReceiverQueue, input));
-        kernelInitExecutor.execute(new KernelInitializer(dataReceiverQueue, kernelInitQueue));
+
         // Save the last update of the OpenCLObject in the Future newOpenCLObject
         newOpenCLObject = kernelExcExecutor.submit(new KernelExecutor(kernelInitQueue, kernelExcQueue, openCLObject));
-        dataSenderExecutor.execute(new DataSender(kernelExcQueue, output));
-        */
+        //dataSenderExecutor.execute(new DataSender(kernelExcQueue, output));
+
 
         // Let the threads do the computations until the service receives the shutdown command from MainActivity
 
         assert input != null;
+        short numberOfThreads = 0;
 
         while (!shutdown) {
-            Log.d("SimulationService", "# synapses " + Constants.NUMBER_OF_SYNAPSES + "# neurons " + Constants.NUMBER_OF_NEURONS + "# dendrites " + Constants.NUMBER_OF_DENDRITES);
+            //Log.d("SimulationService", "# synapses " + Constants.NUMBER_OF_SYNAPSES + "# neurons " + Constants.NUMBER_OF_NEURONS + "# dendrites " + Constants.NUMBER_OF_DENDRITES);
             try {
                 thisDevice = (LocalNetwork) input.readObject();
                 Constants.updateConstants(thisDevice);
@@ -126,23 +127,29 @@ public class SimulationService extends IntentService {
                 String stackTrace = Log.getStackTraceString(e);
                 Log.e("SimulationService", stackTrace);
             }
+
+            assert thisDevice != null;
+
+            for (short index = numberOfThreads; index < thisDevice.presynapticNodes.size(); index++) {
+               kernelInitExecutor.execute(new KernelInitializer(kernelInitQueue, index, thisDevice));
+            }
+
         }
 
         // Retrieve from the Future object the last updated openCLObject
-        /*
         try {
             openCLObject = newOpenCLObject.get();
         } catch (InterruptedException|ExecutionException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("SimulationService", stackTrace);
         }
-        */
+
 
         /**
          * Shut down the Threads and the Sockets
          */
         closeOpenCL(openCLObject);
-        dataReceiverExecutor.shutdown();
+        //dataReceiverExecutor.shutdown();
         kernelInitExecutor.shutdown();
         dataSenderExecutor.shutdownNow();
         if (output != null) {
@@ -158,6 +165,8 @@ public class SimulationService extends IntentService {
         shutdown = false;
         stopSelf();
     }
+
+    /*
 
     public class DataReceiver implements Runnable {
 
@@ -185,6 +194,8 @@ public class SimulationService extends IntentService {
             }
         }
     }
+
+    */
 
     public class KernelExecutor implements Callable<Long> {
 
