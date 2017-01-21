@@ -16,10 +16,8 @@ class IpChecker extends AsyncTask<Context, Integer, Socket> {
     private static final int SERVER_PORT = 4194;
 
     private Context context;
-    static short numOfNeurons;
     private LocalNetwork thisDevice = new LocalNetwork();
     private Socket clientSocket = null;
-    private ObjectOutputStream output = null;
 
     protected Socket doInBackground(Context ... contexts) {
 
@@ -40,6 +38,7 @@ class IpChecker extends AsyncTask<Context, Integer, Socket> {
         /**
          * Choose the number of neurons of the local network based on GPU performance and set the other info
          */
+        short numOfNeurons;
         switch (MainActivity.renderer) {
             case "Mali-T720":
                 numOfNeurons = 32;
@@ -67,7 +66,7 @@ class IpChecker extends AsyncTask<Context, Integer, Socket> {
 
         if (clientSocket != null) {
             try {
-                output = new ObjectOutputStream(clientSocket.getOutputStream());
+                ObjectOutputStream output = new ObjectOutputStream(clientSocket.getOutputStream());
                 output.writeObject(thisDevice);
             } catch (IOException | NullPointerException e) {
                 String stackTrace = Log.getStackTraceString(e);
@@ -77,20 +76,6 @@ class IpChecker extends AsyncTask<Context, Integer, Socket> {
 
         publishProgress(2);
 
-        /**
-         * Since relevant info have been sent we can close the connection and the ObjectStream
-         */
-        /*
-        if (output != null) {
-            try {
-                clientSocket.close();
-                output.close();
-            } catch (IOException | NullPointerException e) {
-                String stackTrace = Log.getStackTraceString(e);
-                Log.e("IpChecker", stackTrace);
-            }
-        }
-        */
         assert ip != null;
         return clientSocket;
     }

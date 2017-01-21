@@ -10,7 +10,7 @@ import java.util.concurrent.BlockingQueue;
  * which is stored in the initKernelQueue and consumed by the ExecuteKernel worker thread.
  */
 
-public class KernelInitializer implements Runnable {
+class KernelInitializer implements Runnable {
 
     private BlockingQueue<char[]> kernelInitQueue;
     private String presynapticDeviceIP;
@@ -24,9 +24,9 @@ public class KernelInitializer implements Runnable {
     private ArrayList<char[]> partialSynapseInput = new ArrayList<>();
 
     // Array obtained by linking together each element of partialSynapseInput
-    static private char[] totalSynapseInput = new char[Constants.NUMBER_OF_DENDRITES * Constants.MAX_MULTIPLICATIONS];
+    private char[] totalSynapseInput = new char[Constants.MAX_NUM_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
 
-    public KernelInitializer(BlockingQueue<char[]> b, String s, LocalNetwork l, byte[] b1) {
+    KernelInitializer(BlockingQueue<char[]> b, String s, LocalNetwork l, byte[] b1) {
         this.kernelInitQueue = b;
         this.presynapticDeviceIP = s;
         this.thisDevice = l;
@@ -57,8 +57,11 @@ public class KernelInitializer implements Runnable {
          * Resize the array holding the presynaptic spikes by adjusting it to the number of neurons of presynapticNetwork
          */
 
-        byte[] presynapticSpikes = new byte[(short)(presynapticNetwork.numOfNeurons / 8) + 1];
-        System.arraycopy(tmpSpikes, 0, presynapticSpikes, 0, (short)(presynapticNetwork.numOfNeurons / 8) + 1);
+        short dataBytes = (presynapticNetwork.numOfNeurons % 8) == 0 ?
+                (short) (presynapticNetwork.numOfNeurons / 8) : (short) (presynapticNetwork.numOfNeurons / 8 + 1);
+
+        byte[] presynapticSpikes = new byte[dataBytes];
+        System.arraycopy(tmpSpikes, 0, presynapticSpikes, 0, dataBytes);
         char[] synapseInput = new char[presynapticNetwork.numOfNeurons * Constants.MAX_MULTIPLICATIONS];
 
         /**
