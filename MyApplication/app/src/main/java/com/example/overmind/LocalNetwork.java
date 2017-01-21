@@ -3,11 +3,11 @@ package com.example.overmind;
 import java.io.Serializable;
 import java.util.ArrayList;
 
-class LocalNetwork implements Serializable {
-    short numOfNeurons, numOfDendrites, numOfSynapses;
-    String ip;
-    ArrayList<LocalNetwork> presynapticNodes;
-    ArrayList<LocalNetwork> postsynapticNodes;
+public class LocalNetwork implements Serializable {
+    public short numOfNeurons, numOfDendrites, numOfSynapses;
+    public String ip;
+    public ArrayList<LocalNetwork> presynapticNodes;
+    public ArrayList<LocalNetwork> postsynapticNodes;
 
     @Override
     public boolean equals(Object obj) {

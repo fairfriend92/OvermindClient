@@ -138,6 +138,8 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Load the proper OpenGL library based on GPU vendor info provided by the OpenGL renderer
      */
+
+
     public void loadGLLibrary () {
         SharedPreferences prefs =getSharedPreferences("GPUinfo",Context.MODE_PRIVATE);
         String vendor = prefs.getString("VENDOR", null);
@@ -187,10 +189,24 @@ public class MainActivity extends AppCompatActivity {
         if (!simulationIsStarted) {
             // The SimulationService Intent
             Intent simulationIntent = new Intent(MainActivity.this, SimulationService.class);
-            // The string used to hold the .cl kernel file
-            String synapseKernelVec4 = loadKernelFromAsset(getInputStream("synapse_vec4.cl"));
+
+            String kernel;
+
+            // TODO it would probably be better to get the needed info from the OpenCL context using native method calls
+
+            switch (renderer) {
+                case "Mali-T720":
+                    // The string used to hold the .cl kernel file
+                    kernel = loadKernelFromAsset(getInputStream("kernel_vec4.cl"));
+                    break;
+                default:
+                    kernel = loadKernelFromAsset(getInputStream("kernel.cl"));
+                    break;
+            }
+
             // Put the string holding the kernel in the simulation Intent
-            simulationIntent.putExtra("Kernel", synapseKernelVec4);
+            simulationIntent.putExtra("Kernel", kernel);
+
             // Start the service
             this.startService(simulationIntent);
             simulationIsStarted = true;

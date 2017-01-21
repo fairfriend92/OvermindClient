@@ -6,18 +6,19 @@
 size_t synapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * 4 * sizeof(cl_float);
 size_t synapseWeightsBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * sizeof(cl_float);
 size_t synapseInputBufferSize = maxNumberMultiplications * (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * sizeof(cl_uchar);
-size_t localDataBufferSize = NUMBER_OF_NEURONS * 2 * sizeof(cl_int);
-size_t neuronalDynVarBufferSize = NUMBER_OF_NEURONS * 2 * sizeof(cl_float);
-char dataBytes = (NUMBER_OF_NEURONS % 8) == 0 ? (char)(NUMBER_OF_NEURONS / 8) : (char)(NUMBER_OF_NEURONS / 8) + 1;
-size_t actionPotentialsBufferSize = dataBytes* sizeof(cl_uchar);
 
 extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
-        JNIEnv *env, jobject thiz, jstring jSynapseKernel) {
+        JNIEnv *env, jobject thiz, jstring jKernel, jshort jNumOfNeurons) {
+
+    size_t localDataBufferSize = jNumOfNeurons * 2 * sizeof(cl_int);
+    size_t neuronalDynVarBufferSize = jNumOfNeurons * 2 * sizeof(cl_float);
+    char dataBytes = (jNumOfNeurons % 8) == 0 ? (char)(jNumOfNeurons / 8) : (char)(jNumOfNeurons / 8 + 1);
+    size_t actionPotentialsBufferSize = dataBytes* sizeof(cl_uchar);
 
     struct OpenCLObject *obj;
     obj = (struct OpenCLObject *)malloc(sizeof(struct OpenCLObject));
 
-    const char *kernelString = env->GetStringUTFChars(jSynapseKernel, JNI_FALSE);
+    const char *kernelString = env->GetStringUTFChars(jKernel, JNI_FALSE);
 
     if (!createContext(&obj->context))
     {
@@ -41,15 +42,15 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
      * Query the device to find various information. These are merely indicative since we must account for ther
      * complexity of the Kernel. For more information look at clGetKernelWorkGroupInfo in the simulateDynamics method.
      */
-    cl_uint intVectorWidth;
     size_t maxWorkGroupSize;
     size_t maxWorkItems[3];
     cl_uint maxWorkItemDimension;
     cl_uint maxComputeUnits;
+    cl_bool compilerAvailable;
     char deviceName[256];
 
-    clGetDeviceInfo(obj->device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT, sizeof(cl_uint), &intVectorWidth, NULL);
-    LOGD("Device info: Preferred vector width for integers: %d ", intVectorWidth);
+    clGetDeviceInfo(obj->device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT, sizeof(cl_uint), &obj->floatVectorWidth, NULL);
+    LOGD("Device info: Preferred vector width for integers: %d ", obj->floatVectorWidth);
 
     clGetDeviceInfo(obj->device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &maxWorkGroupSize, NULL);
     LOGD("Device info: Maximum work group size: %d ", maxWorkGroupSize);
@@ -66,22 +67,19 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     clGetDeviceInfo(obj->device, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &maxComputeUnits, NULL);
     LOGD("Device info: Maximum compute units: %d", maxComputeUnits);
 
-    switch (intVectorWidth)
+    clGetDeviceInfo(obj->device, CL_DEVICE_COMPILER_AVAILABLE, sizeof(cl_bool), &compilerAvailable, NULL);
+    LOGD("Device info: Device compiler available: %d", compilerAvailable);
+
+
+    obj->kernel = clCreateKernel(obj->program, "simulate_dynamics", &obj->errorNumber);
+    if (!checkSuccess(obj->errorNumber))
     {
-        case 4:
-            obj->kernel = clCreateKernel(obj->program, "synapse_vec4", &obj->errorNumber);
-            if (!checkSuccess(obj->errorNumber))
-            {
-                cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-                LOGE("Failed to create OpenCL kernel");
-            }
-            break;
-        default :
-            LOGE("Failed to load kernel for device vector width");
+        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+        LOGE("Failed to create OpenCL kernel");
     }
 
     // Release the string containing the kernel since it has been passed already to createProgram
-    env->ReleaseStringUTFChars(jSynapseKernel, kernelString);
+    env->ReleaseStringUTFChars(jKernel, kernelString);
 
     bool createMemoryObjectsSuccess = true;
     obj->numberOfMemoryObjects= 6;
@@ -154,7 +152,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     // The following could be local kernel variables as well, but that would call for a costly thread
     // syncrhonization. Instead we initialize them outside the kernel as global variables, since additional
     // memory access times are negligible due to the embedded nature of the device
-    for (int index = 0; index < NUMBER_OF_NEURONS; index++)
+    for (int index = 0; index < jNumOfNeurons; index++)
     {
         obj->neuronalDynVar[2 * index] = (cl_float)(-65.0);
         obj->neuronalDynVar[2 * index + 1] = (cl_float)(-10.0);
@@ -202,7 +200,12 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
 }
 
 extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynamics(
-        JNIEnv *env, jobject thiz, jcharArray jSynapseInput, jlong jOpenCLObject) {
+        JNIEnv *env, jobject thiz, jcharArray jSynapseInput, jlong jOpenCLObject, jshort jNumOfNeurons) {
+
+    size_t localDataBufferSize = jNumOfNeurons * 2 * sizeof(cl_int);
+    size_t neuronalDynVarBufferSize = jNumOfNeurons * 2 * sizeof(cl_float);
+    char dataBytes = (jNumOfNeurons % 8) == 0 ? (char)(jNumOfNeurons / 8) : (char)(jNumOfNeurons / 8 + 1);
+    size_t actionPotentialsBufferSize = dataBytes* sizeof(cl_uchar);
 
     struct OpenCLObject *obj;
     obj = (struct OpenCLObject *)jOpenCLObject;
@@ -276,8 +279,9 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     //cl_event event = 0;
 
     // Number of kernel instances
-    size_t globalWorksize[1] = {256};
-    size_t localWorksize[1] = {256};
+    size_t localWorksize[1] = {1024 / obj->floatVectorWidth};
+    size_t globalWorksize[1] = {localWorksize[0] * jNumOfNeurons};
+
 
     // Enqueue the kernel
     if (!checkSuccess(clEnqueueNDRangeKernel(obj->commandQueue, obj->kernel, 1, NULL, globalWorksize, localWorksize, 0, NULL, NULL)))

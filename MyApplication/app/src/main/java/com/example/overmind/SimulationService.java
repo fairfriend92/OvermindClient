@@ -10,6 +10,7 @@ import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -57,13 +58,6 @@ public class SimulationService extends IntentService {
         // Socket and streams used for TCP communications with the OverMind Server
         Socket clientSocket = MainActivity.thisClient;
         ObjectInputStream input = null;
-        DataOutputStream output = null;
-
-        /**
-         * Get the string holding the kernel and initialize the OpenCL implementation
-         */
-        String synapseKernelVec4 = workIntent.getStringExtra("Kernel");
-        long openCLObject = initializeOpenCL(synapseKernelVec4);
 
         // Object used to hold all the relevant info pertaining this device
         LocalNetwork thisDevice = null;
@@ -90,6 +84,12 @@ public class SimulationService extends IntentService {
 
         assert input != null;
         assert thisDevice != null;
+
+        /**
+         * Get the string holding the kernel and initialize the OpenCL implementation
+         */
+        String kernel = workIntent.getStringExtra("Kernel");
+        long openCLObject = initializeOpenCL(kernel, Constants.NUMBER_OF_NEURONS);
 
         /**
          * Queues and Thread executors used to parallelize the computation
@@ -145,7 +145,7 @@ public class SimulationService extends IntentService {
 
 
         /**
-         * Launch thre Threads executor for the KernelInitializer runnable
+         * Launch the Threads executor for the KernelInitializer runnable
          */
 
         // UDP socket which receives data from the presynaptic devices
@@ -217,7 +217,6 @@ public class SimulationService extends IntentService {
 
         private BlockingQueue<char[]> kernelInitQueue;
         private BlockingQueue<byte[]> kernelExcQueue;
-        private LocalNetwork thisDevice;
         private long openCLObject;
         private byte[] outputSpikes;
         private char[] synapseInput = new char[Constants.MAX_NUM_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
@@ -225,7 +224,6 @@ public class SimulationService extends IntentService {
         KernelExecutor(BlockingQueue<char[]> b, BlockingQueue<byte[]> b1, LocalNetwork l, long l1) {
             this.kernelInitQueue = b;
             this.kernelExcQueue = b1;
-            this.thisDevice = l;
             this.openCLObject = l1;
         }
 
@@ -241,7 +239,7 @@ public class SimulationService extends IntentService {
                     Log.e("KernelExecutor", stackTrace);
                 }
 
-                outputSpikes = simulateDynamics(synapseInput, openCLObject);
+                outputSpikes = simulateDynamics(synapseInput, openCLObject, Constants.NUMBER_OF_NEURONS);
 
                 try {
                     kernelExcQueue.put(outputSpikes);
@@ -276,7 +274,7 @@ public class SimulationService extends IntentService {
             DatagramSocket senderSocket = null;
 
             try {
-                senderSocket = new DatagramSocket(4194);
+                senderSocket = new DatagramSocket(4195);
             } catch (SocketException e) {
                 String stackTrace = Log.getStackTraceString(e);
                 Log.e("DataSender", stackTrace);
@@ -309,6 +307,7 @@ public class SimulationService extends IntentService {
                     }
 
                     assert postynapticDeviceIP != null;
+
                     outboundPacket = new DatagramPacket(outputSpikes, Constants.DATA_BYTES, postynapticDeviceIP, 4194);
 
                     try {
@@ -330,7 +329,7 @@ public class SimulationService extends IntentService {
     }
     /* [End of the DataSender class] */
 
-    public native long initializeOpenCL(String synapseKernel);
-    public native byte[] simulateDynamics(char[] synapseInput, long openCLObject);
+    public native long initializeOpenCL(String synapseKernel, short numOfNeurons);
+    public native byte[] simulateDynamics(char[] synapseInput, long openCLObject, short numOfNeurons);
     public native void closeOpenCL(long openCLObject);
 }
