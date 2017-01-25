@@ -184,7 +184,7 @@ Project_BINARY_DIR:STATIC=/home/rodolfo/AndroidStudioProjects/MyApplication/app/
 Project_SOURCE_DIR:STATIC=/home/rodolfo/AndroidStudioProjects/MyApplication/app
 
 //Dependencies for the target
-hello-world_LIB_DEPENDS:STATIC=general;log;general;OpenCL_adreno;
+hello-world_LIB_DEPENDS:STATIC=general;log;general;GLES_mali;
 
 //Path to a library.
 log-lib:FILEPATH=/home/rodolfo/Android/Sdk/ndk-bundle/platforms/android-19/arch-arm/usr/lib/liblog.so

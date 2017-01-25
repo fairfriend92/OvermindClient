@@ -1,4 +1,4 @@
 # ninja log v5
-0	241	0	CMakeFiles/hello-world.dir/src/main/cpp/common.cpp.o	e86ad55d1bd7f3aa
-0	302	0	CMakeFiles/hello-world.dir/src/main/cpp/native_method.cpp.o	cf217950f5bda8ec
-302	391	0	../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libhello-world.so	25ab64d3ac9b571e
+1	260	0	CMakeFiles/hello-world.dir/src/main/cpp/common.cpp.o	e86ad55d1bd7f3aa
+1	275	0	CMakeFiles/hello-world.dir/src/main/cpp/native_method.cpp.o	cf217950f5bda8ec
+275	404	0	../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libhello-world.so	d913336ccaeb637f

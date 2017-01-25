@@ -27,6 +27,7 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Class which provides GPU info
      */
+
     private class MyGLRenderer implements GLSurfaceView.Renderer {
 
         @Override
@@ -62,6 +63,7 @@ public class MainActivity extends AppCompatActivity {
     /**
      * OpenGL surface view called at app startup to retrieve GPU info
      */
+
     class MyGLSurfaceView extends GLSurfaceView {
         public MyGLRenderer mRenderer;
 
@@ -103,15 +105,19 @@ public class MainActivity extends AppCompatActivity {
             public void onTick(long millisUntilFinished) {
             }
             public void onFinish() {
+
                 // Get the GPU model to set the number of neurons of the local network
                 SharedPreferences prefs =getSharedPreferences("GPUinfo",Context.MODE_PRIVATE);
                 renderer = prefs.getString("RENDERER", null);
+
                 // Load the appropriate OpenCL library based on the GPU vendor
                 loadGLLibrary();
+
                 // Create and launch the AsyncTask to retrieve the global IP of the device and to send the info
                 // of the local network to the Overmind server
                 IpChecker ipChecker = new IpChecker();
                 ipChecker.execute(getApplicationContext());
+
                 // Get from the AsyncTask the struct holding all the info regardinf the local network
                 try {
                     thisClient = ipChecker.get();
@@ -119,9 +125,12 @@ public class MainActivity extends AppCompatActivity {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("MainActivity", stackTrace);
                 }
+
                 assert thisClient != null;
+
                 // Now that the GPU info are available display the proper application layout
                 setContentView(R.layout.activity_main);
+
             }
         }.start();
     }
@@ -138,7 +147,6 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Load the proper OpenGL library based on GPU vendor info provided by the OpenGL renderer
      */
-
 
     public void loadGLLibrary () {
         SharedPreferences prefs =getSharedPreferences("GPUinfo",Context.MODE_PRIVATE);
@@ -184,9 +192,11 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Called when the user clicks the Start simulation button
      */
+
     static boolean simulationIsStarted = false;
     public void startSimulation(View view) {
         if (!simulationIsStarted) {
+
             // The SimulationService Intent
             Intent simulationIntent = new Intent(MainActivity.this, SimulationService.class);
 
@@ -210,12 +220,14 @@ public class MainActivity extends AppCompatActivity {
             // Start the service
             this.startService(simulationIntent);
             simulationIsStarted = true;
+
         }
     }
 
     /**
      * Called when the user clicks the Stop simulation button
      */
+
     public void stopSimulation(View view) {
        SimulationService.shutDown();
        simulationIsStarted = false;

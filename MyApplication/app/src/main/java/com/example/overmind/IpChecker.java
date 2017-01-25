@@ -13,17 +13,20 @@ import java.util.ArrayList;
 class IpChecker extends AsyncTask<Context, Integer, Socket> {
 
     private static final String SERVER_IP = MainActivity.serverIP;
-    private static final int SERVER_PORT = 4194;
+
 
     private Context context;
     private LocalNetwork thisDevice = new LocalNetwork();
     private Socket clientSocket = null;
+
+    private static final int SERVER_PORT = 4195;
 
     protected Socket doInBackground(Context ... contexts) {
 
         /**
          * Retrieve the global IP of this device
          */
+
         context = contexts[0];
         String ip = null;
         try (java.util.Scanner s = new java.util.Scanner(new java.net.URL("https://api.ipify.org").openStream(), "UTF-8").useDelimiter("\\A")) {
@@ -38,6 +41,7 @@ class IpChecker extends AsyncTask<Context, Integer, Socket> {
         /**
          * Choose the number of neurons of the local network based on GPU performance and set the other info
          */
+
         short numOfNeurons;
         switch (MainActivity.renderer) {
             case "Mali-T720":
@@ -50,6 +54,7 @@ class IpChecker extends AsyncTask<Context, Integer, Socket> {
         thisDevice.numOfNeurons = numOfNeurons;
         thisDevice.numOfDendrites = 1024;
         thisDevice.numOfSynapses = 1024;
+        thisDevice.natPort = 0;
         thisDevice.presynapticNodes = new ArrayList<>();
         thisDevice.postsynapticNodes = new ArrayList<>();
         publishProgress(1);
@@ -57,6 +62,7 @@ class IpChecker extends AsyncTask<Context, Integer, Socket> {
         /**
          * Establish connection with the Overmind and send local network info
          */
+
         try {
             clientSocket = new Socket(SERVER_IP, SERVER_PORT);
         } catch (IOException e) {

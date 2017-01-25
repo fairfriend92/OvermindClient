@@ -4,16 +4,13 @@ import android.app.IntentService;
 import android.content.Intent;
 import android.util.Log;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -29,6 +26,9 @@ import java.util.concurrent.Future;
 
 public class SimulationService extends IntentService {
 
+    // TODO TCP and UDP socket can live on the same port
+    private static final int SERVER_PORT = 4195;
+
     public SimulationService() {
         super("SimulationService");
     }
@@ -39,8 +39,9 @@ public class SimulationService extends IntentService {
     }
 
     /**
-     * Used to print a byte[] as a hex string
+     * Used to print a byte[] as a hex string.
      */
+
     final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
     public static String bytesToHex(byte[] bytes) {
         char[] hexChars = new char[bytes.length * 2];
@@ -55,7 +56,7 @@ public class SimulationService extends IntentService {
     @Override
     protected void onHandleIntent (Intent workIntent) {
 
-        // Socket and streams used for TCP communications with the OverMind Server
+        // Socket and stream used for TCP communications with the Overmind server
         Socket clientSocket = MainActivity.thisClient;
         ObjectInputStream input = null;
 
@@ -63,7 +64,41 @@ public class SimulationService extends IntentService {
         LocalNetwork thisDevice = null;
 
         /**
-         * Retrieve info regarding the other devices connected to this one
+         * Build the datagram socket used for sending and receiving spikes
+         */
+
+        DatagramSocket datagramSocket = null;
+
+        try {
+            datagramSocket = new DatagramSocket();
+        } catch (SocketException e) {
+            String stackTrace = Log.getStackTraceString(e);
+            Log.e("DataSender", stackTrace);
+        }
+
+        assert datagramSocket != null;
+
+        /**
+         * Send a test packet to the server to initiate UDP hole punching
+         */
+
+        try {
+
+            InetAddress serverAddr = InetAddress.getByName(MainActivity.serverIP);
+
+            byte[] testData = new byte[1];
+
+            DatagramPacket testPacket = new DatagramPacket(testData, 1, serverAddr, SERVER_PORT);
+
+            datagramSocket.send(testPacket);
+
+        } catch (IOException e) {
+            String stackTrace = Log.getStackTraceString(e);
+            Log.e("SimulationService", stackTrace);
+        }
+
+        /**
+         * Retrieve info regarding the connected devices.
          */
 
         try {
@@ -86,43 +121,34 @@ public class SimulationService extends IntentService {
         assert thisDevice != null;
 
         /**
-         * Get the string holding the kernel and initialize the OpenCL implementation
+         * Get the string holding the kernel and initialize the OpenCL implementation.
          */
         String kernel = workIntent.getStringExtra("Kernel");
         long openCLObject = initializeOpenCL(kernel, Constants.NUMBER_OF_NEURONS);
 
         /**
-         * Queues and Thread executors used to parallelize the computation
+         * Queues and Thread executors used to parallelize the computation.
          */
 
-        /* [KernelInitializer] */
         BlockingQueue<char[]> kernelInitQueue = new ArrayBlockingQueue<>(4);
         ExecutorService kernelInitExecutor = Executors.newCachedThreadPool();
-        /* [KernelInitializer] */
 
-        /* [KernelExecutor] */
         BlockingQueue<byte[]> kernelExcQueue = new ArrayBlockingQueue<>(4);
         ExecutorService kernelExcExecutor = Executors.newSingleThreadExecutor();
         // Future object which holds the pointer to the OpenCL structure defined in native_method.h
         Future<Long> newOpenCLObject;
-        /* [KernelExecutor] */
 
-        /* [DataSender] */
         ExecutorService dataSenderExecutor = Executors.newSingleThreadExecutor();
-        /* [DataSender] */
-
-        /*
-        try {
-            thisDevice = (LocalNetwork) input.readObject();
-        } catch (IOException | ClassNotFoundException e) {
-            String stackTrace = Log.getStackTraceString(e);
-            Log.e("SimulationService", stackTrace);
-        }
-        */
 
         /**
-         * Send the connected device an empty vector in order to receive their responses thus triggering
-         * the initialization of the OpenCL kernel
+         * Launch the Threads executors for the KernelExecutor and DataSender runnables
+         */
+
+        newOpenCLObject = kernelExcExecutor.submit(new KernelExecutor(kernelInitQueue, kernelExcQueue, openCLObject));
+        dataSenderExecutor.execute(new DataSender(kernelExcQueue, thisDevice, datagramSocket));
+
+        /**
+         * Put in the output queue and empty vector to trigger the response of the postynaptic devices
          */
 
         try {
@@ -137,58 +163,52 @@ public class SimulationService extends IntentService {
         }
 
         /**
-         * Launch the Threads executors for the KernelExecutor and DataSender runnables
+         * Main loop which listens for incoming spikes from the presynaptic devices and passes them to
+         * worker threads which run KernelInitializer
          */
-
-        newOpenCLObject = kernelExcExecutor.submit(new KernelExecutor(kernelInitQueue, kernelExcQueue, thisDevice, openCLObject));
-        dataSenderExecutor.execute(new DataSender(kernelExcQueue, thisDevice));
-
-
-        /**
-         * Launch the Threads executor for the KernelInitializer runnable
-         */
-
-        // UDP socket which receives data from the presynaptic devices
-        DatagramSocket receiverSocket = null;
-
-        try {
-            receiverSocket = new DatagramSocket(4194);
-        } catch (SocketException e) {
-            String stackTrace = Log.getStackTraceString(e);
-            Log.e("SimulationService", stackTrace);
-        }
-
-        // Temporary array of maximum length to hold the incoming data, independently of the presynaptic network size
-        byte[] tmpSpikes = new byte[256];
-        DatagramPacket incomingPacket = new DatagramPacket(tmpSpikes, 256);
-        String presynapticDeviceIP;
-
-        assert receiverSocket != null;
 
         while (!shutdown) {
 
-            /**
-             * For each of the presynaptic device launch a different thread that runs KernelInitializer
-             */
+            try {
 
-            for (short index = 0; index < thisDevice.presynapticNodes.size(); index++) {
+                // TODO Perhaps the size of this buffer should be bigger to accommodate eventual headers
+                byte[] inputSpikesBuffer = new byte[128];
 
-                try {
-                    receiverSocket.receive(incomingPacket);
-                    tmpSpikes = incomingPacket.getData();
-                } catch (IOException e) {
-                    String stackTrace = Log.getStackTraceString(e);
-                    Log.e("SimulationService", stackTrace);
+                DatagramPacket inputSpikesPacket = new DatagramPacket(inputSpikesBuffer, 128);
+
+                datagramSocket.receive(inputSpikesPacket);
+
+                inputSpikesBuffer = inputSpikesPacket.getData();
+
+                InetAddress presynapticDeviceAddr = inputSpikesPacket.getAddress();
+
+                LocalNetwork presynapticDevice = new LocalNetwork();
+
+                presynapticDevice.ip = presynapticDeviceAddr.toString().substring(1);
+
+                int currentPresynapticDevice;
+
+                for (int index = 0; index < thisDevice.presynapticNodes.size(); index++) {
+
+                    // TODO Handle the case when the spikes are randomly generated by the server
+                    if (presynapticDevice.equals(thisDevice.postsynapticNodes.get(index))) {
+                        currentPresynapticDevice = index;
+                        kernelInitExecutor.execute(new KernelInitializer(kernelInitQueue, currentPresynapticDevice, thisDevice, inputSpikesBuffer));
+                    }
+
                 }
 
-                presynapticDeviceIP = incomingPacket.getAddress().toString();
-                kernelInitExecutor.execute(new KernelInitializer(kernelInitQueue, presynapticDeviceIP, thisDevice, tmpSpikes));
-
+            } catch (IOException e) {
+                String stackTrace = Log.getStackTraceString(e);
+                Log.e("SimulationService", stackTrace);
             }
 
         }
 
-        // Retrieve from the Future object the last updated openCLObject
+        /**
+         * Retrieve from the Future object the last updated openCLObject
+         */
+
         try {
             openCLObject = newOpenCLObject.get();
         } catch (InterruptedException|ExecutionException e) {
@@ -199,9 +219,14 @@ public class SimulationService extends IntentService {
         /**
          * Shut down the Threads and the Sockets
          */
+
         closeOpenCL(openCLObject);
         kernelInitExecutor.shutdown();
+        kernelExcExecutor.shutdownNow();
         dataSenderExecutor.shutdownNow();
+
+        // TODO Close the datagram input socket
+
         try {
             clientSocket.close();
             input.close();
@@ -209,9 +234,15 @@ public class SimulationService extends IntentService {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("SimulationService", stackTrace);
         }
+
         shutdown = false;
         stopSelf();
+
     }
+
+    /**
+     * Class which calls the native method which schedules and runs the OpenCL kernel.
+     */
 
     public class KernelExecutor implements Callable<Long> {
 
@@ -221,7 +252,7 @@ public class SimulationService extends IntentService {
         private byte[] outputSpikes;
         private char[] synapseInput = new char[Constants.MAX_NUM_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
 
-        KernelExecutor(BlockingQueue<char[]> b, BlockingQueue<byte[]> b1, LocalNetwork l, long l1) {
+        KernelExecutor(BlockingQueue<char[]> b, BlockingQueue<byte[]> b1, long l1) {
             this.kernelInitQueue = b;
             this.kernelExcQueue = b1;
             this.openCLObject = l1;
@@ -255,36 +286,27 @@ public class SimulationService extends IntentService {
 
     }
 
+    /**
+     * Runnable class which sends the spikes produced by the local network to the postsynaptic devices.
+     */
+
     public class DataSender implements Runnable {
 
         private BlockingQueue<byte[]> kernelExcQueue;
         private byte[] outputSpikes = new byte[Constants.DATA_BYTES];
         private LocalNetwork thisDevice;
+        private DatagramSocket outputSocket;
 
-        DataSender(BlockingQueue<byte[]> b, LocalNetwork l) {
+        DataSender(BlockingQueue<byte[]> b, LocalNetwork l, DatagramSocket d) {
 
             this.kernelExcQueue = b;
             this.thisDevice = l;
-
+            this.outputSocket = d;
         }
 
         @Override
         public void run () {
 
-            DatagramSocket senderSocket = null;
-
-            try {
-                senderSocket = new DatagramSocket(4195);
-            } catch (SocketException e) {
-                String stackTrace = Log.getStackTraceString(e);
-                Log.e("DataSender", stackTrace);
-            }
-
-            assert senderSocket != null;
-
-            DatagramPacket outboundPacket;
-            LocalNetwork postynapticDevice;
-            InetAddress postynapticDeviceIP = null;
 
             while (!shutdown) {
 
@@ -297,31 +319,30 @@ public class SimulationService extends IntentService {
 
                 for (short index = 0; index < thisDevice.postsynapticNodes.size(); index++) {
 
-                    postynapticDevice = thisDevice.postsynapticNodes.get(index);
-
                     try {
-                        postynapticDeviceIP = InetAddress.getByName(postynapticDevice.ip);
-                    } catch (UnknownHostException e) {
-                        String stackTrace = Log.getStackTraceString(e);
-                        Log.e("DataSender", stackTrace);
-                    }
 
-                    assert postynapticDeviceIP != null;
+                        LocalNetwork postynapticDevice = thisDevice.postsynapticNodes.get(index);
 
-                    outboundPacket = new DatagramPacket(outputSpikes, Constants.DATA_BYTES, postynapticDeviceIP, 4194);
+                        InetAddress postsynapticDeviceAddr = InetAddress.getByName(postynapticDevice.ip);
 
-                    try {
-                        senderSocket.send(outboundPacket);
+                        DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, Constants.DATA_BYTES, postsynapticDeviceAddr, postynapticDevice.natPort);
+
+                        outputSocket.send(outputSpikesPacket);
+
                     } catch (IOException e) {
                         String stackTrace = Log.getStackTraceString(e);
                         Log.e("DataSender", stackTrace);
                     }
+
+                    //Log.d("DataSender", "Spikes have been sent!");
 
                 }
                 /* [End of the for loop] */
 
             }
             /* [End of the while loop] */
+
+            // TODO Close the datagram outputsocket
 
         }
         /* [End of the run loop] */
@@ -332,4 +353,5 @@ public class SimulationService extends IntentService {
     public native long initializeOpenCL(String synapseKernel, short numOfNeurons);
     public native byte[] simulateDynamics(char[] synapseInput, long openCLObject, short numOfNeurons);
     public native void closeOpenCL(long openCLObject);
+
 }
