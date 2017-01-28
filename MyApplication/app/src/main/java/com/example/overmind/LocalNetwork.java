@@ -16,4 +16,18 @@ public class LocalNetwork implements Serializable {
         LocalNetwork compare = (LocalNetwork) obj;
         return compare.ip.equals(ip);
     }
+
+    public synchronized LocalNetwork get() {
+        return this;
+    }
+
+    public synchronized void update(LocalNetwork updatedLN) {
+        this.numOfNeurons = updatedLN.numOfNeurons;
+        this.numOfDendrites = updatedLN.numOfDendrites;
+        this.numOfSynapses = updatedLN.numOfSynapses;
+        this.ip = updatedLN.ip;
+        this.natPort = updatedLN.natPort;
+        this.presynapticNodes = updatedLN.presynapticNodes;
+        this.postsynapticNodes = updatedLN.postsynapticNodes;
+    }
 }

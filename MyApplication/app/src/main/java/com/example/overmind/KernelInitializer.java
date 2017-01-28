@@ -9,14 +9,15 @@ class KernelInitializer implements Runnable {
 
     private BlockingQueue<char[]> kernelInitQueue;
     private int currentPresynapticDevice;
-    private LocalNetwork thisDevice;
+    private static LocalNetwork thisDevice;
     private byte[] inputSpikesBuffer;
 
     // Static variable used to synchronize threads when the spikes need to be passed to KernelExecutor
     static private short threadsCounter;
 
     // List made of the spikes arrays received from each presynaptic device
-    private static ArrayList<char[]> partialSynapseInput = new ArrayList<>();
+    // TODO At this point perhaps a double array would be more efficient?
+    private static ArrayList<char[]> partialSynapseInput = new ArrayList<>(thisDevice.postsynapticNodes.size());
 
     // Array obtained by joinining together each element of partialSynapseInput
     private char[] totalSynapseInput = new char[Constants.MAX_NUM_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
@@ -24,7 +25,7 @@ class KernelInitializer implements Runnable {
     KernelInitializer(BlockingQueue<char[]> b, int i, LocalNetwork l, byte[] b1) {
         this.kernelInitQueue = b;
         this.currentPresynapticDevice = i;
-        this.thisDevice = l;
+        KernelInitializer.thisDevice = l.get();
         this.inputSpikesBuffer = b1;
     }
 
@@ -80,8 +81,12 @@ class KernelInitializer implements Runnable {
 
         synchronized (this) {
 
-            threadsCounter++;
-            partialSynapseInput.set(currentPresynapticDevice, synapseInput);
+            if (partialSynapseInput.get(currentPresynapticDevice) == null) {
+                threadsCounter++;
+                partialSynapseInput.add(currentPresynapticDevice, synapseInput);
+            } else {
+                Log.e("KernelInitializer", "Received new input from the same dendrite while total input was still incomplete");
+            }
 
             // Proceed only if all the partial results have been computed
 
@@ -105,6 +110,8 @@ class KernelInitializer implements Runnable {
                 }
 
                 threadsCounter = 0;
+
+                partialSynapseInput.clear();
 
             }
 
