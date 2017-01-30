@@ -17,7 +17,7 @@ class KernelInitializer implements Runnable {
 
     // List made of the spikes arrays received from each presynaptic device
     // TODO At this point perhaps a double array would be more efficient?
-    private static ArrayList<char[]> partialSynapseInput = new ArrayList<>(thisDevice.postsynapticNodes.size());
+    private static ArrayList<char[]> partialSynapseInput = new ArrayList<>();
 
     // Array obtained by joinining together each element of partialSynapseInput
     private char[] totalSynapseInput = new char[Constants.MAX_NUM_SYNAPSES * Constants.MAX_MULTIPLICATIONS];

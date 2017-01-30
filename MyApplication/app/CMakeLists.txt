@@ -49,4 +49,4 @@ find_library( # Sets the name of the path variable.
 # can link multiple libraries, such as libraries you define in the
 # build script, prebuilt third-party libraries, or system libraries.
 
-target_link_libraries ( hello-world log GLES_mali)
+target_link_libraries ( hello-world log OpenCL_adreno )

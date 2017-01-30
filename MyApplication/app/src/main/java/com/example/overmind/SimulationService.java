@@ -153,6 +153,7 @@ public class SimulationService extends IntentService {
             try {
                 LocalNetwork tmp = updatedLocalNetwork.poll(100, TimeUnit.MICROSECONDS);
                 if (tmp != null) {
+                    Log.d("SimulationService", "Number of presynaptic nodes is " + tmp.presynapticNodes.size());
                     thisDevice.update(tmp);
                 }
             } catch (InterruptedException e) {
@@ -230,11 +231,14 @@ public class SimulationService extends IntentService {
     public class LocalNetworkUpdater implements Runnable {
 
         private ObjectInputStream input;
-        private LocalNetwork thisDevice;
+        private LocalNetwork thisDevice = new LocalNetwork();
         private BlockingQueue<LocalNetwork> updatedLocalNetwork;
 
         LocalNetworkUpdater(ObjectInputStream o, BlockingQueue<LocalNetwork> a) {
+
             this.input = o;
+            this.updatedLocalNetwork = a;
+
         }
 
         @Override
@@ -242,12 +246,16 @@ public class SimulationService extends IntentService {
 
             while (!shutdown) {
 
+                Log.d("LocalNetworkUpdate", "(Before) Number of dendrites is " + thisDevice.numOfDendrites);
+
                 try {
-                    thisDevice = (LocalNetwork) input.readObject();
+                    thisDevice.update((LocalNetwork) input.readObject());
                 } catch (IOException | ClassNotFoundException e) {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("LocalNetworkUpdater", stackTrace);
                 }
+
+                Log.d("LocalNetworkUpdate", "(After) Number of dendrites is " + thisDevice.numOfDendrites);
 
                 try {
                     updatedLocalNetwork.put(thisDevice);
