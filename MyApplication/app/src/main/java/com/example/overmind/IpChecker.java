@@ -19,7 +19,8 @@ class IpChecker extends AsyncTask<Context, Integer, Socket> {
     private LocalNetwork thisDevice = new LocalNetwork();
     private Socket clientSocket = null;
 
-    private static final int SERVER_PORT = 4195;
+    private static final int SERVER_PORT_TCP = 4195;
+    private static final int IPTOS_RELIABILITY = 0x04;
 
     protected Socket doInBackground(Context ... contexts) {
 
@@ -64,7 +65,9 @@ class IpChecker extends AsyncTask<Context, Integer, Socket> {
          */
 
         try {
-            clientSocket = new Socket(SERVER_IP, SERVER_PORT);
+            clientSocket = new Socket(SERVER_IP, SERVER_PORT_TCP);
+            clientSocket.setTrafficClass(IPTOS_RELIABILITY);
+            clientSocket.setTcpNoDelay(true);
         } catch (IOException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("IpChecker", stackTrace);

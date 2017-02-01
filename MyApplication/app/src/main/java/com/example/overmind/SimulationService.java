@@ -28,7 +28,8 @@ import java.util.concurrent.TimeUnit;
 public class SimulationService extends IntentService {
 
     // TODO TCP and UDP socket can live on the same port
-    private static final int SERVER_PORT = 4195;
+    private static final int SERVER_PORT_UDP = 4196;
+    private static final int IPTOS_THROUGHPUT = 0x08;
 
     public SimulationService() {
         super("SimulationService");
@@ -72,6 +73,8 @@ public class SimulationService extends IntentService {
 
         try {
             datagramSocket = new DatagramSocket();
+            datagramSocket.setTrafficClass(IPTOS_THROUGHPUT);
+            //datagramSocket.setReceiveBufferSize(1024);
         } catch (SocketException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("DataSender", stackTrace);
@@ -89,7 +92,7 @@ public class SimulationService extends IntentService {
 
             byte[] testData = new byte[1];
 
-            DatagramPacket testPacket = new DatagramPacket(testData, 1, serverAddr, SERVER_PORT);
+            DatagramPacket testPacket = new DatagramPacket(testData, 1, serverAddr, SERVER_PORT_UDP);
 
             datagramSocket.send(testPacket);
 
@@ -213,9 +216,8 @@ public class SimulationService extends IntentService {
         kernelExcExecutor.shutdownNow();
         dataSenderExecutor.shutdownNow();
 
-        // TODO Close the datagram socket
-
         try {
+            datagramSocket.close();
             clientSocket.close();
             input.close();
         } catch (IOException | NullPointerException e) {
@@ -246,8 +248,6 @@ public class SimulationService extends IntentService {
 
             while (!shutdown) {
 
-                Log.d("LocalNetworkUpdate", "(Before) Number of dendrites is " + thisDevice.numOfDendrites);
-
                 try {
                     thisDevice.update((LocalNetwork) input.readObject());
                 } catch (IOException | ClassNotFoundException e) {
@@ -255,7 +255,7 @@ public class SimulationService extends IntentService {
                     Log.e("LocalNetworkUpdater", stackTrace);
                 }
 
-                Log.d("LocalNetworkUpdate", "(After) Number of dendrites is " + thisDevice.numOfDendrites);
+                Log.d("LocalNetworkUpdate", "Number of dendrites is " + thisDevice.numOfDendrites);
 
                 try {
                     updatedLocalNetwork.put(thisDevice);

@@ -88,9 +88,24 @@ public class MainActivity extends AppCompatActivity {
     static String serverIP;
     static String renderer;
 
+    EditText editText = null;
+
+    public void lookUpServerIP(View view) {
+        String ip = null;
+        LookUpServerIP lookUpServerIP = new LookUpServerIP();
+        lookUpServerIP.execute();
+        try {
+            ip = lookUpServerIP.get();
+        } catch (InterruptedException|ExecutionException e) {
+            String stackTrace = Log.getStackTraceString(e);
+            Log.e("MainActivity", stackTrace);
+        }
+        assert ip != null;
+        editText.setText(ip);
+    }
+
     public void confirmServerIP(View view) {
 
-        EditText editText = (EditText) findViewById(R.id.edit_ip);
         assert editText != null;
         serverIP = editText.getText().toString();
 
@@ -141,6 +156,7 @@ public class MainActivity extends AppCompatActivity {
         // Used to get the GPU info stored by the OpenGL renderer
         prefs = this.getSharedPreferences("GPUinfo", Context.MODE_PRIVATE);
         setContentView(R.layout.pre_connection);
+        editText = (EditText) findViewById(R.id.edit_ip);
     }
 
 

@@ -81,6 +81,10 @@ class KernelInitializer implements Runnable {
 
         synchronized (this) {
 
+            if (threadsCounter == 0) {
+                partialSynapseInput.ensureCapacity(thisDevice.presynapticNodes.size());
+            }
+
             if (partialSynapseInput.get(currentPresynapticDevice) == null) {
                 threadsCounter++;
                 partialSynapseInput.add(currentPresynapticDevice, synapseInput);

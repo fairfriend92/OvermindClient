@@ -5,4 +5,5 @@
     <string name="stop_simulation">Stop simulation</string>
     <string name="edit_ip">Enter the OvermindServer IP</string>
     <string name="confirm_ip">Confirm the IP</string>
+    <string name="server_ip">Look up the IP on the Overmind webpage</string>
 </resources>
