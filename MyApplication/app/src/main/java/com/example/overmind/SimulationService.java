@@ -1,7 +1,10 @@
 package com.example.overmind;
 
+import android.app.FragmentManager;
 import android.app.IntentService;
+import android.content.Context;
 import android.content.Intent;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import java.io.IOException;
@@ -19,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Background service used to initialize the OpenCL implementation and execute the Thread pool managers
@@ -37,11 +41,14 @@ public class SimulationService extends IntentService {
 
     static boolean shutdown = false;
     static public void shutDown () {
+
         shutdown = true;
+        Log.d("Shutdown test", "Shutdown signal received");
+
     }
 
     // Object used to hold all the relevant info pertaining this device
-    static public LocalNetwork thisDevice = new LocalNetwork();
+    private LocalNetwork thisDevice = new LocalNetwork();
 
     /**
      * Used to print a byte[] as a hex string.
@@ -110,6 +117,8 @@ public class SimulationService extends IntentService {
             // Open input stream through TCP socket
             input = new ObjectInputStream(clientSocket.getInputStream());
 
+            Log.d("Shutdown test", "New input stream read");
+
             // Save the object from the stream into the local variable thisDevice
             thisDevice.update((LocalNetwork) input.readObject());
 
@@ -119,10 +128,18 @@ public class SimulationService extends IntentService {
         } catch (IOException | NullPointerException | ClassNotFoundException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("SimulationService", stackTrace);
+            shutDown();
+            Intent broadcastError = new Intent("ErrorMessage");
+            broadcastError.putExtra("ErrorNumber", 1);
+            LocalBroadcastManager.getInstance(this).sendBroadcast(broadcastError);
         }
+
+        Log.e("barrier", "1");
 
         assert input != null;
         assert thisDevice != null;
+
+        Log.e("barrier", "2");
 
         /**
          * Get the string holding the kernel and initialize the OpenCL implementation.
@@ -134,22 +151,34 @@ public class SimulationService extends IntentService {
          * Queues and Thread executors used to parallelize the computation.
          */
 
+        Log.e("barrier", "3");
+
         BlockingQueue<char[]> kernelInitQueue = new ArrayBlockingQueue<>(4);
         ExecutorService kernelInitExecutor = Executors.newCachedThreadPool();
+
+        Log.e("barrier", "4");
 
         BlockingQueue<byte[]> kernelExcQueue = new ArrayBlockingQueue<>(4);
         ExecutorService kernelExcExecutor = Executors.newSingleThreadExecutor();
         // Future object which holds the pointer to the OpenCL structure defined in native_method.h
         Future<Long> newOpenCLObject;
 
+        Log.e("barrier", "5");
+
         ExecutorService dataSenderExecutor = Executors.newSingleThreadExecutor();
 
-        ExecutorService localNetworkUpdater = Executors.newSingleThreadExecutor();
+        Log.e("barrier", "6");
+
+        ExecutorService localNetworkUpdaterExecutor = Executors.newSingleThreadExecutor();
         BlockingQueue<LocalNetwork> updatedLocalNetwork = new ArrayBlockingQueue<>(1);
+
+        Log.e("barrier", "7");
 
         newOpenCLObject = kernelExcExecutor.submit(new KernelExecutor(kernelInitQueue, kernelExcQueue, openCLObject));
         dataSenderExecutor.execute(new DataSender(kernelExcQueue, datagramSocket));
-        localNetworkUpdater.execute(new LocalNetworkUpdater(input, updatedLocalNetwork));
+        localNetworkUpdaterExecutor.execute(new LocalNetworkUpdater(input, updatedLocalNetwork, this));
+
+        Log.e("barrier", "8");
 
         while (!shutdown) {
 
@@ -171,6 +200,7 @@ public class SimulationService extends IntentService {
 
                 DatagramPacket inputSpikesPacket = new DatagramPacket(inputSpikesBuffer, 128);
 
+                // TODO Perhaps this socket should have a timeout?
                 datagramSocket.receive(inputSpikesPacket);
 
                 inputSpikesBuffer = inputSpikesPacket.getData();
@@ -200,30 +230,42 @@ public class SimulationService extends IntentService {
          * Retrieve from the Future object the last updated openCLObject
          */
 
+        Log.e("barrier", "9");
+
+
         try {
-            openCLObject = newOpenCLObject.get();
-        } catch (InterruptedException|ExecutionException e) {
+            openCLObject = newOpenCLObject.get(100, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException|ExecutionException|TimeoutException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("SimulationService", stackTrace);
         }
+
+        Log.e("barrier", "10");
 
         /**
          * Shut down the Threads and the Sockets
          */
 
         closeOpenCL(openCLObject);
+
+        localNetworkUpdaterExecutor.shutdown();
         kernelInitExecutor.shutdown();
-        kernelExcExecutor.shutdownNow();
-        dataSenderExecutor.shutdownNow();
+        kernelExcExecutor.shutdown();
+        dataSenderExecutor.shutdown();
+
+        Log.e("barrier", "11");
 
         try {
             datagramSocket.close();
+            clientSocket.shutdownInput();
             clientSocket.close();
             input.close();
-        } catch (IOException | NullPointerException e) {
+        } catch (IOException|NullPointerException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("SimulationService", stackTrace);
         }
+
+        Log.e("barrier", "12");
 
         shutdown = false;
         stopSelf();
@@ -235,11 +277,13 @@ public class SimulationService extends IntentService {
         private ObjectInputStream input;
         private LocalNetwork thisDevice = new LocalNetwork();
         private BlockingQueue<LocalNetwork> updatedLocalNetwork;
+        private Context context;
 
-        LocalNetworkUpdater(ObjectInputStream o, BlockingQueue<LocalNetwork> a) {
+        LocalNetworkUpdater(ObjectInputStream o, BlockingQueue<LocalNetwork> a, Context c) {
 
             this.input = o;
             this.updatedLocalNetwork = a;
+            this.context = c;
 
         }
 
@@ -253,9 +297,14 @@ public class SimulationService extends IntentService {
                 } catch (IOException | ClassNotFoundException e) {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("LocalNetworkUpdater", stackTrace);
+                    shutDown();
+                    Intent broadcastError = new Intent("ErrorMessage");
+                    broadcastError.putExtra("ErrorNumber", 2);
+                    LocalBroadcastManager.getInstance(context).sendBroadcast(broadcastError);
+                    stopSelf();
                 }
 
-                Log.d("LocalNetworkUpdate", "Number of dendrites is " + thisDevice.numOfDendrites);
+                //Log.d("LocalNetworkUpdate", "Number of dendrites is " + thisDevice.numOfDendrites);
 
                 try {
                     updatedLocalNetwork.put(thisDevice);

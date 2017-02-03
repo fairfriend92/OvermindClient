@@ -2,6 +2,7 @@ package com.example.overmind;
 
 import android.content.Context;
 import android.os.AsyncTask;
+import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -12,8 +13,7 @@ import java.util.ArrayList;
 
 class IpChecker extends AsyncTask<Context, Integer, Socket> {
 
-    private static final String SERVER_IP = MainActivity.serverIP;
-
+    private String SERVER_IP = MainActivity.serverIP;
 
     private Context context;
     private LocalNetwork thisDevice = new LocalNetwork();
@@ -23,6 +23,8 @@ class IpChecker extends AsyncTask<Context, Integer, Socket> {
     private static final int IPTOS_RELIABILITY = 0x04;
 
     protected Socket doInBackground(Context ... contexts) {
+
+        Looper.prepare();
 
         /**
          * Retrieve the global IP of this device
@@ -37,7 +39,7 @@ class IpChecker extends AsyncTask<Context, Integer, Socket> {
             Log.e("IpChecker", stackTrace);
         }
         thisDevice.ip = ip;
-        publishProgress(0);
+        //publishProgress(0);
 
         /**
          * Choose the number of neurons of the local network based on GPU performance and set the other info
@@ -58,11 +60,13 @@ class IpChecker extends AsyncTask<Context, Integer, Socket> {
         thisDevice.natPort = 0;
         thisDevice.presynapticNodes = new ArrayList<>();
         thisDevice.postsynapticNodes = new ArrayList<>();
-        publishProgress(1);
+        //publishProgress(1);
 
         /**
          * Establish connection with the Overmind and send local network info
          */
+
+        // TODO Perhaps clientsocket should have a timeout?
 
         try {
             clientSocket = new Socket(SERVER_IP, SERVER_PORT_TCP);
@@ -71,9 +75,10 @@ class IpChecker extends AsyncTask<Context, Integer, Socket> {
         } catch (IOException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("IpChecker", stackTrace);
+            MainActivity.IpCheckerFailed = true;
         }
 
-        if (clientSocket != null) {
+        if (clientSocket != null && !MainActivity.IpCheckerFailed) {
             try {
                 ObjectOutputStream output = new ObjectOutputStream(clientSocket.getOutputStream());
                 output.writeObject(thisDevice);
@@ -83,7 +88,7 @@ class IpChecker extends AsyncTask<Context, Integer, Socket> {
             }
         }
 
-        publishProgress(2);
+        //publishProgress(2);
 
         assert ip != null;
         return clientSocket;
