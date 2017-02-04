@@ -10,8 +10,11 @@
     IP is correct.</string>
     <string name="connection_lost_title">Connection lost</string>
     <string name="connection_lost_message">Connection with the Overmind server lost. Please check back at a later time.</string>
-    <string name="stream_error_title">Data stream error</string>
-    <string name="stream_error_message">Failed to read the TCP data stream: could not update the local network info.
+    <string name="stream_error_title">Data stream interrupted</string>
+    <string name="stream_error_message">Unexpected interruption of the TCP data stream.
     Please check back at a later time</string>
+    <string name="udp_socket_timeout_title">UDP socket timeout</string>
+    <string name="udp_socket_timeout_message">The UDP socket did not receive any packet before the timeout. Please check your connection and
+    try again at a later time.</string>
 
 </resources>

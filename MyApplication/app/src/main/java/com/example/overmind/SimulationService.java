@@ -14,6 +14,8 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.util.ArrayList;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -34,6 +36,7 @@ public class SimulationService extends IntentService {
     // TODO TCP and UDP socket can live on the same port
     private static final int SERVER_PORT_UDP = 4196;
     private static final int IPTOS_THROUGHPUT = 0x08;
+    private boolean errorRaised = false;
 
     public SimulationService() {
         super("SimulationService");
@@ -81,6 +84,7 @@ public class SimulationService extends IntentService {
         try {
             datagramSocket = new DatagramSocket();
             datagramSocket.setTrafficClass(IPTOS_THROUGHPUT);
+            datagramSocket.setSoTimeout(5000);
             //datagramSocket.setReceiveBufferSize(1024);
         } catch (SocketException e) {
             String stackTrace = Log.getStackTraceString(e);
@@ -129,9 +133,12 @@ public class SimulationService extends IntentService {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("SimulationService", stackTrace);
             shutDown();
-            Intent broadcastError = new Intent("ErrorMessage");
-            broadcastError.putExtra("ErrorNumber", 1);
-            LocalBroadcastManager.getInstance(this).sendBroadcast(broadcastError);
+            if (!errorRaised) {
+                Intent broadcastError = new Intent("ErrorMessage");
+                broadcastError.putExtra("ErrorNumber", 1);
+                LocalBroadcastManager.getInstance(this).sendBroadcast(broadcastError);
+                errorRaised = true;
+            }
         }
 
         Log.e("barrier", "1");
@@ -219,11 +226,20 @@ public class SimulationService extends IntentService {
                     Log.e("SimulationService", "Could not find presynaptic device with IP: " + presynapticDevice.ip);
                 }
 
+            } catch (SocketTimeoutException e) {
+                String stackTrace = Log.getStackTraceString(e);
+                Log.e("LocalNetworkUpdater", stackTrace);
+                shutDown();
+                if (!errorRaised) {
+                    Intent broadcastError = new Intent("ErrorMessage");
+                    broadcastError.putExtra("ErrorNumber", 2);
+                    LocalBroadcastManager.getInstance(this).sendBroadcast(broadcastError);
+                    errorRaised = true;
+                }
             } catch (IOException e) {
                 String stackTrace = Log.getStackTraceString(e);
                 Log.e("SimulationService", stackTrace);
             }
-
         }
 
         /**
@@ -298,9 +314,11 @@ public class SimulationService extends IntentService {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("LocalNetworkUpdater", stackTrace);
                     shutDown();
-                    Intent broadcastError = new Intent("ErrorMessage");
-                    broadcastError.putExtra("ErrorNumber", 2);
-                    LocalBroadcastManager.getInstance(context).sendBroadcast(broadcastError);
+                    if (!errorRaised) {
+                        Intent broadcastError = new Intent("ErrorMessage");
+                        broadcastError.putExtra("ErrorNumber", 3);
+                        LocalBroadcastManager.getInstance(context).sendBroadcast(broadcastError);
+                    }
                     stopSelf();
                 }
 

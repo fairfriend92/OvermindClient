@@ -31,6 +31,15 @@ public class ConnectionFailedDialogFragment extends android.support.v4.app.Dialo
                         });
                 break;
             case 2:
+                builder.setMessage(R.string.udp_socket_timeout_message)
+                        .setTitle(R.string.udp_socket_timeout_title)
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                dismiss();
+                            }
+                        });
+                break;
+            case 3:
                 builder.setMessage(R.string.stream_error_message)
                         .setTitle(R.string.stream_error_title)
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -38,6 +47,7 @@ public class ConnectionFailedDialogFragment extends android.support.v4.app.Dialo
                                 dismiss();
                             }
                         });
+                break;
         }
 
         return builder.create();

@@ -72,6 +72,7 @@ class IpChecker extends AsyncTask<Context, Integer, Socket> {
             clientSocket = new Socket(SERVER_IP, SERVER_PORT_TCP);
             clientSocket.setTrafficClass(IPTOS_RELIABILITY);
             clientSocket.setTcpNoDelay(true);
+            clientSocket.setSoTimeout(0);
         } catch (IOException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("IpChecker", stackTrace);
