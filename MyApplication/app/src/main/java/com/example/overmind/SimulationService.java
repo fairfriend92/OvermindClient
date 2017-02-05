@@ -322,6 +322,7 @@ public class SimulationService extends IntentService {
                         Intent broadcastError = new Intent("ErrorMessage");
                         broadcastError.putExtra("ErrorNumber", 3);
                         LocalBroadcastManager.getInstance(context).sendBroadcast(broadcastError);
+                        errorRaised = true;
                     }
                     stopSelf();
                 }

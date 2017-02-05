@@ -13,6 +13,8 @@ class KernelInitializer implements Runnable {
     private byte[] inputSpikesBuffer;
     private static long lastTime = 0;
 
+    static final Object lock = new Object();
+
     // Static variable used to synchronize threads when the spikes need to be passed to KernelExecutor
     static private short threadsCounter = 0;
 
@@ -80,7 +82,7 @@ class KernelInitializer implements Runnable {
         // TODO this piece of code can be further optimized by allowing each thread to copy its partial input in the
         // TODO result and leaving to the last thread the job of putting it in the queue
 
-        synchronized (this) {
+        synchronized (lock) {
 
             if (threadsCounter == 0) {
                 for (int i = 0; i < thisDevice.presynapticNodes.size(); i++) {
@@ -99,6 +101,8 @@ class KernelInitializer implements Runnable {
 
             if (threadsCounter == thisDevice.presynapticNodes.size()) {
 
+                threadsCounter = 0;
+
                 // Put together the complete input
 
                 short offset = 0;
@@ -115,8 +119,6 @@ class KernelInitializer implements Runnable {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("KernelInitializer", stackTrace);
                 }
-
-                threadsCounter = 0;
 
                 partialSynapseInput.clear();
 
