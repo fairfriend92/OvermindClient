@@ -11,9 +11,10 @@ class KernelInitializer implements Runnable {
     private int currentPresynapticDevice;
     private static LocalNetwork thisDevice;
     private byte[] inputSpikesBuffer;
+    private static long lastTime = 0;
 
     // Static variable used to synchronize threads when the spikes need to be passed to KernelExecutor
-    static private short threadsCounter;
+    static private short threadsCounter = 0;
 
     // List made of the spikes arrays received from each presynaptic device
     // TODO At this point perhaps a double array would be more efficient?
@@ -82,7 +83,9 @@ class KernelInitializer implements Runnable {
         synchronized (this) {
 
             if (threadsCounter == 0) {
-                partialSynapseInput.ensureCapacity(thisDevice.presynapticNodes.size());
+                for (int i = 0; i < thisDevice.presynapticNodes.size(); i++) {
+                    partialSynapseInput.add(null);
+                }
             }
 
             if (partialSynapseInput.get(currentPresynapticDevice) == null) {
@@ -121,6 +124,9 @@ class KernelInitializer implements Runnable {
 
         }
         /* [End of synchronized block] */
+
+        Log.d("Time elapsed", "KernelInitializer: " + (System.nanoTime() - lastTime));
+        lastTime = System.nanoTime();
     }
     /* [End of run() method] */
 }

@@ -187,6 +187,8 @@ public class SimulationService extends IntentService {
 
         Log.e("barrier", "8");
 
+        long lastTime = 0;
+
         while (!shutdown) {
 
             try {
@@ -207,7 +209,6 @@ public class SimulationService extends IntentService {
 
                 DatagramPacket inputSpikesPacket = new DatagramPacket(inputSpikesBuffer, 128);
 
-                // TODO Perhaps this socket should have a timeout?
                 datagramSocket.receive(inputSpikesPacket);
 
                 inputSpikesBuffer = inputSpikesPacket.getData();
@@ -240,6 +241,9 @@ public class SimulationService extends IntentService {
                 String stackTrace = Log.getStackTraceString(e);
                 Log.e("SimulationService", stackTrace);
             }
+
+            Log.d("Time elapsed", "MainLoop: " + (System.nanoTime() - lastTime));
+            lastTime = System.nanoTime();
         }
 
         /**
@@ -358,6 +362,8 @@ public class SimulationService extends IntentService {
         @Override
         public Long call () {
 
+            long lastTime = 0;
+
             while (!shutdown) {
 
                 try {
@@ -376,6 +382,8 @@ public class SimulationService extends IntentService {
                     Log.e("KernelExecutor", stackTrace);
                 }
 
+                Log.d("Time elapsed", "KernelExecutor: " + (System.nanoTime() - lastTime));
+                lastTime = System.nanoTime();
             }
 
             return openCLObject;
@@ -402,6 +410,8 @@ public class SimulationService extends IntentService {
 
         @Override
         public void run () {
+
+            long lastTime = 0;
 
             while (!shutdown) {
 
@@ -436,6 +446,9 @@ public class SimulationService extends IntentService {
 
                 }
                 /* [End of the for loop] */
+
+                Log.d("Time elapsed", "DataSender: " + (System.nanoTime() - lastTime));
+                lastTime = System.nanoTime();
 
             }
             /* [End of the while loop] */
