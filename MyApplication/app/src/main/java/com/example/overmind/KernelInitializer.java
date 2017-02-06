@@ -11,7 +11,6 @@ class KernelInitializer implements Runnable {
     private int currentPresynapticDevice;
     private static LocalNetwork thisDevice;
     private byte[] inputSpikesBuffer;
-    private static long lastTime = 0;
 
     static final Object lock = new Object();
 
@@ -129,8 +128,6 @@ class KernelInitializer implements Runnable {
         }
         /* [End of synchronized block] */
 
-        Log.d("Time elapsed", "KernelInitializer: " + (System.nanoTime() - lastTime));
-        lastTime = System.nanoTime();
     }
     /* [End of run() method] */
 }

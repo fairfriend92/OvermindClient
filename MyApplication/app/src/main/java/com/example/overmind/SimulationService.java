@@ -26,6 +26,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.example.overmind.Constants.NUMBER_OF_NEURONS;
+
 /**
  * Background service used to initialize the OpenCL implementation and execute the Thread pool managers
  * for data reception, Kernel initialization, Kernel execution and data sending.
@@ -46,27 +48,11 @@ public class SimulationService extends IntentService {
     static public void shutDown () {
 
         shutdown = true;
-        Log.d("Shutdown test", "Shutdown signal received");
 
     }
 
     // Object used to hold all the relevant info pertaining this device
     private LocalNetwork thisDevice = new LocalNetwork();
-
-    /**
-     * Used to print a byte[] as a hex string.
-     */
-
-    final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
-    public static String bytesToHex(byte[] bytes) {
-        char[] hexChars = new char[bytes.length * 2];
-        for ( int j = 0; j < bytes.length; j++ ) {
-            int v = bytes[j] & 0xFF;
-            hexChars[j * 2] = hexArray[v >>> 4];
-            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
-        }
-        return new String(hexChars);
-    }
 
     @Override
     protected void onHandleIntent (Intent workIntent) {
@@ -127,7 +113,7 @@ public class SimulationService extends IntentService {
             thisDevice.update((LocalNetwork) input.readObject());
 
             // The local number of neurons never changes, so it can be made constant
-            Constants.NUMBER_OF_NEURONS = thisDevice.numOfNeurons;
+            NUMBER_OF_NEURONS = thisDevice.numOfNeurons;
 
         } catch (IOException | NullPointerException | ClassNotFoundException e) {
             String stackTrace = Log.getStackTraceString(e);
@@ -152,7 +138,7 @@ public class SimulationService extends IntentService {
          * Get the string holding the kernel and initialize the OpenCL implementation.
          */
         String kernel = workIntent.getStringExtra("Kernel");
-        long openCLObject = initializeOpenCL(kernel, Constants.NUMBER_OF_NEURONS);
+        long openCLObject = initializeOpenCL(kernel, NUMBER_OF_NEURONS);
 
         /**
          * Queues and Thread executors used to parallelize the computation.
@@ -187,8 +173,6 @@ public class SimulationService extends IntentService {
 
         Log.e("barrier", "8");
 
-        long lastTime = 0;
-
         while (!shutdown) {
 
             try {
@@ -222,7 +206,7 @@ public class SimulationService extends IntentService {
                 int index = thisDevice.presynapticNodes.indexOf(presynapticDevice);
 
                 if (index != -1) {
-                    //kernelInitExecutor.execute(new KernelInitializer(kernelInitQueue, index, thisDevice, inputSpikesBuffer));
+                    kernelInitExecutor.execute(new KernelInitializer(kernelInitQueue, index, thisDevice, inputSpikesBuffer));
                 } else {
                     Log.e("SimulationService", "Could not find presynaptic device with IP: " + presynapticDevice.ip);
                 }
@@ -242,8 +226,6 @@ public class SimulationService extends IntentService {
                 Log.e("SimulationService", stackTrace);
             }
 
-            Log.d("Time elapsed", "MainLoop: " + (System.nanoTime() - lastTime));
-            lastTime = System.nanoTime();
         }
 
         /**
@@ -349,7 +331,9 @@ public class SimulationService extends IntentService {
         private BlockingQueue<char[]> kernelInitQueue;
         private BlockingQueue<byte[]> kernelExcQueue;
         private long openCLObject;
-        private byte[] outputSpikes;
+        private short data_bytes = (NUMBER_OF_NEURONS % 8) == 0 ?
+                (short) (NUMBER_OF_NEURONS / 8) : (short)(NUMBER_OF_NEURONS / 8 + 1);
+        private byte[] outputSpikes = new byte[data_bytes];
         private char[] synapseInput = new char[Constants.MAX_NUM_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
 
         KernelExecutor(BlockingQueue<char[]> b, BlockingQueue<byte[]> b1, long l1) {
@@ -361,8 +345,6 @@ public class SimulationService extends IntentService {
         @Override
         public Long call () {
 
-            long lastTime = 0;
-
             while (!shutdown) {
 
                 try {
@@ -372,7 +354,7 @@ public class SimulationService extends IntentService {
                     Log.e("KernelExecutor", stackTrace);
                 }
 
-                outputSpikes = simulateDynamics(synapseInput, openCLObject, Constants.NUMBER_OF_NEURONS);
+                outputSpikes = simulateDynamics(synapseInput, openCLObject, NUMBER_OF_NEURONS);
 
                 try {
                     kernelExcQueue.put(outputSpikes);
@@ -381,8 +363,6 @@ public class SimulationService extends IntentService {
                     Log.e("KernelExecutor", stackTrace);
                 }
 
-                Log.d("Time elapsed", "KernelExecutor: " + (System.nanoTime() - lastTime));
-                lastTime = System.nanoTime();
             }
 
             return openCLObject;
@@ -397,7 +377,9 @@ public class SimulationService extends IntentService {
     public class DataSender implements Runnable {
 
         private BlockingQueue<byte[]> kernelExcQueue;
-        private byte[] outputSpikes = new byte[Constants.DATA_BYTES];
+        private short data_bytes = (NUMBER_OF_NEURONS % 8) == 0 ?
+                (short) (NUMBER_OF_NEURONS / 8) : (short)(NUMBER_OF_NEURONS / 8 + 1);
+        private byte[] outputSpikes = new byte[data_bytes];
         // TODO Maybe it's better to have different sockets for send and receive but on the same port rather than just one socket
         private DatagramSocket outputSocket;
 
@@ -409,8 +391,6 @@ public class SimulationService extends IntentService {
 
         @Override
         public void run () {
-
-            long lastTime = 0;
 
             while (!shutdown) {
 
@@ -432,7 +412,7 @@ public class SimulationService extends IntentService {
 
                         InetAddress postsynapticDeviceAddr = InetAddress.getByName(postynapticDevice.ip);
 
-                        DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, Constants.DATA_BYTES, postsynapticDeviceAddr, postynapticDevice.natPort);
+                        DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, data_bytes, postsynapticDeviceAddr, postynapticDevice.natPort);
 
                         outputSocket.send(outputSpikesPacket);
 
@@ -445,9 +425,6 @@ public class SimulationService extends IntentService {
 
                 }
                 /* [End of the for loop] */
-
-                Log.d("Time elapsed", "DataSender: " + (System.nanoTime() - lastTime));
-                lastTime = System.nanoTime();
 
             }
             /* [End of the while loop] */

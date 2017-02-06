@@ -41,7 +41,7 @@ __kernel void simulate_dynamics(__constant float* coeff, __constant float* weigh
       float oldPotential = potential;
       float oldRecovery = recovery;
       
-      potential = 0.04f * pown(oldPotential, 2)  + 5 * oldPotential + 110 - oldRecovery + (float)(current) / pown(2.0f, 15);
+      potential = 0.04f * pown(oldPotential, 2)  + 5 * oldPotential + 140 - oldRecovery + (float)(current) / pown(2.0f, 15);
       recovery = 0.02f * (0.2f * oldPotential - oldRecovery);
       
       if (potential >= 30.0f)

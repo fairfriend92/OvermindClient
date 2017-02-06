@@ -9,6 +9,5 @@ final class Constants {
     // TODO Change the sampling rate perhaps?
     private final static float SAMPLING_RATE = (float) 0.1;
     static final char MAX_MULTIPLICATIONS = (char) (SYNAPSE_FILTER_ORDER * SAMPLING_RATE / ABSOLUTE_REFRACTORY_PERIOD + 1);
-    static short DATA_BYTES = (NUMBER_OF_NEURONS % 8) == 0 ? (short) (NUMBER_OF_NEURONS / 8) : (short)(NUMBER_OF_NEURONS / 8 + 1);
 
 }
