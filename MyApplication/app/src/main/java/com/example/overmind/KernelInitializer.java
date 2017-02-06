@@ -113,6 +113,8 @@ class KernelInitializer implements Runnable {
                     offset += tmpSynapseInput.length;
                 }
 
+                // TODO Change blocking put in offer
+
                 try {
                     kernelInitQueue.put(totalSynapseInput);
                 } catch (InterruptedException e) {

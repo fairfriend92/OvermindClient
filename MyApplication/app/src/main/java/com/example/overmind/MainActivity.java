@@ -209,6 +209,7 @@ public class MainActivity extends AppCompatActivity {
     public void onDestroy() {
         // Unregister the receiver since the service is about to be closed
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
+        SimulationService.shutDown();
         super.onDestroy();
     }
 

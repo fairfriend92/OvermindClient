@@ -279,6 +279,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     //cl_event event = 0;
 
     // Number of kernel instances
+    // TODO Must keep in mind maximum work group size too in determining localWorkSize
     size_t localWorksize[1] = {1024 / obj->floatVectorWidth};
     size_t globalWorksize[1] = {localWorksize[0] * jNumOfNeurons};
 

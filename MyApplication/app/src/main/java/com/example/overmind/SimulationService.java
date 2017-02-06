@@ -222,7 +222,7 @@ public class SimulationService extends IntentService {
                 int index = thisDevice.presynapticNodes.indexOf(presynapticDevice);
 
                 if (index != -1) {
-                    kernelInitExecutor.execute(new KernelInitializer(kernelInitQueue, index, thisDevice, inputSpikesBuffer));
+                    //kernelInitExecutor.execute(new KernelInitializer(kernelInitQueue, index, thisDevice, inputSpikesBuffer));
                 } else {
                     Log.e("SimulationService", "Could not find presynaptic device with IP: " + presynapticDevice.ip);
                 }
@@ -277,9 +277,7 @@ public class SimulationService extends IntentService {
 
         try {
             datagramSocket.close();
-            clientSocket.shutdownInput();
             clientSocket.close();
-            input.close();
         } catch (IOException|NullPointerException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("SimulationService", stackTrace);
@@ -324,7 +322,7 @@ public class SimulationService extends IntentService {
                         LocalBroadcastManager.getInstance(context).sendBroadcast(broadcastError);
                         errorRaised = true;
                     }
-                    stopSelf();
+                    //stopSelf();
                 }
 
                 //Log.d("LocalNetworkUpdate", "Number of dendrites is " + thisDevice.numOfDendrites);
