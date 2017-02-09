@@ -4,6 +4,7 @@ import android.app.FragmentManager;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Process;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
@@ -69,9 +70,8 @@ public class SimulationService extends IntentService {
 
         try {
             datagramSocket = new DatagramSocket();
-            datagramSocket.setTrafficClass(IPTOS_THROUGHPUT);
+            datagramSocket.setTrafficClass(0x10);
             datagramSocket.setSoTimeout(5000);
-            //datagramSocket.setReceiveBufferSize(1024);
         } catch (SocketException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("DataSender", stackTrace);
@@ -329,12 +329,12 @@ public class SimulationService extends IntentService {
     public class KernelExecutor implements Callable<Long> {
 
         private BlockingQueue<char[]> kernelInitQueue;
-        private BlockingQueue<byte[]> kernelExcQueue;
         private long openCLObject;
+        private char[] synapseInput = new char[Constants.MAX_NUM_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
         private short data_bytes = (NUMBER_OF_NEURONS % 8) == 0 ?
                 (short) (NUMBER_OF_NEURONS / 8) : (short)(NUMBER_OF_NEURONS / 8 + 1);
         private byte[] outputSpikes = new byte[data_bytes];
-        private char[] synapseInput = new char[Constants.MAX_NUM_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
+        private BlockingQueue<byte[]> kernelExcQueue;
 
         KernelExecutor(BlockingQueue<char[]> b, BlockingQueue<byte[]> b1, long l1) {
             this.kernelInitQueue = b;

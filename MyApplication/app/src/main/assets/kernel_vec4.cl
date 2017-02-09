@@ -1,49 +1,50 @@
+#pragma OPENCL EXTENSION cl_khr_fp16 : enable
+#pragma OPENCL EXTENSION cl_khr_fp64 : enable
+#pragma OPENCL EXTENSION cl_khr_int64_base_atomics: enable
+
 #define SHIFT_FACTOR 15
 
 #define potential neuronalDynVar[workId * 2]
 #define recovery neuronalDynVar[workId * 2 + 1]
-#define current localData[workId * 2]
-#define counter localData[workId * 2 + 1]
-
-int synaptic_current (uchar localId, ushort workId, uchar16 index,
-		      __constant float* weights, __constant float* coeff)
+  
+__kernel void simulate_dynamics(__constant float* coeff, __constant half* weights,
+				__constant uchar* input, __global long* current, __global int* counter,
+				__global double* neuronalDynVar, __global uchar* actionPotentials)
 {
+
+  ushort localId = get_local_id(0);
+  ushort workId = get_group_id(0);
+
+  uchar16 index = vload16(localId, input);
+
   float4 coeffVec = (float4)(coeff[index.s0] + coeff[index.s1] + coeff[index.s2] + coeff[index.s3],
 			     coeff[index.s4] + coeff[index.s5] + coeff[index.s6] + coeff[index.s7],
 			     coeff[index.s8] + coeff[index.s9] + coeff[index.sa] + coeff[index.sb],
 			     coeff[index.sc] + coeff[index.sd] + coeff[index.se] + coeff[index.sf]);
-
-  float4 weightsVec = (float4)(weights[workId * 1024 + localId * 4],
-			       weights[workId * 1024 + localId * 4 + 1],
-			       weights[workId * 1024 + localId * 4 + 2],
-			       weights[workId * 1024 + localId * 4 + 3]);
-
-  return (int)(dot(coeffVec, weightsVec) * pown(2.0f, 15));
-}
   
-__kernel void simulate_dynamics(__constant float* coeff, __constant float* weights,
-				__constant uchar* input, __global int* localData,
-				__global float* neuronalDynVar, __global uchar* actionPotentials)
-{  
-  uchar localId = get_local_id(0);
-  ushort workId = (ushort)(get_global_id(0) / get_local_size(0));
+  float4 weightsVecFloat = vload_half4(localId, weights + workId * 1024);
 
-  int increment = synaptic_current(localId, workId, vload16(localId, input), weights, coeff);
+  long increment = convert_long(dot(coeffVec, weightsVecFloat) * pown(2.0f, SHIFT_FACTOR));
   
-  atomic_add(&current, increment);
-  
-  atomic_inc(&counter);
+  atom_add(&current[workId], increment);
+   
+  atomic_inc(&counter[workId]);
 
   mem_fence(CLK_LOCAL_MEM_FENCE); 
  
-  if (counter == get_local_size(0))
-    {      
-      float oldPotential = potential;
-      float oldRecovery = recovery;
+  if (counter[workId] == get_local_size(0))
+    {
+
+      double oldPotential = potential;
+      //double oldRecovery = recovery;
+
+      double currentDouble = convert_double(current[workId]) / pown(2.0f, SHIFT_FACTOR ) * 100000.0f;
       
-      potential = 0.04f * pown(oldPotential, 2)  + 5 * oldPotential + 140 - oldRecovery + (float)(current) / pown(2.0f, 15);
-      recovery = 0.02f * (0.2f * oldPotential - oldRecovery);
-      
+      potential = potential + 0.5f * (0.04f * pown(potential, 2) + 5.0f * potential + 140.0f - recovery + currentDouble);
+      //potential = potential + 0.25f * (0.04f * pown(potential, 2) + 5.0f * potential + 140.0f - recovery + currentDouble);
+      recovery = recovery + 0.5f * 0.02f * (0.2f * oldPotential - recovery);
+
+     
       if (potential >= 30.0f)
 	{
 	  actionPotentials[(ushort)(workId / 8)] |= (1 << (workId - (ushort)(workId / 8) * 8));
@@ -55,8 +56,8 @@ __kernel void simulate_dynamics(__constant float* coeff, __constant float* weigh
 	  actionPotentials[(ushort)(workId / 8)] &= ~(1 << (workId - (ushort)(workId / 8) * 8));
 	}      
 
-      current = 0;
-      counter = 0;
+      current[workId] = 0;
+      counter[workId] = 0;
     }
 }
     

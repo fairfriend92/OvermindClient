@@ -7,14 +7,13 @@
 
 #endif //MYAPPLICATION_NATIVE_METHOD_H_H
 
-#define SAMPLING_RATE 0.1
-#define SYNAPSE_FILTER_ORDER 64
+#define SAMPLING_RATE 0.5
+#define SYNAPSE_FILTER_ORDER 16
 #define EXC_SYNAPSE_TIME_SCALE 1
 #define INH_SYNAPSE_TIME_SCALE 3
 #define NUMBER_OF_EXC_SYNAPSES 512
 #define NUMBER_OF_INH_SYNAPSES 512
 #define ABSOLUTE_REFRACTORY_PERIOD 2
-
 
 #include <android/log.h>
 #include <jni.h>
@@ -31,15 +30,16 @@ struct OpenCLObject {
     cl_kernel kernel = 0;
     cl_int errorNumber = 0;
     int numberOfMemoryObjects = 6;
-    cl_mem memoryObjects[6] = {0, 0, 0, 0, 0, 0};
+    cl_mem memoryObjects[7] = {0, 0, 0, 0, 0, 0, 0};
     cl_uint floatVectorWidth;
 
     // Pointers to the memory buffers
     cl_float *synapseCoeff;
-    cl_float *synapseWeights;
+    cl_half *synapseWeights;
     cl_uchar *synapseInput;
-    cl_int *localData;
-    cl_float *neuronalDynVar;
+    cl_long *current;
+    cl_int  *counter;
+    cl_double *neuronalDynVar;
     cl_uchar *actionPotentials;
 };
 

@@ -47,6 +47,20 @@ class KernelInitializer implements Runnable {
 
         char[] synapseInput = new char[presynapticNetwork.numOfNeurons * Constants.MAX_MULTIPLICATIONS];
 
+        synchronized (lock) {
+
+            if (partialSynapseInput.size() < thisDevice.presynapticNodes.size()) {
+                for (int i = partialSynapseInput.size(); i < thisDevice.presynapticNodes.size(); i++) {
+                    partialSynapseInput.add(null);
+                }
+            }
+
+            if (partialSynapseInput.get(currentPresynapticDevice) != null) {
+                synapseInput = partialSynapseInput.get(currentPresynapticDevice);
+            }
+
+        }
+
         /**
          * For each synapse of the presynapticNetwork compute the appropriate input
          */
@@ -83,18 +97,9 @@ class KernelInitializer implements Runnable {
 
         synchronized (lock) {
 
-            if (threadsCounter == 0) {
-                for (int i = 0; i < thisDevice.presynapticNodes.size(); i++) {
-                    partialSynapseInput.add(null);
-                }
-            }
-
-            if (partialSynapseInput.get(currentPresynapticDevice) == null) {
-                threadsCounter++;
-                partialSynapseInput.add(currentPresynapticDevice, synapseInput);
-            } else {
-                Log.e("KernelInitializer", "Received new input from the same dendrite while total input was still incomplete");
-            }
+            // TODO This way we cannot tell if we are serving the same synapse before the totalinput is complete...
+            threadsCounter++;
+            partialSynapseInput.set(currentPresynapticDevice, synapseInput);
 
             // Proceed only if all the partial results have been computed
 
@@ -112,7 +117,7 @@ class KernelInitializer implements Runnable {
                     offset += tmpSynapseInput.length;
                 }
 
-                // TODO Change blocking put in offer
+                // TODO Change blocking put in offer (?)
 
                 try {
                     kernelInitQueue.put(totalSynapseInput);
@@ -120,8 +125,6 @@ class KernelInitializer implements Runnable {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("KernelInitializer", stackTrace);
                 }
-
-                partialSynapseInput.clear();
 
             }
 
