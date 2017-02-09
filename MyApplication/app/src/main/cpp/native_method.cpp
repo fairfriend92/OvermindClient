@@ -9,8 +9,7 @@ size_t synapseInputBufferSize = maxNumberMultiplications * (NUMBER_OF_EXC_SYNAPS
 extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
         JNIEnv *env, jobject thiz, jstring jKernel, jshort jNumOfNeurons) {
 
-    size_t synapseWeightsBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * jNumOfNeurons * sizeof(cl_half);
-
+    size_t synapseWeightsBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * jNumOfNeurons * sizeof(cl_uchar);
     size_t currentBufferSize = jNumOfNeurons * sizeof(cl_long);
     size_t counterBufferSize = jNumOfNeurons * sizeof(cl_int);
     size_t neuronalDynVarBufferSize = jNumOfNeurons * 2 * sizeof(cl_double);
@@ -120,7 +119,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     obj->synapseCoeff = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[0], CL_TRUE, CL_MAP_WRITE, 0, synapseCoeffBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-    obj->synapseWeights = (cl_half*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    obj->synapseWeights = (cl_uchar*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     obj->current = (cl_long*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[3], CL_TRUE, CL_MAP_WRITE, 0, currentBufferSize, 0, NULL, NULL, &obj->errorNumber);
@@ -155,7 +154,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     // For testing purposes we initialize the synapses weights here
     for (int index = 0; index < (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * jNumOfNeurons; index++)
     {
-        obj->synapseWeights[index] = index%2 == 0 ? (cl_half)(10000) : (cl_half)(330);
+        obj->synapseWeights[index] = index%2 == 0 ? (cl_uchar)(100) : (cl_uchar)(33);
     }
 
     // The following could be local kernel variables as well, but that would call for a costly thread
@@ -217,7 +216,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
 extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynamics(
         JNIEnv *env, jobject thiz, jcharArray jSynapseInput, jlong jOpenCLObject, jshort jNumOfNeurons) {
 
-    size_t synapseWeightsBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES)* jNumOfNeurons * sizeof(cl_half);
+    size_t synapseWeightsBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES)* jNumOfNeurons * sizeof(cl_uchar);
 
     size_t currentBufferSize = jNumOfNeurons * sizeof(cl_long);
     size_t counterBufferSize = jNumOfNeurons * sizeof(cl_int);

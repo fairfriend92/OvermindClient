@@ -74,7 +74,7 @@ class KernelInitializer implements Runnable {
             char bitValue = (char) ((inputSpikes[byteIndex] >> (indexI - byteIndex * 8)) & 1);
 
             // Increment the synapse inputs and advance them in the filter pipe only in case of firing
-            for (char indexJ = 1; indexJ < Constants.MAX_MULTIPLICATIONS; indexJ++) {
+            for (char indexJ = Constants.MAX_MULTIPLICATIONS - 1; indexJ >= 1; indexJ--) {
 
                 // Increment the input only if different from zero to begin with. Advance it if the synapse carries an action potential (bitValue = 1)
                 synapseInput[indexJ + indexI * Constants.MAX_MULTIPLICATIONS] =
@@ -83,7 +83,13 @@ class KernelInitializer implements Runnable {
             }
 
             // Make room for the new input in case bitValue = 1
-            synapseInput[indexI * Constants.MAX_MULTIPLICATIONS] = bitValue == 1 ? 1 : synapseInput[indexI * Constants.MAX_MULTIPLICATIONS];
+            //TODO Can be further optimized
+            if (bitValue == 1) {
+                synapseInput[indexI * Constants.MAX_MULTIPLICATIONS] = 1;
+            } else {
+                synapseInput[indexI * Constants.MAX_MULTIPLICATIONS] = synapseInput[indexI * Constants.MAX_MULTIPLICATIONS] != 0 ?
+                        (char)(synapseInput[indexI * Constants.MAX_MULTIPLICATIONS] + 1) : 0;
+            }
 
         }
 
@@ -124,6 +130,10 @@ class KernelInitializer implements Runnable {
                 } catch (InterruptedException e) {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("KernelInitializer", stackTrace);
+                }
+
+                for (int i = 0; i < 4; i++) {
+                    Log.d("batman", " " + (int)totalSynapseInput[i]);
                 }
 
             }

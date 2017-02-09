@@ -1,13 +1,11 @@
-#pragma OPENCL EXTENSION cl_khr_fp16 : enable
+//#pragma OPENCL EXTENSION cl_khr_fp16 : enable
 #pragma OPENCL EXTENSION cl_khr_fp64 : enable
 #pragma OPENCL EXTENSION cl_khr_int64_base_atomics: enable
-
-#define SHIFT_FACTOR 15
 
 #define potential neuronalDynVar[workId * 2]
 #define recovery neuronalDynVar[workId * 2 + 1]
   
-__kernel void simulate_dynamics(__constant float* coeff, __constant half* weights,
+__kernel void simulate_dynamics(__constant float* coeff, __constant uchar* weights,
 				__constant uchar* input, __global long* current, __global int* counter,
 				__global double* neuronalDynVar, __global uchar* actionPotentials)
 {
@@ -22,9 +20,12 @@ __kernel void simulate_dynamics(__constant float* coeff, __constant half* weight
 			     coeff[index.s8] + coeff[index.s9] + coeff[index.sa] + coeff[index.sb],
 			     coeff[index.sc] + coeff[index.sd] + coeff[index.se] + coeff[index.sf]);
   
-  float4 weightsVecFloat = vload_half4(localId, weights + workId * 1024);
+  float4 weightsVec = convert_float4(vload4(localId, weights + workId * 1024));
 
-  long increment = convert_long(dot(coeffVec, weightsVecFloat) * pown(2.0f, SHIFT_FACTOR));
+  float result = dot(coeffVec, weightsVec) * 32768.0f;
+
+  long resultLong = convert_long(result);
+  long increment = result > 0 ? resultLong : (-resultLong);
   
   atom_add(&current[workId], increment);
    
@@ -35,20 +36,17 @@ __kernel void simulate_dynamics(__constant float* coeff, __constant half* weight
   if (counter[workId] == get_local_size(0))
     {
 
-      double oldPotential = potential;
-      //double oldRecovery = recovery;
-
-      double currentDouble = convert_double(current[workId]) / pown(2.0f, SHIFT_FACTOR ) * 100000.0f;
+      double unsignedCurrentDouble = convert_double(current[workId]) / 32768000.0f;
+      double currentDouble = current[workId] > 0 ? unsignedCurrentDouble : (-unsignedCurrentDouble);
       
-      potential = potential + 0.5f * (0.04f * pown(potential, 2) + 5.0f * potential + 140.0f - recovery + currentDouble);
-      //potential = potential + 0.25f * (0.04f * pown(potential, 2) + 5.0f * potential + 140.0f - recovery + currentDouble);
-      recovery = recovery + 0.5f * 0.02f * (0.2f * oldPotential - recovery);
+      potential += 0.5f * (0.04f * pown(potential, 2) + 5.0f * potential + 140.0f - recovery + currentDouble);      
 
-     
+      recovery = (0.5f * 0.1f * 0.2f * potential + recovery) / (1.0f + 0.5f * 0.1f);      
+	
       if (potential >= 30.0f)
 	{
 	  actionPotentials[(ushort)(workId / 8)] |= (1 << (workId - (ushort)(workId / 8) * 8));
-	  recovery = recovery + 8.0f;
+	  recovery += 2.0f;
 	  potential = -65.0f;
 	}
       else

@@ -48,7 +48,7 @@ class IpChecker extends AsyncTask<Context, Integer, Socket> {
         short numOfNeurons;
         switch (MainActivity.renderer) {
             case "Mali-T720":
-                numOfNeurons = 24;
+                numOfNeurons = 56;
                 break;
             default:
                 // TODO default means could not identify GPU, exit app.
