@@ -2,9 +2,10 @@
 #pragma OPENCL EXTENSION cl_khr_fp64 : enable
 #pragma OPENCL EXTENSION cl_khr_int64_base_atomics: enable
 
-#define potential neuronalDynVar[workId * 2]
-#define recovery neuronalDynVar[workId * 2 + 1]
-  
+#define potential neuronalDynVar[workId * 3]
+#define recovery neuronalDynVar[workId * 3 + 1]
+#define kahanCompensation neuronalDynVar[workId * 3 + 2]
+
 __kernel void simulate_dynamics(__constant float* coeff, __constant uchar* weights,
 				__constant uchar* input, __global long* current, __global int* counter,
 				__global double* neuronalDynVar, __global uchar* actionPotentials)
@@ -38,15 +39,23 @@ __kernel void simulate_dynamics(__constant float* coeff, __constant uchar* weigh
 
       double unsignedCurrentDouble = convert_double(current[workId]) / 32768000.0f;
       double currentDouble = current[workId] > 0 ? unsignedCurrentDouble : (-unsignedCurrentDouble);
-      
-      potential += 0.5f * (0.04f * pown(potential, 2) + 5.0f * potential + 140.0f - recovery + currentDouble);      
 
-      recovery = (0.5f * 0.1f * 0.2f * potential + recovery) / (1.0f + 0.5f * 0.1f);      
-	
+      potential += 0.5f * (0.04f * pown(potential, 2) + 5.0f * potential + 140.0f - recovery + currentDouble);
+      
+      /*
+      recovery = (0.5f * 0.02f * 0.2f * potential + recovery) / (1.0f + 0.5f * 0.02f);      
+      recovery += 0.5f * 0.02f * (0.2f * potential - recovery);
+      */
+            
+      double y = 0.5f * 0.02f * (0.2f * potential - recovery) - kahanCompensation;
+      double t = recovery + y;
+      kahanCompensation = (t - recovery) - y;
+      recovery = t;
+                        
       if (potential >= 30.0f)
 	{
 	  actionPotentials[(ushort)(workId / 8)] |= (1 << (workId - (ushort)(workId / 8) * 8));
-	  recovery += 2.0f;
+	  recovery += 8.0f;
 	  potential = -65.0f;
 	}
       else

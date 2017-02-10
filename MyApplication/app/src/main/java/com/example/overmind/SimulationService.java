@@ -257,6 +257,8 @@ public class SimulationService extends IntentService {
 
         Log.e("barrier", "11");
 
+        /*
+
         try {
             datagramSocket.close();
             clientSocket.close();
@@ -264,6 +266,8 @@ public class SimulationService extends IntentService {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("SimulationService", stackTrace);
         }
+
+        */
 
         Log.e("barrier", "12");
 

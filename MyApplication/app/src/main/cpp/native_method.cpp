@@ -12,7 +12,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     size_t synapseWeightsBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * jNumOfNeurons * sizeof(cl_uchar);
     size_t currentBufferSize = jNumOfNeurons * sizeof(cl_long);
     size_t counterBufferSize = jNumOfNeurons * sizeof(cl_int);
-    size_t neuronalDynVarBufferSize = jNumOfNeurons * 2 * sizeof(cl_double);
+    size_t neuronalDynVarBufferSize = jNumOfNeurons * 3 * sizeof(cl_double);
     char dataBytes = (jNumOfNeurons % 8) == 0 ? (char)(jNumOfNeurons / 8) : (char)(jNumOfNeurons / 8 + 1);
     size_t actionPotentialsBufferSize = dataBytes* sizeof(cl_uchar);
 
@@ -162,8 +162,9 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     // memory access times are negligible due to the embedded nature of the device
     for (int index = 0; index < jNumOfNeurons; index++)
     {
-        obj->neuronalDynVar[2 * index] = (cl_double)(-65.0f);
-        obj->neuronalDynVar[2 * index + 1] = (cl_double)(-13.0f);
+        obj->neuronalDynVar[3 * index] = (cl_double)(-65.0f);
+        obj->neuronalDynVar[3 * index + 1] = (cl_double)(-13.0f);
+        obj->neuronalDynVar[3 * index + 2] = (cl_double)(0.0f);
         obj->current[index] = (cl_long)0;
         obj->counter[index] = (cl_int)0;
     }
@@ -220,7 +221,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
     size_t currentBufferSize = jNumOfNeurons * sizeof(cl_long);
     size_t counterBufferSize = jNumOfNeurons * sizeof(cl_int);
-    size_t neuronalDynVarBufferSize = jNumOfNeurons * 2 * sizeof(cl_double);
+    size_t neuronalDynVarBufferSize = jNumOfNeurons * 3 * sizeof(cl_double);
     char dataBytes = (jNumOfNeurons % 8) == 0 ? (char)(jNumOfNeurons / 8) : (char)(jNumOfNeurons / 8 + 1);
     size_t actionPotentialsBufferSize = dataBytes * sizeof(cl_uchar);
 

@@ -1,20 +1,4 @@
 # ninja log v5
-0	238	0	CMakeFiles/hello-world.dir/src/main/cpp/common.cpp.o	e86ad55d1bd7f3aa
-0	283	0	CMakeFiles/hello-world.dir/src/main/cpp/native_method.cpp.o	cf217950f5bda8ec
-283	420	0	../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libhello-world.so	d913336ccaeb637f
-0	270	0	CMakeFiles/hello-world.dir/src/main/cpp/native_method.cpp.o	cf217950f5bda8ec
-270	367	0	../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libhello-world.so	d913336ccaeb637f
-1	269	0	CMakeFiles/hello-world.dir/src/main/cpp/native_method.cpp.o	cf217950f5bda8ec
-269	370	0	../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libhello-world.so	d913336ccaeb637f
-0	267	0	CMakeFiles/hello-world.dir/src/main/cpp/native_method.cpp.o	cf217950f5bda8ec
-267	381	0	../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libhello-world.so	d913336ccaeb637f
-0	266	0	CMakeFiles/hello-world.dir/src/main/cpp/native_method.cpp.o	cf217950f5bda8ec
-266	384	0	../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libhello-world.so	d913336ccaeb637f
-0	300	0	CMakeFiles/hello-world.dir/src/main/cpp/native_method.cpp.o	cf217950f5bda8ec
-300	427	0	../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libhello-world.so	d913336ccaeb637f
-1	293	0	CMakeFiles/hello-world.dir/src/main/cpp/native_method.cpp.o	cf217950f5bda8ec
-293	408	0	../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libhello-world.so	d913336ccaeb637f
-0	296	0	CMakeFiles/hello-world.dir/src/main/cpp/native_method.cpp.o	cf217950f5bda8ec
-296	406	0	../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libhello-world.so	d913336ccaeb637f
-0	285	0	CMakeFiles/hello-world.dir/src/main/cpp/native_method.cpp.o	cf217950f5bda8ec
-285	386	0	../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libhello-world.so	d913336ccaeb637f
+0	231	0	CMakeFiles/hello-world.dir/src/main/cpp/common.cpp.o	e86ad55d1bd7f3aa
+0	269	0	CMakeFiles/hello-world.dir/src/main/cpp/native_method.cpp.o	cf217950f5bda8ec
+269	366	0	../../../../build/intermediates/cmake/debug/obj/armeabi-v7a/libhello-world.so	d913336ccaeb637f

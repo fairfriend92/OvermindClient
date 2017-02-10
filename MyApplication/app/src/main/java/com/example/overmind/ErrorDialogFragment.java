@@ -5,7 +5,7 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 
-public class ConnectionFailedDialogFragment extends android.support.v4.app.DialogFragment {
+public class ErrorDialogFragment extends android.support.v4.app.DialogFragment {
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -42,6 +42,15 @@ public class ConnectionFailedDialogFragment extends android.support.v4.app.Dialo
             case 3:
                 builder.setMessage(R.string.stream_error_message)
                         .setTitle(R.string.stream_error_title)
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                dismiss();
+                            }
+                        });
+                break;
+            case 4:
+                builder.setMessage(R.string.gpu_id_error_message)
+                        .setTitle(R.string.gpu_id_error_title)
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
                                 dismiss();

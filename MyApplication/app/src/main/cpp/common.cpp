@@ -152,6 +152,9 @@ bool createProgram(cl_context context, cl_device_id device, const char* kernelSt
     }
 
     // Try to build the OpenCL program
+
+    char options[128] = "-cl-opt-disable";
+
     bool buildSuccess = checkSuccess(clBuildProgram(*program, 0, NULL, NULL, NULL, NULL));
 
     // Get the size of the build log

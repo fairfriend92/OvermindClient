@@ -11,7 +11,7 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
 
-class IpChecker extends AsyncTask<Context, Integer, Socket> {
+class ServerConnect extends AsyncTask<Context, Integer, Socket> {
 
     private String SERVER_IP = MainActivity.serverIP;
 
@@ -24,7 +24,7 @@ class IpChecker extends AsyncTask<Context, Integer, Socket> {
 
     protected Socket doInBackground(Context ... contexts) {
 
-        Looper.prepare();
+        //Looper.prepare();
 
         /**
          * Retrieve the global IP of this device
@@ -36,7 +36,7 @@ class IpChecker extends AsyncTask<Context, Integer, Socket> {
             ip = s.next();
         } catch (java.io.IOException e) {
             String stackTrace = Log.getStackTraceString(e);
-            Log.e("IpChecker", stackTrace);
+            Log.e("ServerConnect", stackTrace);
         }
         thisDevice.ip = ip;
         //publishProgress(0);
@@ -75,17 +75,17 @@ class IpChecker extends AsyncTask<Context, Integer, Socket> {
             clientSocket.setSoTimeout(0);
         } catch (IOException e) {
             String stackTrace = Log.getStackTraceString(e);
-            Log.e("IpChecker", stackTrace);
-            MainActivity.IpCheckerFailed = true;
+            Log.e("ServerConnect", stackTrace);
+            MainActivity.ServerConnectFailed = true;
         }
 
-        if (clientSocket != null && !MainActivity.IpCheckerFailed) {
+        if (clientSocket != null && !MainActivity.ServerConnectFailed) {
             try {
                 ObjectOutputStream output = new ObjectOutputStream(clientSocket.getOutputStream());
                 output.writeObject(thisDevice);
             } catch (IOException | NullPointerException e) {
                 String stackTrace = Log.getStackTraceString(e);
-                Log.e("IpChecker", stackTrace);
+                Log.e("ServerConnect", stackTrace);
             }
         }
 
@@ -113,6 +113,6 @@ class IpChecker extends AsyncTask<Context, Integer, Socket> {
     }
 
     protected void onPostExecute(LocalNetwork result) {
-        Log.d("IpChecker", "My current IP address is " + result.ip);
+        Log.d("ServerConnect", "My current IP address is " + result.ip);
     }
 }

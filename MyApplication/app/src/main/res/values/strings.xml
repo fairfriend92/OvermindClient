@@ -12,9 +12,11 @@
     <string name="connection_lost_message">Connection with the Overmind server lost. Please check back at a later time.</string>
     <string name="stream_error_title">Data stream interrupted</string>
     <string name="stream_error_message">Unexpected interruption of the TCP data stream.
-    Please check back at a later time</string>
+    Please check back at a later time.</string>
     <string name="udp_socket_timeout_title">UDP socket timeout</string>
     <string name="udp_socket_timeout_message">The UDP socket did not receive any packet before the timeout. Please check your connection and
     try again at a later time.</string>
+    <string name="gpu_id_error_title">"GPU unknown"</string>
+    <string name="gpu_id_error_message">"Could not identify the graphics chipset of this device. Cannot launch the simulation."</string>
 
 </resources>

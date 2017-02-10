@@ -92,21 +92,35 @@ public class MainActivity extends AppCompatActivity {
 
     EditText editText = null;
 
+    /**
+     * Called to lookup the Overmind server IP on the Overmind webpage
+     */
+
     public void lookUpServerIP(View view) {
+
         String ip = null;
+
+        // Traffic needs to happen outside the GUI thread, therefore an asynchronous task is launched
+        // to retrieve the IP
         LookUpServerIP lookUpServerIP = new LookUpServerIP();
         lookUpServerIP.execute();
+
+        // Wait for the async task to finish to receive the IP
         try {
             ip = lookUpServerIP.get();
         } catch (InterruptedException | ExecutionException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("MainActivity", stackTrace);
         }
+
         assert ip != null;
+
+        // Pass the IP to the text box
         editText.setText(ip);
+
     }
 
-    public static boolean IpCheckerFailed = false;
+    public static boolean ServerConnectFailed = false;
 
     public void confirmServerIP(View view) {
 
@@ -134,20 +148,22 @@ public class MainActivity extends AppCompatActivity {
 
                 // Create and launch the AsyncTask to retrieve the global IP of the device and to send the info
                 // of the local network to the Overmind server
-                IpChecker ipChecker = new IpChecker();
-                ipChecker.execute(getApplicationContext());
+                ServerConnect serverConnect = new ServerConnect();
+                serverConnect.execute(getApplicationContext());
 
                 // Get from the AsyncTask the struct holding all the info regardinf the local network
                 try {
-                    thisClient = ipChecker.get();
+                    thisClient = serverConnect.get();
                 } catch (InterruptedException | ExecutionException e) {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("MainActivity", stackTrace);
                 }
 
-                if (IpCheckerFailed) {
-                    IpCheckerFailed = false;
-                    android.support.v4.app.DialogFragment dialogFragment = new ConnectionFailedDialogFragment();
+                // Display error message and bring back the home layout if the connection with the
+                // Overmind server fails
+                if (ServerConnectFailed) {
+                    ServerConnectFailed = false;
+                    android.support.v4.app.DialogFragment dialogFragment = new ErrorDialogFragment();
                     Bundle args = new Bundle();
                     args.putInt("ErrorNumber", 0);
                     dialogFragment.setArguments(args);
@@ -155,7 +171,8 @@ public class MainActivity extends AppCompatActivity {
                     setContentView(R.layout.pre_connection);
                     editText = (EditText) findViewById(R.id.edit_ip);
                 } else {
-                    // Now that the GPU info are available display the proper application layout
+                    // Now that the GPU info are available display the proper application layout and
+                    // start the simulation
                     setContentView(R.layout.activity_main);
                     startSimulation();
                 }
@@ -179,10 +196,18 @@ public class MainActivity extends AppCompatActivity {
 
             // Get data included in the Intent
             errorNumber = intent.getIntExtra("ErrorNumber", errorNumber);
+
+            // Use the bundle to pass to the class that displays the error message its error code
             Bundle args = new Bundle();
-            android.support.v4.app.DialogFragment dialogFragment = new ConnectionFailedDialogFragment();
+
+            // Call the class to display the error message
+            android.support.v4.app.DialogFragment dialogFragment = new ErrorDialogFragment();
+
+            // Set the error code
             args.putInt("ErrorNumber", errorNumber);
             dialogFragment.setArguments(args);
+
+            // Display the error message and bring back the home layout
             dialogFragment.show(getSupportFragmentManager(), "Connection failed");
             setContentView(R.layout.pre_connection);
             editText = (EditText) findViewById(R.id.edit_ip);
@@ -191,10 +216,14 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
+
         // Used to get the GPU info stored by the OpenGL renderer
         prefs = this.getSharedPreferences("GPUinfo", Context.MODE_PRIVATE);
+
         setContentView(R.layout.pre_connection);
+
         editText = (EditText) findViewById(R.id.edit_ip);
 
         /**
@@ -207,9 +236,12 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onDestroy() {
+
         // Unregister the receiver since the service is about to be closed
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
+
         SimulationService.shutDown();
+
         super.onDestroy();
     }
 
@@ -229,19 +261,27 @@ public class MainActivity extends AppCompatActivity {
                     Log.e("Unsatisfied link", "libGLES_mali.so not found");
                 }
                 break;
-            // TODO default means no OpenCL support, exit application.
-            default:
+            case "Qualcomm":
                 try {
                     System.loadLibrary("libOpenCL.so");
                 } catch (UnsatisfiedLinkError linkError) {
                     Log.e("Unsatisfied link", "libGLES_mali.so not found");
                 }
+                break;
+            default:
+                Intent broadcastError = new Intent("ErrorMessage");
+                broadcastError.putExtra("ErrorNumber", 4);
+                LocalBroadcastManager.getInstance(this).sendBroadcast(broadcastError);
         }
     }
 
     static {
         System.loadLibrary("hello-world");
     }
+
+    /**
+     * Get an input stream from the .cl file
+     */
 
     public InputStream getInputStream(String kernelName) {
         try {
@@ -251,6 +291,10 @@ public class MainActivity extends AppCompatActivity {
             return null;
         }
     }
+
+    /**
+     * Scan the .cl file and turn it into a string
+     */
 
     static String loadKernelFromAsset(InputStream inputStream) {
         Scanner scanner = new Scanner(inputStream).useDelimiter("\\A");
@@ -263,8 +307,6 @@ public class MainActivity extends AppCompatActivity {
         Intent simulationIntent = new Intent(MainActivity.this, SimulationService.class);
 
         String kernel;
-
-        // TODO it would probably be better to get the needed info from the OpenCL context using native method calls
 
         switch (renderer) {
             case "Mali-T720":
