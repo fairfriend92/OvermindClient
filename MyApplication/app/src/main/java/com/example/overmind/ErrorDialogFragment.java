@@ -57,6 +57,15 @@ public class ErrorDialogFragment extends android.support.v4.app.DialogFragment {
                             }
                         });
                 break;
+            case 5:
+                builder.setMessage(R.string.num_of_neurons_error_message)
+                        .setTitle(R.string.num_of_neurons_error_title)
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                dismiss();
+                            }
+                        });
+                break;
         }
 
         return builder.create();

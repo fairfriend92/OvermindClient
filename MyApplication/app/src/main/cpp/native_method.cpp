@@ -302,12 +302,14 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     size_t localWorksize[1] = {1024 / obj->floatVectorWidth};
     size_t globalWorksize[1] = {localWorksize[0] * jNumOfNeurons};
 
+    bool openCLFailed = false;
 
     // Enqueue the kernel
     if (!checkSuccess(clEnqueueNDRangeKernel(obj->commandQueue, obj->kernel, 1, NULL, globalWorksize, localWorksize, 0, NULL, NULL)))
     {
         cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
         LOGE("Failed to enqueue OpenCL kernel");
+        openCLFailed = true;
     }
 
     // Wait for kernel execution completion
@@ -315,6 +317,12 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     {
         cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
         LOGE("Failed waiting for kernel execution to finish");
+        openCLFailed = true;
+    }
+
+    if (openCLFailed) {
+        jbyteArray errorByte = env->NewByteArray(0);
+        return errorByte;
     }
 
     // Print the profiling information for the event

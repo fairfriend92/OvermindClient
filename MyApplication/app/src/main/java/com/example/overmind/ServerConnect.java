@@ -45,15 +45,32 @@ class ServerConnect extends AsyncTask<Context, Integer, Socket> {
          * Choose the number of neurons of the local network based on GPU performance and set the other info
          */
 
-        short numOfNeurons;
-        switch (MainActivity.renderer) {
-            case "Mali-T720":
-                numOfNeurons = 56;
-                break;
-            default:
-                // TODO default means could not identify GPU, exit app.
-                numOfNeurons = 1;
+        short numOfNeurons = 1;
+        if (MainActivity.numOfNeuronsDetermineByApp) {
+            switch (MainActivity.renderer) {
+                case "Mali-T720":
+                    numOfNeurons = 58;
+                    break;
+                default:
+                    // TODO default means could not identify GPU, exit app.
+                    numOfNeurons = 1;
+            }
+        } else {
+            try {
+                numOfNeurons = (short)Integer.parseInt(MainActivity.numOfNeurons);
+            } catch(NumberFormatException e) {
+                String stackTrace = Log.getStackTraceString(e);
+                Log.e("ServerConnect", stackTrace);
+                MainActivity.ServerConnectErrorNumber = 5;
+                MainActivity.ServerConnectFailed = true;
+            }
         }
+
+        if ((numOfNeurons > 1024) || (numOfNeurons < 1)) {
+            MainActivity.ServerConnectErrorNumber = 5;
+            MainActivity.ServerConnectFailed = true;
+        }
+
         thisDevice.numOfNeurons = numOfNeurons;
         thisDevice.numOfDendrites = 1024;
         thisDevice.numOfSynapses = 1024;
@@ -68,15 +85,20 @@ class ServerConnect extends AsyncTask<Context, Integer, Socket> {
 
         // TODO Perhaps clientsocket should have a timeout?
 
-        try {
-            clientSocket = new Socket(SERVER_IP, SERVER_PORT_TCP);
-            //clientSocket.setTrafficClass(IPTOS_RELIABILITY);
-            //clientSocket.setTcpNoDelay(true);
-            clientSocket.setSoTimeout(0);
-        } catch (IOException e) {
-            String stackTrace = Log.getStackTraceString(e);
-            Log.e("ServerConnect", stackTrace);
-            MainActivity.ServerConnectFailed = true;
+        if (!MainActivity.ServerConnectFailed) {
+
+            try {
+                clientSocket = new Socket(SERVER_IP, SERVER_PORT_TCP);
+                //clientSocket.setTrafficClass(IPTOS_RELIABILITY);
+                //clientSocket.setTcpNoDelay(true);
+                clientSocket.setSoTimeout(0);
+            } catch (IOException e) {
+                String stackTrace = Log.getStackTraceString(e);
+                Log.e("ServerConnect", stackTrace);
+                MainActivity.ServerConnectFailed = true;
+                MainActivity.ServerConnectErrorNumber = 0;
+            }
+
         }
 
         if (clientSocket != null && !MainActivity.ServerConnectFailed) {

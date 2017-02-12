@@ -9,7 +9,7 @@ class KernelInitializer implements Runnable {
 
     private BlockingQueue<char[]> kernelInitQueue;
     private int currentPresynapticDevice;
-    private static LocalNetwork thisDevice;
+    private static LocalNetwork thisDevice = new LocalNetwork();
     private byte[] inputSpikesBuffer;
 
     static final Object lock = new Object();
@@ -27,7 +27,12 @@ class KernelInitializer implements Runnable {
     KernelInitializer(BlockingQueue<char[]> b, int i, LocalNetwork l, byte[] b1) {
         this.kernelInitQueue = b;
         this.currentPresynapticDevice = i;
-        KernelInitializer.thisDevice = l.get();
+        if (KernelInitializer.thisDevice == null) {
+            KernelInitializer.thisDevice = l.get();
+        } else {
+            KernelInitializer.thisDevice.update(l);
+        }
+
         this.inputSpikesBuffer = b1;
     }
 
@@ -130,10 +135,6 @@ class KernelInitializer implements Runnable {
                 } catch (InterruptedException e) {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("KernelInitializer", stackTrace);
-                }
-
-                for (int i = 0; i < 4; i++) {
-                    Log.d("batman", " " + (int)totalSynapseInput[i]);
                 }
 
             }

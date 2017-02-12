@@ -13,6 +13,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.EditText;
 
 import java.io.IOException;
@@ -88,9 +89,12 @@ public class MainActivity extends AppCompatActivity {
     public static Socket thisClient;
 
     static String serverIP;
+    static String numOfNeurons;
+    static boolean numOfNeuronsDetermineByApp = false;
     static String renderer;
 
     EditText editText = null;
+    EditText editNumOfNeurons = null;
 
     /**
      * Called to lookup the Overmind server IP on the Overmind webpage
@@ -121,11 +125,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public static boolean ServerConnectFailed = false;
+    public static short ServerConnectErrorNumber;
 
-    public void confirmServerIP(View view) {
+    public void startSimulation(View view) {
 
         assert editText != null;
         serverIP = editText.getText().toString();
+        numOfNeurons = editNumOfNeurons.getText().toString();
 
         // OpenGL surface view
         MyGLSurfaceView mGlSurfaceView = new MyGLSurfaceView(this);
@@ -162,14 +168,16 @@ public class MainActivity extends AppCompatActivity {
                 // Display error message and bring back the home layout if the connection with the
                 // Overmind server fails
                 if (ServerConnectFailed) {
+                    MainActivity.numOfNeuronsDetermineByApp = false;
                     ServerConnectFailed = false;
                     android.support.v4.app.DialogFragment dialogFragment = new ErrorDialogFragment();
                     Bundle args = new Bundle();
-                    args.putInt("ErrorNumber", 0);
+                    args.putInt("ErrorNumber", ServerConnectErrorNumber);
                     dialogFragment.setArguments(args);
                     dialogFragment.show(getSupportFragmentManager(), "Connection failed");
                     setContentView(R.layout.pre_connection);
                     editText = (EditText) findViewById(R.id.edit_ip);
+                    editNumOfNeurons = (EditText) findViewById(R.id.edit_num_of_neurons);
                 } else {
                     // Now that the GPU info are available display the proper application layout and
                     // start the simulation
@@ -183,6 +191,24 @@ public class MainActivity extends AppCompatActivity {
         }.start();
     }
 
+    public void onCheckboxClicked(View view) {
+        // Is the view now checked?
+        boolean checked = ((CheckBox) view).isChecked();
+
+        // Check which checkbox was clicked
+        switch(view.getId()) {
+            case R.id.checkbox_num_of_neurons:
+                if (checked) {
+                    editNumOfNeurons.setText(getResources().getString(R.string.num_of_neurons_text));
+                    numOfNeuronsDetermineByApp = true;
+                } else {
+                    editNumOfNeurons.setText("1");
+                    numOfNeuronsDetermineByApp = false;
+                }
+                break;
+        }
+    }
+
     /**
      * Handler for received Intents: called whenever an Intent  with action named
      * "Error message" is broadcast.
@@ -193,6 +219,8 @@ public class MainActivity extends AppCompatActivity {
     private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+
+            MainActivity.numOfNeuronsDetermineByApp = false;
 
             // Get data included in the Intent
             errorNumber = intent.getIntExtra("ErrorNumber", errorNumber);
@@ -211,6 +239,7 @@ public class MainActivity extends AppCompatActivity {
             dialogFragment.show(getSupportFragmentManager(), "Connection failed");
             setContentView(R.layout.pre_connection);
             editText = (EditText) findViewById(R.id.edit_ip);
+            editNumOfNeurons = (EditText) findViewById(R.id.edit_num_of_neurons);
         }
     };
 
@@ -225,6 +254,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.pre_connection);
 
         editText = (EditText) findViewById(R.id.edit_ip);
+        editNumOfNeurons = (EditText) findViewById(R.id.edit_num_of_neurons);
 
         /**
          * Register an observer (mMessageReceiver) to receive Intents with actions named

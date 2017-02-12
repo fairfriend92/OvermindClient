@@ -3,33 +3,35 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="fill_parent"
-    android:layout_height="fill_parent">
-    <LinearLayout
-        android:orientation="horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-        <EditText android:id="@+id/edit_ip"
-            android:layout_weight="1"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:hint="@string/edit_ip" />
-        <Button
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/confirm_ip"
-            android:onClick="confirmServerIP" />
-    </LinearLayout>
-    <LinearLayout
-        android:orientation="horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-        <Button
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_weight="1"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="@string/server_ip"
-            android:onClick="lookUpServerIP" />
-    </LinearLayout>
+    android:layout_height="wrap_content">
+    <EditText android:id="@+id/edit_ip"
+        android:layout_weight="1"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:hint="@string/edit_ip" />
+    <Button
+        style="?android:attr/buttonBarButtonStyle"
+        android:layout_weight="1"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:text="@string/server_ip"
+        android:onClick="lookUpServerIP" />
+    <EditText android:id="@+id/edit_num_of_neurons"
+        android:inputType="number"
+        android:layout_weight="1"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:hint="@string/edit_num_of_neurons"/>
+    <CheckBox android:id="@+id/checkbox_num_of_neurons"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/checkbox_num_of_neurons"
+        android:onClick="onCheckboxClicked"/>
+    <Button
+        style="?android:attr/buttonBarButtonStyle"
+        android:layout_weight="1"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:text="@string/start_simulation"
+        android:onClick="startSimulation" />
 </LinearLayout>

@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">OvermindClient</string>
     <string name="edit_ip">Enter the OvermindServer IP</string>
-    <string name="confirm_ip">Confirm the IP</string>
+    <string name="start_simulation">Start simulation</string>
     <string name="server_ip">Look up the IP on the Overmind webpage</string>
     <string name="connection_failed_title">Connection failed</string>
     <string name="back">Back</string>
@@ -18,5 +18,10 @@
     try again at a later time.</string>
     <string name="gpu_id_error_title">"GPU unknown"</string>
     <string name="gpu_id_error_message">"Could not identify the graphics chipset of this device. Cannot launch the simulation."</string>
+    <string name="edit_num_of_neurons">Enter the # of neurons for the local network</string>
+    <string name="checkbox_num_of_neurons">Let the application determine the appropriate number</string>
+    <string name="num_of_neurons_text">"Determined by the application"</string>
+    <string name="num_of_neurons_error_title">"Wrong format for number of neurons"</string>
+    <string name="num_of_neurons_error_message">"Please specify a number between 1 and 1024."</string>
 
 </resources>

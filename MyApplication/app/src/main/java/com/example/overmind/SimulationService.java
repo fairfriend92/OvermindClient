@@ -8,6 +8,7 @@ import android.os.Process;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
@@ -70,7 +71,7 @@ public class SimulationService extends IntentService {
 
         try {
             datagramSocket = new DatagramSocket();
-            datagramSocket.setTrafficClass(0x10);
+            datagramSocket.setTrafficClass(IPTOS_THROUGHPUT);
             datagramSocket.setSoTimeout(5000);
         } catch (SocketException e) {
             String stackTrace = Log.getStackTraceString(e);
@@ -167,7 +168,7 @@ public class SimulationService extends IntentService {
 
         Log.e("barrier", "7");
 
-        newOpenCLObject = kernelExcExecutor.submit(new KernelExecutor(kernelInitQueue, kernelExcQueue, openCLObject));
+        newOpenCLObject = kernelExcExecutor.submit(new KernelExecutor(kernelInitQueue, kernelExcQueue, openCLObject, this));
         dataSenderExecutor.execute(new DataSender(kernelExcQueue, datagramSocket));
         localNetworkUpdaterExecutor.execute(new LocalNetworkUpdater(input, updatedLocalNetwork, this));
 
@@ -339,11 +340,13 @@ public class SimulationService extends IntentService {
                 (short) (NUMBER_OF_NEURONS / 8) : (short)(NUMBER_OF_NEURONS / 8 + 1);
         private byte[] outputSpikes = new byte[data_bytes];
         private BlockingQueue<byte[]> kernelExcQueue;
+        private Context context;
 
-        KernelExecutor(BlockingQueue<char[]> b, BlockingQueue<byte[]> b1, long l1) {
+        KernelExecutor(BlockingQueue<char[]> b, BlockingQueue<byte[]> b1, long l1, Context c) {
             this.kernelInitQueue = b;
             this.kernelExcQueue = b1;
             this.openCLObject = l1;
+            this.context = c;
         }
 
         @Override
@@ -360,11 +363,23 @@ public class SimulationService extends IntentService {
 
                 outputSpikes = simulateDynamics(synapseInput, openCLObject, NUMBER_OF_NEURONS);
 
-                try {
-                    kernelExcQueue.put(outputSpikes);
-                } catch (InterruptedException e) {
-                    String stackTrace = Log.getStackTraceString(e);
-                    Log.e("KernelExecutor", stackTrace);
+                if (outputSpikes.length == 0) {
+                    shutDown();
+                    if (!errorRaised) {
+                        Intent broadcastError = new Intent("ErrorMessage");
+                        broadcastError.putExtra("ErrorNumber", 2);
+                        LocalBroadcastManager.getInstance(context).sendBroadcast(broadcastError);
+                        errorRaised = true;
+                    }
+                } else {
+
+                    try {
+                        kernelExcQueue.put(outputSpikes);
+                    } catch (InterruptedException e) {
+                        String stackTrace = Log.getStackTraceString(e);
+                        Log.e("KernelExecutor", stackTrace);
+                    }
+
                 }
 
             }
