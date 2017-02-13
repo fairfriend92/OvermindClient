@@ -246,31 +246,39 @@ public class SimulationService extends IntentService {
         Log.e("barrier", "10");
 
         /**
-         * Shut down the Threads and the Sockets
+         * Shut down the Threads
          */
 
-        closeOpenCL(openCLObject);
+        localNetworkUpdaterExecutor.shutdownNow();
+        kernelInitExecutor.shutdownNow();
+        kernelExcExecutor.shutdownNow();
+        dataSenderExecutor.shutdownNow();
 
-        localNetworkUpdaterExecutor.shutdown();
-        kernelInitExecutor.shutdown();
-        kernelExcExecutor.shutdown();
-        dataSenderExecutor.shutdown();
-
-        Log.e("barrier", "11");
-
-        /*
+        boolean localNetworkUpdaterIsShutdown = false;
+        boolean kernelInitializerIsShutdown = false;
+        boolean kernelExecutorIsShutdown = false;
+        boolean dataSenderIsShutdown = false;
 
         try {
-            datagramSocket.close();
-            clientSocket.close();
-        } catch (IOException|NullPointerException e) {
+            localNetworkUpdaterIsShutdown = localNetworkUpdaterExecutor.awaitTermination(300, TimeUnit.MILLISECONDS);
+            kernelInitializerIsShutdown = kernelInitExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
+            kernelExecutorIsShutdown = kernelExcExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
+            dataSenderIsShutdown = dataSenderExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("SimulationService", stackTrace);
         }
 
-        */
+        if (!localNetworkUpdaterIsShutdown || !kernelExecutorIsShutdown || !kernelInitializerIsShutdown || dataSenderIsShutdown) {
+            Log.e("SimulationService", "network updater is shutdown: " + localNetworkUpdaterIsShutdown +
+                    " kernel initializer is shutdown: " + kernelInitializerIsShutdown + " kernel executor is shutdown: " + kernelExcExecutor +
+                    " data sender is shutdown: " + dataSenderIsShutdown);
+        }
 
-        Log.e("barrier", "12");
+        closeOpenCL(openCLObject);
+
+
+        Log.e("barrier", "11");
 
         shutdown = false;
         stopSelf();
@@ -385,6 +393,7 @@ public class SimulationService extends IntentService {
             }
 
             return openCLObject;
+
         }
 
     }
