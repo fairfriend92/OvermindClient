@@ -277,7 +277,6 @@ public class SimulationService extends IntentService {
 
         closeOpenCL(openCLObject);
 
-
         Log.e("barrier", "11");
 
         shutdown = false;
@@ -369,7 +368,7 @@ public class SimulationService extends IntentService {
                     Log.e("KernelExecutor", stackTrace);
                 }
 
-                outputSpikes = simulateDynamics(synapseInput, openCLObject, NUMBER_OF_NEURONS);
+                outputSpikes = simulateDynamics(synapseInput, openCLObject, NUMBER_OF_NEURONS, SimulationParameters.getParameters());
 
                 if (outputSpikes.length == 0) {
                     shutDown();
@@ -466,7 +465,7 @@ public class SimulationService extends IntentService {
     /* [End of the DataSender class] */
 
     public native long initializeOpenCL(String synapseKernel, short numOfNeurons);
-    public native byte[] simulateDynamics(char[] synapseInput, long openCLObject, short numOfNeurons);
+    public native byte[] simulateDynamics(char[] synapseInput, long openCLObject, short numOfNeurons, double[] simulationParameters);
     public native void closeOpenCL(long openCLObject);
 
 }

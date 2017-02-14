@@ -2,7 +2,32 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    android:orientation="horizontal"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
     android:baselineAligned="false">
+    <TextView android:id="@+android:id/title"
+        style="?android:attr/listSeparatorTextViewStyle"
+        android:text="@string/local_network_parameters"
+        />
+
+    <RadioGroup xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+        <RadioButton android:id="@+id/radio_rs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/rs"
+            android:onClick="onRadioButtonClicked"/>
+        <RadioButton android:id="@+id/radio_fs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/fs"
+            android:onClick="onRadioButtonClicked"/>
+        <RadioButton android:id="@+id/radio_ch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/ch"
+            android:onClick="onRadioButtonClicked"/>
+    </RadioGroup>
 </LinearLayout>

@@ -23,5 +23,11 @@
     <string name="num_of_neurons_text">"Determined by the application"</string>
     <string name="num_of_neurons_error_title">"Wrong format for number of neurons"</string>
     <string name="num_of_neurons_error_message">"Please specify a number between 1 and 1024."</string>
+    <string name="connection_settings_title">"Connection settings"</string>
+    <string name="neural_network_settings_title">"Neural network settings"</string>
+    <string name="rs">"Regular spiking neuron"</string>
+    <string name="fs">"Fast spiking neuron"</string>
+    <string name="ch">"Chattering neuron"</string>
+    <string name="local_network_parameters">"Local network parameters"</string>
 
 </resources>

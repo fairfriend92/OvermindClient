@@ -29,8 +29,8 @@ struct OpenCLObject {
     cl_device_id device = 0;
     cl_kernel kernel = 0;
     cl_int errorNumber = 0;
-    int numberOfMemoryObjects = 7;
-    cl_mem memoryObjects[7] = {0, 0, 0, 0, 0, 0, 0};
+    int numberOfMemoryObjects = 8;
+    cl_mem memoryObjects[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     cl_uint floatVectorWidth;
 
     // Pointers to the memory buffers
@@ -41,5 +41,6 @@ struct OpenCLObject {
     cl_int  *counter;
     cl_double *neuronalDynVar;
     cl_uchar *actionPotentials;
+    cl_double *simulationParameters;
 };
 

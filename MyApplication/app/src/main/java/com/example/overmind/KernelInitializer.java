@@ -47,9 +47,6 @@ class KernelInitializer implements Runnable {
         byte[] inputSpikes = new byte[dataBytes];
         System.arraycopy(inputSpikesBuffer, 0, inputSpikes, 0, dataBytes);
 
-        // TODO length of char[] shoud be thisDevice.numOfDendrites. Modifications to allow this should be made to the native
-        // TODO method simulateDynamics
-
         char[] synapseInput = new char[presynapticNetwork.numOfNeurons * Constants.MAX_MULTIPLICATIONS];
 
         synchronized (lock) {

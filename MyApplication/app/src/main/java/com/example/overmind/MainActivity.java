@@ -15,6 +15,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.RadioButton;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -95,6 +96,7 @@ public class MainActivity extends AppCompatActivity {
 
     EditText editText = null;
     EditText editNumOfNeurons = null;
+    RadioButton regularSpikingRadioButton = null;
 
     /**
      * Called to lookup the Overmind server IP on the Overmind webpage
@@ -182,6 +184,16 @@ public class MainActivity extends AppCompatActivity {
                     // Now that the GPU info are available display the proper application layout and
                     // start the simulation
                     setContentView(R.layout.activity_main);
+
+                    regularSpikingRadioButton = (RadioButton) findViewById(R.id.radio_rs);
+
+                    // Assert are using freely through the code to prevent NullPointerException even in those cases
+                    // when such condition shouldn't theoretically arise
+                    assert regularSpikingRadioButton != null;
+
+                    regularSpikingRadioButton.setChecked(true);
+                    SimulationParameters.setParameters(0.02f, 0.2f, -65.0f, 8.0f);
+
                     startSimulation();
                 }
 
@@ -206,6 +218,27 @@ public class MainActivity extends AppCompatActivity {
                     numOfNeuronsDetermineByApp = false;
                 }
                 break;
+        }
+    }
+
+    public void onRadioButtonClicked(View view) {
+        // Is the button now checked?
+        boolean checked = ((RadioButton) view).isChecked();
+
+        // Check which radio button was clicked
+        switch(view.getId()) {
+            case R.id.radio_fs:
+                if (checked)
+                    SimulationParameters.setParameters(0.1f, 0.2f, -65.0f, 2.0f);
+                    break;
+            case R.id.radio_rs:
+                if (checked)
+                    SimulationParameters.setParameters(0.02f, 0.2f, -65.0f, 8.0f);
+                    break;
+            case R.id.radio_ch:
+                if (checked)
+                    SimulationParameters.setParameters(0.02f, 0.2f, -50.0f, 2.0f);
+                    break;
         }
     }
 

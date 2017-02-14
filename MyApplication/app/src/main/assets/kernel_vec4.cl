@@ -6,9 +6,14 @@
 #define recovery neuronalDynVar[workId * 3 + 1]
 #define kahanCompensation neuronalDynVar[workId * 3 + 2]
 
+#define a simulationParameters[0]
+#define b simulationParameters[1]
+#define c simulationParameters[2]
+#define d simulationParameters[3]
+
 __kernel void simulate_dynamics(__constant float* coeff, __constant uchar* weights,
 				__constant uchar* input, __global long* current, __global int* counter,
-				__global double* neuronalDynVar, __global uchar* actionPotentials)
+				__global double* neuronalDynVar, __global uchar* actionPotentials, __constant double* simulationParameters)
 {
 
   ushort localId = get_local_id(0);
@@ -47,7 +52,7 @@ __kernel void simulate_dynamics(__constant float* coeff, __constant uchar* weigh
       recovery += 0.5f * 0.02f * (0.2f * potential - recovery);
       */
             
-      double y = 0.5f * 0.02f * (0.2f * potential - recovery) - kahanCompensation;
+      double y = 0.5f * a * (b * potential - recovery) - kahanCompensation;
       double t = recovery + y;
       kahanCompensation = (t - recovery) - y;
       recovery = t;
@@ -55,8 +60,8 @@ __kernel void simulate_dynamics(__constant float* coeff, __constant uchar* weigh
       if (potential >= 30.0f)
 	{
 	  actionPotentials[(ushort)(workId / 8)] |= (1 << (workId - (ushort)(workId / 8) * 8));
-	  recovery += 8.0f;
-	  potential = -65.0f;
+	  recovery += d;
+	  potential = c;
 	}
       else
 	{

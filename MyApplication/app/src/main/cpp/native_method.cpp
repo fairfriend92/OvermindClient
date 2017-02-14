@@ -5,6 +5,7 @@
 // Size of the buffers needed to store data
 size_t synapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * 4 * sizeof(cl_float);
 size_t synapseInputBufferSize = maxNumberMultiplications * (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * sizeof(cl_uchar);
+size_t simulationParametersBufferSize = 4 * sizeof(double);
 
 extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
         JNIEnv *env, jobject thiz, jstring jKernel, jshort jNumOfNeurons) {
@@ -105,6 +106,9 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     obj->memoryObjects[6] = clCreateBuffer(obj->context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, actionPotentialsBufferSize, NULL, &obj->errorNumber);
+    createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
+    obj->memoryObjects[7] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, simulationParametersBufferSize, NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     if (!createMemoryObjectsSuccess)
@@ -215,7 +219,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
 }
 
 extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynamics(
-        JNIEnv *env, jobject thiz, jcharArray jSynapseInput, jlong jOpenCLObject, jshort jNumOfNeurons) {
+        JNIEnv *env, jobject thiz, jcharArray jSynapseInput, jlong jOpenCLObject, jshort jNumOfNeurons, jdoubleArray jSimulationParameters) {
 
     size_t synapseWeightsBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES)* jNumOfNeurons * sizeof(cl_uchar);
 
@@ -229,6 +233,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     obj = (struct OpenCLObject *)jOpenCLObject;
 
     jchar *synapseInput = env->GetCharArrayElements(jSynapseInput, JNI_FALSE);
+    jdouble *simulationParameters = env->GetDoubleArrayElements(jSimulationParameters, JNI_FALSE);
 
     /* [Input initialization] */
     /**
@@ -260,6 +265,28 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
         LOGE("Unmap memory objects failed");
     }
 
+    mapMemoryObjectsSuccess = true;
+
+    obj->simulationParameters = (cl_double *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[7], CL_TRUE, CL_MAP_WRITE, 0, simulationParametersBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
+    if (!mapMemoryObjectsSuccess)
+    {
+        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+        LOGE("Failed to map buffer");
+    }
+
+    for (int index = 0; index < 4; index++)
+    {
+        obj->simulationParameters[index] = (cl_double)simulationParameters[index];
+    }
+
+    if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[7], obj->simulationParameters, 0, NULL, NULL)))
+    {
+        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+        LOGE("Unmap memory objects failed");
+    }
+
     // Release the java array since the data has been passed to the memory buffer
     env->ReleaseCharArrayElements(jSynapseInput, synapseInput, 0);
     /* [Input initialization] */
@@ -274,6 +301,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 4, sizeof(counterBufferSize), &obj->memoryObjects[4]));
     setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 5, sizeof(neuronalDynVarBufferSize), &obj->memoryObjects[5]));
     setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 6, sizeof(actionPotentialsBufferSize), &obj->memoryObjects[6]));
+    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 7, sizeof(simulationParametersBufferSize), &obj->memoryObjects[7]));
 
     // Catch eventual errors
     if (!setKernelArgumentSuccess)
