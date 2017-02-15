@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.CountDownTimer;
@@ -13,9 +14,11 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.RadioButton;
+import android.widget.TextView;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -181,6 +184,7 @@ public class MainActivity extends AppCompatActivity {
                     editText = (EditText) findViewById(R.id.edit_ip);
                     editNumOfNeurons = (EditText) findViewById(R.id.edit_num_of_neurons);
                 } else {
+
                     // Now that the GPU info are available display the proper application layout and
                     // start the simulation
                     setContentView(R.layout.activity_main);
@@ -193,6 +197,25 @@ public class MainActivity extends AppCompatActivity {
 
                     regularSpikingRadioButton.setChecked(true);
                     SimulationParameters.setParameters(0.02f, 0.2f, -65.0f, 8.0f);
+
+                    Resources res = getResources();
+
+                    TextView rendererView = new TextView(MainActivity.this);
+                    TextView vendorView = new TextView(MainActivity.this);
+
+                    String rendererString = String.format(res.getString(R.string.renderer), renderer);
+                    String vendorString = String.format(res.getString(R.string.venodr), vendor);
+
+                    rendererView.setText(rendererString);
+                    vendorView.setText(vendorString);
+
+                    ViewGroup mainActivityLayout = (ViewGroup) findViewById(R.id.activity_main);
+
+                    assert mainActivityLayout != null;
+
+                    mainActivityLayout.addView(rendererView);
+                    mainActivityLayout.addView(vendorView);
+
 
                     startSimulation();
                 }
@@ -312,9 +335,11 @@ public class MainActivity extends AppCompatActivity {
      * Load the proper OpenGL library based on GPU vendor info provided by the OpenGL renderer
      */
 
+    String vendor;
+
     public void loadGLLibrary() {
         SharedPreferences prefs = getSharedPreferences("GPUinfo", Context.MODE_PRIVATE);
-        String vendor = prefs.getString("VENDOR", null);
+        vendor = prefs.getString("VENDOR", null);
         assert vendor != null;
         switch (vendor) {
             case "ARM":

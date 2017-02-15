@@ -29,5 +29,8 @@
     <string name="fs">"Fast spiking neuron"</string>
     <string name="ch">"Chattering neuron"</string>
     <string name="local_network_parameters">"Local network parameters"</string>
+    <string name="renderer">"Renderer: %1$s"</string>
+    <string name="venodr">"Vendor: %1$s"</string>
+    <string name="device_info">Device info</string>
 
 </resources>

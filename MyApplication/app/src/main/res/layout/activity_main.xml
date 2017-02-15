@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
+    android:id="@+id/activity_main"
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:baselineAligned="false">
-    <TextView android:id="@+android:id/title"
+
+    <TextView android:id="@+id/network_parameters"
         style="?android:attr/listSeparatorTextViewStyle"
         android:text="@string/local_network_parameters"
         />
@@ -30,4 +32,10 @@
             android:text="@string/ch"
             android:onClick="onRadioButtonClicked"/>
     </RadioGroup>
+
+    <TextView android:id="@+id/device_info"
+        style="?android:attr/listSeparatorTextViewStyle"
+        android:text="@string/device_info"
+        />
+
 </LinearLayout>
