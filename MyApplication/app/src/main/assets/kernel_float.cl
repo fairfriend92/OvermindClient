@@ -1,6 +1,3 @@
-#pragma OPENCL EXTENSION cl_khr_fp64 : enable
-#pragma OPENCL EXTENSION cl_khr_int64_base_atomics: enable
-
 #define potential neuronalDynVar[workId * 3]
 #define recovery neuronalDynVar[workId * 3 + 1]
 #define kahanCompensation neuronalDynVar[workId * 3 + 2]
@@ -11,8 +8,8 @@
 #define d simulationParameters[3]
 
 __kernel void simulate_dynamics(__constant float* coeff, __constant uchar* weights,
-				__constant uchar* input, __global long* current, __global int* counter,
-				__global double* neuronalDynVar, __global uchar* actionPotentials, __constant double* simulationParameters)
+				__constant uchar* input, __global int* current, __global int* counter,
+				__global float* neuronalDynVar, __global uchar* actionPotentials, __constant float* simulationParameters)
 {  
   uchar localId = get_local_id(0);
   ushort workId = get_group_id(0);
@@ -25,10 +22,10 @@ __kernel void simulate_dynamics(__constant float* coeff, __constant uchar* weigh
 
   float result = coeffVec * weightsVec * 32768.0f;
 
-  long resultLong = convert_long(result);
-  long increment = result > 0 ? resultLong : (-resultLong);
+  int resultInt = convert_int(result);
+  int increment = result > 0 ? resultInt : (-resultInt);
   
-  atom_add(&current[workId], increment);
+  atomic_add(&current[workId], increment);
    
   atomic_inc(&counter[workId]);
 
@@ -36,18 +33,18 @@ __kernel void simulate_dynamics(__constant float* coeff, __constant uchar* weigh
  
   if (counter[workId] == get_local_size(0))
     {      
-      double unsignedCurrentDouble = convert_double(current[workId]) / 32768000.0f;
-      double currentDouble = current[workId] > 0 ? unsignedCurrentDouble : (-unsignedCurrentDouble);
+      float unsignedCurrentFloat = convert_float(current[workId]) / 32768000.0f;
+      float currentFloat = current[workId] > 0 ? unsignedCurrentFloat : (-unsignedCurrentFloat);
 
-      potential += 0.5f * (0.04f * pown(potential, 2) + 5.0f * potential + 140.0f - recovery + currentDouble);
+      potential += 0.5f * (0.04f * pown(potential, 2) + 5.0f * potential + 140.0f - recovery + currentFloat);
       
       /*
       recovery = (0.5f * 0.02f * 0.2f * potential + recovery) / (1.0f + 0.5f * 0.02f);      
       recovery += 0.5f * 0.02f * (0.2f * potential - recovery);
       */
             
-      double y = 0.5f * a * (b * potential - recovery) - kahanCompensation;
-      double t = recovery + y;
+      float y = 0.5f * a * (b * potential - recovery) - kahanCompensation;
+      float t = recovery + y;
       kahanCompensation = (t - recovery) - y;
       recovery = t;
                         
@@ -65,6 +62,7 @@ __kernel void simulate_dynamics(__constant float* coeff, __constant uchar* weigh
       current[workId] = 0;
       counter[workId] = 0;
     }
+
 }
     
   
