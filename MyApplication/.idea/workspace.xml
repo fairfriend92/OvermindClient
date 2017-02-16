@@ -12,10 +12,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ca50b962-a988-47d9-97ce-c78b82bfa005" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/misc.xml" afterPath="$PROJECT_DIR$/.idea/misc.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/app/app.iml" afterPath="$PROJECT_DIR$/app/app.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/app/src/main/java/com/example/overmind/SimulationService.java" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/overmind/SimulationService.java" />
     </list>
     <ignored path="MyApplication.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -2637,7 +2634,14 @@
       <option name="project" value="LOCAL" />
       <updated>1487262579955</updated>
     </task>
-    <option name="localTasksCounter" value="45" />
+    <task id="LOCAL-00045" summary="aggiornamento nome repository">
+      <created>1487264857155</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1487264857155</updated>
+    </task>
+    <option name="localTasksCounter" value="46" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -2724,7 +2728,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Ancora cambiamenti alla asynctask" />
     <MESSAGE value="Selezione dell ip del server all'avvio dell'applicazione" />
     <MESSAGE value="Reperimento dell'informazioni in merito alle connessioni dal server" />
     <MESSAGE value="Modificata la classe KernelInitializer per generalizzare il workthread a un numero imprecisato di connessionni" />
@@ -2749,7 +2752,8 @@
     <MESSAGE value="possibilità di cambiare al volo i parametri della simulazione neuronale" />
     <MESSAGE value="display di informazioni relative al terminale" />
     <MESSAGE value="commenti vari" />
-    <option name="LAST_COMMIT_MESSAGE" value="commenti vari" />
+    <MESSAGE value="aggiornamento nome repository" />
+    <option name="LAST_COMMIT_MESSAGE" value="aggiornamento nome repository" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
