@@ -1,14 +1,17 @@
+/**
+ * Background service used to initialize the OpenCL implementation and execute the Thread pool managers
+ * for data reception, Kernel initialization, Kernel execution and data sending.
+ */
+
 package com.example.overmind;
 
-import android.app.FragmentManager;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Process;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
-import java.io.EOFException;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
@@ -17,7 +20,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.util.ArrayList;
+
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -29,11 +32,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static com.example.overmind.Constants.NUMBER_OF_NEURONS;
-
-/**
- * Background service used to initialize the OpenCL implementation and execute the Thread pool managers
- * for data reception, Kernel initialization, Kernel execution and data sending.
- */
 
 public class SimulationService extends IntentService {
 
@@ -128,16 +126,13 @@ public class SimulationService extends IntentService {
             }
         }
 
-        Log.e("barrier", "1");
-
         assert input != null;
         assert thisDevice != null;
-
-        Log.e("barrier", "2");
 
         /**
          * Get the string holding the kernel and initialize the OpenCL implementation.
          */
+
         String kernel = workIntent.getStringExtra("Kernel");
         long openCLObject = initializeOpenCL(kernel, NUMBER_OF_NEURONS);
 
@@ -145,37 +140,27 @@ public class SimulationService extends IntentService {
          * Queues and Thread executors used to parallelize the computation.
          */
 
-        Log.e("barrier", "3");
-
         BlockingQueue<char[]> kernelInitQueue = new ArrayBlockingQueue<>(4);
         ExecutorService kernelInitExecutor = Executors.newCachedThreadPool();
-
-        Log.e("barrier", "4");
 
         BlockingQueue<byte[]> kernelExcQueue = new ArrayBlockingQueue<>(4);
         ExecutorService kernelExcExecutor = Executors.newSingleThreadExecutor();
         // Future object which holds the pointer to the OpenCL structure defined in native_method.h
         Future<Long> newOpenCLObject;
 
-        Log.e("barrier", "5");
-
         ExecutorService dataSenderExecutor = Executors.newSingleThreadExecutor();
-
-        Log.e("barrier", "6");
 
         ExecutorService localNetworkUpdaterExecutor = Executors.newSingleThreadExecutor();
         BlockingQueue<LocalNetwork> updatedLocalNetwork = new ArrayBlockingQueue<>(1);
-
-        Log.e("barrier", "7");
 
         newOpenCLObject = kernelExcExecutor.submit(new KernelExecutor(kernelInitQueue, kernelExcQueue, openCLObject, this));
         dataSenderExecutor.execute(new DataSender(kernelExcQueue, datagramSocket));
         localNetworkUpdaterExecutor.execute(new LocalNetworkUpdater(input, updatedLocalNetwork, this));
 
-        Log.e("barrier", "8");
-
         while (!shutdown) {
 
+            // Firstly get the updated info about the connected devices stored in the LocalNetwork
+            // class
             try {
                 LocalNetwork tmp = updatedLocalNetwork.poll(100, TimeUnit.MICROSECONDS);
                 if (tmp != null) {
@@ -187,9 +172,10 @@ public class SimulationService extends IntentService {
                 Log.e("SimulationService", stackTrace);
             }
 
+            // Then received the packets from the known connected devices
+
             try {
 
-                // TODO Perhaps the size of this buffer should be bigger to accommodate eventual headers
                 byte[] inputSpikesBuffer = new byte[128];
 
                 DatagramPacket inputSpikesPacket = new DatagramPacket(inputSpikesBuffer, 128);
@@ -200,6 +186,12 @@ public class SimulationService extends IntentService {
 
                 InetAddress presynapticDeviceAddr = inputSpikesPacket.getAddress();
 
+                /**
+                 * Build a temporary LocalNetwork using the ip included in the header of the received
+                 * datagram packet and use its equals method to identify the device among the
+                 * presynapticNodes which has sent said packet
+                 */
+
                 LocalNetwork presynapticDevice = new LocalNetwork();
 
                 presynapticDevice.ip = presynapticDeviceAddr.toString().substring(1);
@@ -207,6 +199,7 @@ public class SimulationService extends IntentService {
                 int index = thisDevice.presynapticNodes.indexOf(presynapticDevice);
 
                 if (index != -1) {
+                    // If the device was found put the workload in the queue
                     kernelInitExecutor.execute(new KernelInitializer(kernelInitQueue, index, thisDevice, inputSpikesBuffer));
                 } else {
                     Log.e("SimulationService", "Could not find presynaptic device with IP: " + presynapticDevice.ip);
@@ -233,17 +226,12 @@ public class SimulationService extends IntentService {
          * Retrieve from the Future object the last updated openCLObject
          */
 
-        Log.e("barrier", "9");
-
-
         try {
             openCLObject = newOpenCLObject.get(100, TimeUnit.MILLISECONDS);
         } catch (InterruptedException|ExecutionException|TimeoutException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("SimulationService", stackTrace);
         }
-
-        Log.e("barrier", "10");
 
         /**
          * Shut down the Threads
@@ -259,6 +247,7 @@ public class SimulationService extends IntentService {
         boolean kernelExecutorIsShutdown = false;
         boolean dataSenderIsShutdown = false;
 
+        // Print whether or not the shutdowns were successful
         try {
             localNetworkUpdaterIsShutdown = localNetworkUpdaterExecutor.awaitTermination(300, TimeUnit.MILLISECONDS);
             kernelInitializerIsShutdown = kernelInitExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
@@ -277,12 +266,15 @@ public class SimulationService extends IntentService {
 
         closeOpenCL(openCLObject);
 
-        Log.e("barrier", "11");
-
         shutdown = false;
         stopSelf();
 
     }
+
+    /**
+     * Update the info about the local network using the object sent back by server whenever the
+     * topology of the virtual layer changes
+     */
 
     public class LocalNetworkUpdater implements Runnable {
 
@@ -316,10 +308,7 @@ public class SimulationService extends IntentService {
                         LocalBroadcastManager.getInstance(context).sendBroadcast(broadcastError);
                         errorRaised = true;
                     }
-                    //stopSelf();
                 }
-
-                //Log.d("LocalNetworkUpdate", "Number of dendrites is " + thisDevice.numOfDendrites);
 
                 try {
                     updatedLocalNetwork.put(thisDevice);
@@ -370,6 +359,7 @@ public class SimulationService extends IntentService {
 
                 outputSpikes = simulateDynamics(synapseInput, openCLObject, NUMBER_OF_NEURONS, SimulationParameters.getParameters());
 
+                // A return object on length zero means an error has occurred
                 if (outputSpikes.length == 0) {
                     shutDown();
                     if (!errorRaised) {
@@ -398,7 +388,8 @@ public class SimulationService extends IntentService {
     }
 
     /**
-     * Runnable class which sends the spikes produced by the local network to the postsynaptic devices.
+     * Runnable class which sends the spikes produced by the local network to the postsynaptic devices,
+     * including the server itself
      */
 
     public class DataSender implements Runnable {
@@ -428,7 +419,6 @@ public class SimulationService extends IntentService {
                     Log.e("DataSender", stackTrace);
                 }
 
-                // TODO Should thisDevice be static or should we use KernelInitializer method?
                 LocalNetwork thisDeviceLocal = thisDevice.get();
 
                 for (short index = 0; index < thisDeviceLocal.postsynapticNodes.size(); index++) {

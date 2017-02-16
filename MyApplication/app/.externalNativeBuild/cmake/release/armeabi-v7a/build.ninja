@@ -31,6 +31,15 @@ include rules.ninja
 
 
 #############################################
+# Utility command for edit_cache
+
+build CMakeFiles/edit_cache.util: CUSTOM_COMMAND
+  COMMAND = cd /home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/release/armeabi-v7a && /home/rodolfo/Android/Sdk/cmake/3.6.3155560/bin/cmake -E echo No\ interactive\ CMake\ dialog\ available.
+  DESC = No interactive CMake dialog available...
+  restat = 1
+build edit_cache: phony CMakeFiles/edit_cache.util
+
+#############################################
 # Utility command for rebuild_cache
 
 build CMakeFiles/rebuild_cache.util: CUSTOM_COMMAND
@@ -39,58 +48,89 @@ build CMakeFiles/rebuild_cache.util: CUSTOM_COMMAND
   pool = console
   restat = 1
 build rebuild_cache: phony CMakeFiles/rebuild_cache.util
-
-#############################################
-# Utility command for edit_cache
-
-build CMakeFiles/edit_cache.util: CUSTOM_COMMAND
-  COMMAND = cd /home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/release/armeabi-v7a && /home/rodolfo/Android/Sdk/cmake/3.6.3155560/bin/cmake -E echo No\ interactive\ CMake\ dialog\ available.
-  DESC = No interactive CMake dialog available...
-  restat = 1
-build edit_cache: phony CMakeFiles/edit_cache.util
 # =============================================================================
-# Object build statements for SHARED_LIBRARY target hello-world
+# Object build statements for SHARED_LIBRARY target Qualcomm
 
-build CMakeFiles/hello-world.dir/src/main/cpp/native_method.cpp.o: CXX_COMPILER__hello-world ../../../../src/main/cpp/native_method.cpp
-  DEFINES = -Dhello_world_EXPORTS
-  DEP_FILE = CMakeFiles/hello-world.dir/src/main/cpp/native_method.cpp.o.d
+build CMakeFiles/Qualcomm.dir/src/main/cpp/native_method.cpp.o: CXX_COMPILER__Qualcomm ../../../../src/main/cpp/native_method.cpp
+  DEFINES = -DQualcomm_EXPORTS
+  DEP_FILE = CMakeFiles/Qualcomm.dir/src/main/cpp/native_method.cpp.o.d
   FLAGS = -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -fno-integrated-as -mthumb -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -fno-integrated-as -mthumb -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -std=c++11 -Os -DNDEBUG -Os -DNDEBUG  -fPIC
   INCLUDES = -I../../../../src/main/assets -I../../../../OpenCL/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include/backward
   IN_ABS = /home/rodolfo/AndroidStudioProjects/MyApplication/app/src/main/cpp/native_method.cpp
-  OBJECT_DIR = CMakeFiles/hello-world.dir
-  OBJECT_FILE_DIR = CMakeFiles/hello-world.dir/src/main/cpp
-build CMakeFiles/hello-world.dir/src/main/cpp/common.cpp.o: CXX_COMPILER__hello-world ../../../../src/main/cpp/common.cpp
-  DEFINES = -Dhello_world_EXPORTS
-  DEP_FILE = CMakeFiles/hello-world.dir/src/main/cpp/common.cpp.o.d
+  OBJECT_DIR = CMakeFiles/Qualcomm.dir
+  OBJECT_FILE_DIR = CMakeFiles/Qualcomm.dir/src/main/cpp
+build CMakeFiles/Qualcomm.dir/src/main/cpp/common.cpp.o: CXX_COMPILER__Qualcomm ../../../../src/main/cpp/common.cpp
+  DEFINES = -DQualcomm_EXPORTS
+  DEP_FILE = CMakeFiles/Qualcomm.dir/src/main/cpp/common.cpp.o.d
   FLAGS = -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -fno-integrated-as -mthumb -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -fno-integrated-as -mthumb -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -std=c++11 -Os -DNDEBUG -Os -DNDEBUG  -fPIC
   INCLUDES = -I../../../../src/main/assets -I../../../../OpenCL/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include/backward
   IN_ABS = /home/rodolfo/AndroidStudioProjects/MyApplication/app/src/main/cpp/common.cpp
-  OBJECT_DIR = CMakeFiles/hello-world.dir
-  OBJECT_FILE_DIR = CMakeFiles/hello-world.dir/src/main/cpp
+  OBJECT_DIR = CMakeFiles/Qualcomm.dir
+  OBJECT_FILE_DIR = CMakeFiles/Qualcomm.dir/src/main/cpp
 
 # =============================================================================
-# Link build statements for SHARED_LIBRARY target hello-world
+# Link build statements for SHARED_LIBRARY target Qualcomm
 
 
 #############################################
-# Link the shared library ../../../../build/intermediates/cmake/release/obj/armeabi-v7a/libhello-world.so
+# Link the shared library ../../../../build/intermediates/cmake/release/obj/armeabi-v7a/libQualcomm.so
 
-build ../../../../build/intermediates/cmake/release/obj/armeabi-v7a/libhello-world.so: CXX_SHARED_LIBRARY_LINKER__hello-world CMakeFiles/hello-world.dir/src/main/cpp/native_method.cpp.o CMakeFiles/hello-world.dir/src/main/cpp/common.cpp.o | ../../../../OpenCL/src/armeabi-v7a/libGLES_mali.so
+build ../../../../build/intermediates/cmake/release/obj/armeabi-v7a/libQualcomm.so: CXX_SHARED_LIBRARY_LINKER__Qualcomm CMakeFiles/Qualcomm.dir/src/main/cpp/native_method.cpp.o CMakeFiles/Qualcomm.dir/src/main/cpp/common.cpp.o | ../../../../OpenCL/src/armeabi-v7a/libOpenCL.so
+  LANGUAGE_COMPILE_FLAGS = -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -fno-integrated-as -mthumb -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -fno-integrated-as -mthumb -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -std=c++11 -Os -DNDEBUG -Os -DNDEBUG
+  LINK_FLAGS = -Wl,--build-id -Wl,--warn-shared-textrel -Wl,--fatal-warnings -Wl,--fix-cortex-a8 -Wl,--no-undefined -Wl,-z,noexecstack -Qunused-arguments -Wl,-z,relro -Wl,-z,now -Wl,--build-id -Wl,--warn-shared-textrel -Wl,--fatal-warnings -Wl,--fix-cortex-a8 -Wl,--no-undefined -Wl,-z,noexecstack -Qunused-arguments -Wl,-z,relro -Wl,-z,now
+  LINK_LIBRARIES = -llog ../../../../OpenCL/src/armeabi-v7a/libOpenCL.so -lm "/home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/libgnustl_static.a"
+  OBJECT_DIR = CMakeFiles/Qualcomm.dir
+  POST_BUILD = :
+  PRE_LINK = :
+  SONAME = libQualcomm.so
+  SONAME_FLAG = -Wl,-soname,
+  TARGET_FILE = ../../../../build/intermediates/cmake/release/obj/armeabi-v7a/libQualcomm.so
+  TARGET_PDB = Qualcomm.so.dbg
+# =============================================================================
+# Object build statements for SHARED_LIBRARY target ARM
+
+build CMakeFiles/ARM.dir/src/main/cpp/native_method.cpp.o: CXX_COMPILER__ARM ../../../../src/main/cpp/native_method.cpp
+  DEFINES = -DARM_EXPORTS
+  DEP_FILE = CMakeFiles/ARM.dir/src/main/cpp/native_method.cpp.o.d
+  FLAGS = -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -fno-integrated-as -mthumb -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -fno-integrated-as -mthumb -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -std=c++11 -Os -DNDEBUG -Os -DNDEBUG  -fPIC
+  INCLUDES = -I../../../../src/main/assets -I../../../../OpenCL/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include/backward
+  IN_ABS = /home/rodolfo/AndroidStudioProjects/MyApplication/app/src/main/cpp/native_method.cpp
+  OBJECT_DIR = CMakeFiles/ARM.dir
+  OBJECT_FILE_DIR = CMakeFiles/ARM.dir/src/main/cpp
+build CMakeFiles/ARM.dir/src/main/cpp/common.cpp.o: CXX_COMPILER__ARM ../../../../src/main/cpp/common.cpp
+  DEFINES = -DARM_EXPORTS
+  DEP_FILE = CMakeFiles/ARM.dir/src/main/cpp/common.cpp.o.d
+  FLAGS = -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -fno-integrated-as -mthumb -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -fno-integrated-as -mthumb -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -std=c++11 -Os -DNDEBUG -Os -DNDEBUG  -fPIC
+  INCLUDES = -I../../../../src/main/assets -I../../../../OpenCL/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include/backward
+  IN_ABS = /home/rodolfo/AndroidStudioProjects/MyApplication/app/src/main/cpp/common.cpp
+  OBJECT_DIR = CMakeFiles/ARM.dir
+  OBJECT_FILE_DIR = CMakeFiles/ARM.dir/src/main/cpp
+
+# =============================================================================
+# Link build statements for SHARED_LIBRARY target ARM
+
+
+#############################################
+# Link the shared library ../../../../build/intermediates/cmake/release/obj/armeabi-v7a/libARM.so
+
+build ../../../../build/intermediates/cmake/release/obj/armeabi-v7a/libARM.so: CXX_SHARED_LIBRARY_LINKER__ARM CMakeFiles/ARM.dir/src/main/cpp/native_method.cpp.o CMakeFiles/ARM.dir/src/main/cpp/common.cpp.o | ../../../../OpenCL/src/armeabi-v7a/libGLES_mali.so
   LANGUAGE_COMPILE_FLAGS = -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -fno-integrated-as -mthumb -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -fno-integrated-as -mthumb -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -std=c++11 -Os -DNDEBUG -Os -DNDEBUG
   LINK_FLAGS = -Wl,--build-id -Wl,--warn-shared-textrel -Wl,--fatal-warnings -Wl,--fix-cortex-a8 -Wl,--no-undefined -Wl,-z,noexecstack -Qunused-arguments -Wl,-z,relro -Wl,-z,now -Wl,--build-id -Wl,--warn-shared-textrel -Wl,--fatal-warnings -Wl,--fix-cortex-a8 -Wl,--no-undefined -Wl,-z,noexecstack -Qunused-arguments -Wl,-z,relro -Wl,-z,now
   LINK_LIBRARIES = -llog ../../../../OpenCL/src/armeabi-v7a/libGLES_mali.so -lm "/home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/libgnustl_static.a"
-  OBJECT_DIR = CMakeFiles/hello-world.dir
+  OBJECT_DIR = CMakeFiles/ARM.dir
   POST_BUILD = :
   PRE_LINK = :
-  SONAME = libhello-world.so
+  SONAME = libARM.so
   SONAME_FLAG = -Wl,-soname,
-  TARGET_FILE = ../../../../build/intermediates/cmake/release/obj/armeabi-v7a/libhello-world.so
-  TARGET_PDB = hello-world.so.dbg
+  TARGET_FILE = ../../../../build/intermediates/cmake/release/obj/armeabi-v7a/libARM.so
+  TARGET_PDB = ARM.so.dbg
 # =============================================================================
 # Target aliases.
 
-build hello-world: phony ../../../../build/intermediates/cmake/release/obj/armeabi-v7a/libhello-world.so
-build libhello-world.so: phony ../../../../build/intermediates/cmake/release/obj/armeabi-v7a/libhello-world.so
+build ARM: phony ../../../../build/intermediates/cmake/release/obj/armeabi-v7a/libARM.so
+build Qualcomm: phony ../../../../build/intermediates/cmake/release/obj/armeabi-v7a/libQualcomm.so
+build libARM.so: phony ../../../../build/intermediates/cmake/release/obj/armeabi-v7a/libARM.so
+build libQualcomm.so: phony ../../../../build/intermediates/cmake/release/obj/armeabi-v7a/libQualcomm.so
 # =============================================================================
 # Folder targets.
 
@@ -102,7 +142,7 @@ build libhello-world.so: phony ../../../../build/intermediates/cmake/release/obj
 #############################################
 # The main all target.
 
-build all: phony ../../../../build/intermediates/cmake/release/obj/armeabi-v7a/libhello-world.so
+build all: phony ../../../../build/intermediates/cmake/release/obj/armeabi-v7a/libQualcomm.so ../../../../build/intermediates/cmake/release/obj/armeabi-v7a/libARM.so
 
 #############################################
 # Make the all target the default.

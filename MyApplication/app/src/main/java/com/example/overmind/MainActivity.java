@@ -1,3 +1,8 @@
+/**
+ * Main activity containing everything which runs on the gui thread, from error messages to OpenGL
+ * calls to retrieve info about the renderer and the GPU vendor
+ */
+
 package com.example.overmind;
 
 import android.content.BroadcastReceiver;
@@ -90,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
     // Used to store GPU info by the renderer class
     private static SharedPreferences prefs;
 
+    // Socket used for TCP communications with the Overmind server
     public static Socket thisClient;
 
     static String serverIP;
@@ -132,14 +138,23 @@ public class MainActivity extends AppCompatActivity {
     public static boolean ServerConnectFailed = false;
     public static short ServerConnectErrorNumber;
 
+    /**
+     * Called when the start simulation button is pressed
+     */
+
     public void startSimulation(View view) {
 
         assert editText != null;
+
+        // Get the server ip from the text box
         serverIP = editText.getText().toString();
+
+        // Get the number of neurons ot the local netwowrk from the text box
         numOfNeurons = editNumOfNeurons.getText().toString();
 
         // OpenGL surface view
         MyGLSurfaceView mGlSurfaceView = new MyGLSurfaceView(this);
+
         // Set on display the OpenGL surface view in order to call the OpenGL renderer and retrieve the GPU info
         setContentView(mGlSurfaceView);
 
@@ -173,32 +188,47 @@ public class MainActivity extends AppCompatActivity {
                 // Display error message and bring back the home layout if the connection with the
                 // Overmind server fails
                 if (ServerConnectFailed) {
+
+                    // When going back to the home menu the default settings must be restored
                     MainActivity.numOfNeuronsDetermineByApp = false;
                     ServerConnectFailed = false;
+
+                    // Show the appropriate error message
                     android.support.v4.app.DialogFragment dialogFragment = new ErrorDialogFragment();
                     Bundle args = new Bundle();
                     args.putInt("ErrorNumber", ServerConnectErrorNumber);
                     dialogFragment.setArguments(args);
                     dialogFragment.show(getSupportFragmentManager(), "Connection failed");
+
+                    // Bring back the home menu view
                     setContentView(R.layout.pre_connection);
                     editText = (EditText) findViewById(R.id.edit_ip);
                     editNumOfNeurons = (EditText) findViewById(R.id.edit_num_of_neurons);
+
                 } else {
 
-                    // Now that the GPU info are available display the proper application layout and
-                    // start the simulation
+                    /**
+                     * If the async task server connect succeeded the simulation can be started
+                     */
+
+                    // Now that the GPU info are available display the proper application layout
                     setContentView(R.layout.activity_main);
 
+                    // By default the network is made of regular spiking neurons, so the appropriate parameters
+                    // must be passed to the simulation and the default radio button must be selected
                     regularSpikingRadioButton = (RadioButton) findViewById(R.id.radio_rs);
 
-                    // Assert are using freely through the code to prevent NullPointerException even in those cases
-                    // when such condition shouldn't theoretically arise
                     assert regularSpikingRadioButton != null;
 
                     regularSpikingRadioButton.setChecked(true);
+
                     SimulationParameters.setParameters(0.02f, 0.2f, -65.0f, 8.0f);
 
                     Resources res = getResources();
+
+                    /**
+                     * Show some info about the device running the simulation
+                     */
 
                     TextView rendererView = new TextView(MainActivity.this);
                     TextView vendorView = new TextView(MainActivity.this);
@@ -216,8 +246,8 @@ public class MainActivity extends AppCompatActivity {
                     mainActivityLayout.addView(rendererView);
                     mainActivityLayout.addView(vendorView);
 
-
                     startSimulation();
+
                 }
 
                 assert thisClient != null;
@@ -225,6 +255,10 @@ public class MainActivity extends AppCompatActivity {
             }
         }.start();
     }
+
+    /**
+     * Called when the checkbox is clicked
+     */
 
     public void onCheckboxClicked(View view) {
         // Is the view now checked?
@@ -243,6 +277,10 @@ public class MainActivity extends AppCompatActivity {
                 break;
         }
     }
+
+    /**
+     * Called when one of the radio buttons is selected
+     */
 
     public void onRadioButtonClicked(View view) {
         // Is the button now checked?
@@ -344,14 +382,14 @@ public class MainActivity extends AppCompatActivity {
         switch (vendor) {
             case "ARM":
                 try {
-                    System.loadLibrary("libGLES_mali.so");
+                    System.loadLibrary("ARM");
                 } catch (UnsatisfiedLinkError linkError) {
                     Log.e("Unsatisfied link", "libGLES_mali.so not found");
                 }
                 break;
             case "Qualcomm":
                 try {
-                    System.loadLibrary("libOpenCL.so");
+                    System.loadLibrary("Qualcomm");
                 } catch (UnsatisfiedLinkError linkError) {
                     Log.e("Unsatisfied link", "libGLES_mali.so not found");
                 }
@@ -361,10 +399,6 @@ public class MainActivity extends AppCompatActivity {
                 broadcastError.putExtra("ErrorNumber", 4);
                 LocalBroadcastManager.getInstance(this).sendBroadcast(broadcastError);
         }
-    }
-
-    static {
-        System.loadLibrary("hello-world");
     }
 
     /**
@@ -402,7 +436,7 @@ public class MainActivity extends AppCompatActivity {
                 kernel = loadKernelFromAsset(getInputStream("kernel_vec4.cl"));
                 break;
             default:
-                kernel = loadKernelFromAsset(getInputStream("kernel.cl"));
+                kernel = loadKernelFromAsset(getInputStream("kernel_vec4.cl"));
                 break;
         }
 

@@ -23,6 +23,9 @@ ANDROID_NATIVE_API_LEVEL:UNINITIALIZED=19
 //No help, variable specified on the command line.
 ANDROID_NDK:UNINITIALIZED=/home/rodolfo/Android/Sdk/ndk-bundle
 
+//Dependencies for the target
+ARM_LIB_DEPENDS:STATIC=general;log;general;GLES_mali;
+
 //Path to a program.
 CMAKE_AR:FILEPATH=/home/rodolfo/Android/Sdk/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin/arm-linux-androideabi-ar
 
@@ -184,7 +187,7 @@ Project_BINARY_DIR:STATIC=/home/rodolfo/AndroidStudioProjects/MyApplication/app/
 Project_SOURCE_DIR:STATIC=/home/rodolfo/AndroidStudioProjects/MyApplication/app
 
 //Dependencies for the target
-hello-world_LIB_DEPENDS:STATIC=general;log;general;GLES_mali;
+Qualcomm_LIB_DEPENDS:STATIC=general;log;general;OpenCL_adreno;
 
 //Path to a library.
 log-lib:FILEPATH=/home/rodolfo/Android/Sdk/ndk-bundle/platforms/android-19/arch-arm/usr/lib/liblog.so

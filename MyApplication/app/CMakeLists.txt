@@ -9,7 +9,15 @@ cmake_minimum_required(VERSION 3.4.1)
 # You can define multiple libraries, and CMake builds it for you.
 # Gradle automatically packages shared libraries with your APK.
 
-add_library( hello-world
+add_library( ARM
+             SHARED
+             src/main/cpp/native_method.cpp
+             src/main/cpp/native_method.h
+             src/main/cpp/common.cpp
+             src/main/cpp/common.h )
+include_directories( src/main/assets/ )
+
+add_library( Qualcomm
              SHARED
              src/main/cpp/native_method.cpp
              src/main/cpp/native_method.h
@@ -49,4 +57,6 @@ find_library( # Sets the name of the path variable.
 # can link multiple libraries, such as libraries you define in the
 # build script, prebuilt third-party libraries, or system libraries.
 
-target_link_libraries ( hello-world log GLES_mali )
+target_link_libraries ( ARM log GLES_mali )
+target_link_libraries ( Qualcomm log OpenCL_adreno )
+
