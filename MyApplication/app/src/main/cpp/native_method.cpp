@@ -219,7 +219,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
 }
 
 extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynamics(
-        JNIEnv *env, jobject thiz, jcharArray jSynapseInput, jlong jOpenCLObject, jshort jNumOfNeurons, jdoubleArray jSimulationParameters) {
+        JNIEnv *env, jobject thiz, jcharArray jSynapseInput, jlong jOpenCLObject, jshort jNumOfNeurons, jfloatArray jSimulationParameters) {
 
     size_t synapseWeightsBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES)* jNumOfNeurons * sizeof(cl_uchar);
 
@@ -233,7 +233,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     obj = (struct OpenCLObject *)jOpenCLObject;
 
     jchar *synapseInput = env->GetCharArrayElements(jSynapseInput, JNI_FALSE);
-    jdouble *simulationParameters = env->GetDoubleArrayElements(jSimulationParameters, JNI_FALSE);
+    jfloat *simulationParameters = env->GetFloatArrayElements(jSimulationParameters, JNI_FALSE);
 
     /* [Input initialization] */
     /**
@@ -327,7 +327,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
     // Number of kernel instances
     // TODO Must keep in mind maximum work group size too in determining localWorkSize
-    size_t localWorksize[1] = {1024 / obj->floatVectorWidth};
+    size_t localWorksize[1] = {64};
     size_t globalWorksize[1] = {localWorksize[0] * jNumOfNeurons};
 
     bool openCLFailed = false;

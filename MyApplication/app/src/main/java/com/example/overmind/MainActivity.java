@@ -431,11 +431,7 @@ public class MainActivity extends AppCompatActivity {
         String kernel;
 
         switch (renderer) {
-            case "Mali-T720":
-                // The string used to hold the .cl kernel file
-                kernel = loadKernelFromAsset(getInputStream("kernel_vec4.cl"));
-                break;
-            case "Adreno 306":
+            case "Adreno (TM) 306":
                 kernel = loadKernelFromAsset(getInputStream("kernel_float.cl"));
                 break;
             default:
