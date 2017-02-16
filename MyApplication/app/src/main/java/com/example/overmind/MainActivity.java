@@ -435,8 +435,11 @@ public class MainActivity extends AppCompatActivity {
                 // The string used to hold the .cl kernel file
                 kernel = loadKernelFromAsset(getInputStream("kernel_vec4.cl"));
                 break;
+            case "Adreno 306":
+                kernel = loadKernelFromAsset(getInputStream("kernel_float.cl"));
+                break;
             default:
-                kernel = loadKernelFromAsset(getInputStream("kernel_vec4.cl"));
+                kernel = loadKernelFromAsset(getInputStream("kernel_float.cl"));
                 break;
         }
 

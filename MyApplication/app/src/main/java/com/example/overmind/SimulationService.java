@@ -455,7 +455,7 @@ public class SimulationService extends IntentService {
     /* [End of the DataSender class] */
 
     public native long initializeOpenCL(String synapseKernel, short numOfNeurons);
-    public native byte[] simulateDynamics(char[] synapseInput, long openCLObject, short numOfNeurons, double[] simulationParameters);
+    public native byte[] simulateDynamics(char[] synapseInput, long openCLObject, short numOfNeurons, float[] simulationParameters);
     public native void closeOpenCL(long openCLObject);
 
 }

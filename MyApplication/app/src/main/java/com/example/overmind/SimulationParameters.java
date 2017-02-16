@@ -2,21 +2,21 @@ package com.example.overmind;
 
 class SimulationParameters {
 
-    static private double recoveryScale;
-    static private double recoverySensitivity;
-    static private double resetPotential;
-    static private double resetRecovery;
+    static private float recoveryScale;
+    static private float recoverySensitivity;
+    static private float resetPotential;
+    static private float resetRecovery;
 
-    synchronized  static void setParameters(double a, double b, double c, double d) {
+    synchronized  static void setParameters(float a, float b, float c, float d) {
         recoveryScale = a;
         recoverySensitivity = b;
         resetPotential = c;
         resetRecovery = d;
     }
 
-    synchronized static double[] getParameters() {
+    synchronized static float[] getParameters() {
 
-        double[] paramArray = new double[4];
+        float[] paramArray = new float[4];
 
         paramArray[0] = recoveryScale;
         paramArray[1] = recoverySensitivity;

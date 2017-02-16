@@ -5,15 +5,15 @@
 // Size of the buffers needed to store data
 size_t synapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * 4 * sizeof(cl_float);
 size_t synapseInputBufferSize = maxNumberMultiplications * (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * sizeof(cl_uchar);
-size_t simulationParametersBufferSize = 4 * sizeof(double);
+size_t simulationParametersBufferSize = 4 * sizeof(cl_float);
 
 extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
         JNIEnv *env, jobject thiz, jstring jKernel, jshort jNumOfNeurons) {
 
     size_t synapseWeightsBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * jNumOfNeurons * sizeof(cl_uchar);
-    size_t currentBufferSize = jNumOfNeurons * sizeof(cl_long);
+    size_t currentBufferSize = jNumOfNeurons * sizeof(cl_int);
     size_t counterBufferSize = jNumOfNeurons * sizeof(cl_int);
-    size_t neuronalDynVarBufferSize = jNumOfNeurons * 3 * sizeof(cl_double);
+    size_t neuronalDynVarBufferSize = jNumOfNeurons * 3 * sizeof(cl_float);
     char dataBytes = (jNumOfNeurons % 8) == 0 ? (char)(jNumOfNeurons / 8) : (char)(jNumOfNeurons / 8 + 1);
     size_t actionPotentialsBufferSize = dataBytes* sizeof(cl_uchar);
 
@@ -126,13 +126,13 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     obj->synapseWeights = (cl_uchar*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-    obj->current = (cl_long*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[3], CL_TRUE, CL_MAP_WRITE, 0, currentBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    obj->current = (cl_int*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[3], CL_TRUE, CL_MAP_WRITE, 0, currentBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     obj->counter = (cl_int *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[4], CL_TRUE, CL_MAP_WRITE, 0, counterBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-    obj->neuronalDynVar = (cl_double *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[5], CL_TRUE, CL_MAP_WRITE, 0, neuronalDynVarBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    obj->neuronalDynVar = (cl_float *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[5], CL_TRUE, CL_MAP_WRITE, 0, neuronalDynVarBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     obj->actionPotentials = (cl_uchar*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[6], CL_TRUE, CL_MAP_WRITE, 0, actionPotentialsBufferSize, 0, NULL, NULL, &obj->errorNumber);
@@ -166,10 +166,10 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     // memory access times are negligible due to the embedded nature of the device
     for (int index = 0; index < jNumOfNeurons; index++)
     {
-        obj->neuronalDynVar[3 * index] = (cl_double)(-65.0f);
-        obj->neuronalDynVar[3 * index + 1] = (cl_double)(-13.0f);
-        obj->neuronalDynVar[3 * index + 2] = (cl_double)(0.0f);
-        obj->current[index] = (cl_long)0;
+        obj->neuronalDynVar[3 * index] = -65.0f;
+        obj->neuronalDynVar[3 * index + 1] = -13.0f;
+        obj->neuronalDynVar[3 * index + 2] = 0.0f;
+        obj->current[index] = (cl_int)0;
         obj->counter[index] = (cl_int)0;
     }
 
@@ -223,9 +223,9 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
     size_t synapseWeightsBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES)* jNumOfNeurons * sizeof(cl_uchar);
 
-    size_t currentBufferSize = jNumOfNeurons * sizeof(cl_long);
+    size_t currentBufferSize = jNumOfNeurons * sizeof(cl_int);
     size_t counterBufferSize = jNumOfNeurons * sizeof(cl_int);
-    size_t neuronalDynVarBufferSize = jNumOfNeurons * 3 * sizeof(cl_double);
+    size_t neuronalDynVarBufferSize = jNumOfNeurons * 3 * sizeof(cl_float);
     char dataBytes = (jNumOfNeurons % 8) == 0 ? (char)(jNumOfNeurons / 8) : (char)(jNumOfNeurons / 8 + 1);
     size_t actionPotentialsBufferSize = dataBytes * sizeof(cl_uchar);
 
@@ -267,7 +267,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
     mapMemoryObjectsSuccess = true;
 
-    obj->simulationParameters = (cl_double *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[7], CL_TRUE, CL_MAP_WRITE, 0, simulationParametersBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    obj->simulationParameters = (cl_float *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[7], CL_TRUE, CL_MAP_WRITE, 0, simulationParametersBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     if (!mapMemoryObjectsSuccess)
@@ -278,7 +278,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
     for (int index = 0; index < 4; index++)
     {
-        obj->simulationParameters[index] = (cl_double)simulationParameters[index];
+        obj->simulationParameters[index] = (cl_float)simulationParameters[index];
     }
 
     if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[7], obj->simulationParameters, 0, NULL, NULL)))
