@@ -1,6 +1,6 @@
 /**
  * Background service used to initialize the OpenCL implementation and execute the Thread pool managers
- * for data reception, Kernel initialization, Kernel execution and data sending.
+ * for data reception, Kernel initialization, Kernel execution and data sending
  */
 
 package com.example.overmind;
