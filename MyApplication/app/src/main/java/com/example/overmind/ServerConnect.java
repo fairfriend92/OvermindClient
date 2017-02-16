@@ -113,13 +113,12 @@ class ServerConnect extends AsyncTask<Context, Integer, Socket> {
             try {
                 ObjectOutputStream output = new ObjectOutputStream(clientSocket.getOutputStream());
                 output.writeObject(thisDevice);
+                publishProgress(0);
             } catch (IOException | NullPointerException e) {
                 String stackTrace = Log.getStackTraceString(e);
                 Log.e("ServerConnect", stackTrace);
             }
         }
-
-        publishProgress(0);
 
         assert ip != null;
         return clientSocket;
