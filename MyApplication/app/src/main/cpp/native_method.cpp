@@ -3,7 +3,7 @@
 // Maximum number of multiplications needed to compute the current response of a synapse
  int maxNumberMultiplications = (int) (SYNAPSE_FILTER_ORDER * SAMPLING_RATE / ABSOLUTE_REFRACTORY_PERIOD);
 // Size of the buffers needed to store data
-size_t synapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * 4 * sizeof(cl_float);
+size_t synapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * 2 * sizeof(cl_float);
 size_t synapseInputBufferSize = maxNumberMultiplications * (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * sizeof(cl_uchar);
 size_t simulationParametersBufferSize = 4 * sizeof(cl_double);
 
@@ -148,7 +148,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     float tExc = (float) (SAMPLING_RATE / EXC_SYNAPSE_TIME_SCALE);
     float tInh = (float) (SAMPLING_RATE / INH_SYNAPSE_TIME_SCALE);
     // Extend the loop beyond the synapse filter order to account for possible overflows of the filter input
-    for (int index = 0; index < SYNAPSE_FILTER_ORDER * 4; index++)
+    for (int index = 0; index < SYNAPSE_FILTER_ORDER * 2; index++)
     {
         obj->synapseCoeff[index] = index%2 == 0 ? (cl_float )index * tExc * expf( - index * tExc) : obj->synapseCoeff[index] = (cl_float)(-index * tInh * expf( - index * tInh));
         //LOGD("The synapse coefficients are: \tcoefficient %d \tvalue %f", index, (float) (obj->synapseCoeff[index]));

@@ -39,7 +39,7 @@ class KernelInitializer implements Runnable {
     @Override
     public void run () {
 
-        LocalNetwork presynapticNetwork = thisDevice.presynapticNodes.get(currentPresynapticDevice);
+        LocalNetwork presynapticNetwork =  thisDevice.presynapticNodes.get(currentPresynapticDevice);
 
         int dataBytes = (presynapticNetwork.numOfNeurons % 8) == 0 ?
                 (short) (presynapticNetwork.numOfNeurons / 8) : (short)(presynapticNetwork.numOfNeurons / 8 + 1);
@@ -78,9 +78,12 @@ class KernelInitializer implements Runnable {
             // Increment the synapse inputs and advance them in the filter pipe only in case of firing
             for (char indexJ = Constants.MAX_MULTIPLICATIONS - 1; indexJ >= 1; indexJ--) {
 
+                char increment = (char) (synapseInput[indexJ + indexI * Constants.MAX_MULTIPLICATIONS - bitValue] + 1) >= Constants.SYNAPSE_FILTER_ORDER ? 0 :
+                        (char) (synapseInput[indexJ + indexI * Constants.MAX_MULTIPLICATIONS - bitValue] + 1);
+
                 // Increment the input only if different from zero to begin with. Advance it if the synapse carries an action potential (bitValue = 1)
                 synapseInput[indexJ + indexI * Constants.MAX_MULTIPLICATIONS] =
-                        synapseInput[indexJ + indexI * Constants.MAX_MULTIPLICATIONS - bitValue] != 0 ? (char) (synapseInput[indexJ + indexI * Constants.MAX_MULTIPLICATIONS - bitValue] + 1) : 0;
+                        synapseInput[indexJ + indexI * Constants.MAX_MULTIPLICATIONS - bitValue] != 0 ? increment : 0;
 
             }
 
