@@ -164,7 +164,6 @@ public class SimulationService extends IntentService {
             try {
                 LocalNetwork tmp = updatedLocalNetwork.poll(100, TimeUnit.MICROSECONDS);
                 if (tmp != null) {
-                    Log.d("SimulationService", "Number of presynaptic nodes is " + tmp.presynapticNodes.size());
                     thisDevice.update(tmp);
                 }
             } catch (InterruptedException e) {
@@ -202,7 +201,7 @@ public class SimulationService extends IntentService {
                     // If the device was found put the workload in the queue
                     kernelInitExecutor.execute(new KernelInitializer(kernelInitQueue, index, thisDevice, inputSpikesBuffer));
                 } else {
-                    Log.e("SimulationService", "Could not find presynaptic device with IP: " + presynapticDevice.ip);
+                    //Log.e("SimulationService", "Could not find presynaptic device with IP: " + presynapticDevice.ip);
                 }
 
             } catch (SocketTimeoutException e) {

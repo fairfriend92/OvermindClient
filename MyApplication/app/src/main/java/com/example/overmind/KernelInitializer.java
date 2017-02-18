@@ -49,6 +49,11 @@ class KernelInitializer implements Runnable {
 
         char[] synapseInput = new char[presynapticNetwork.numOfNeurons * Constants.MAX_MULTIPLICATIONS];
 
+        /**
+         * Add new empty elements to the list of partial inputs if the size is not sufficient to hold all
+         * the presynaptic spikes
+         */
+
         synchronized (lock) {
 
             if (partialSynapseInput.size() < thisDevice.presynapticNodes.size()) {
@@ -58,7 +63,9 @@ class KernelInitializer implements Runnable {
             }
 
             if (partialSynapseInput.get(currentPresynapticDevice) != null) {
-                synapseInput = partialSynapseInput.get(currentPresynapticDevice);
+                char[] oldInput = partialSynapseInput.get(currentPresynapticDevice);
+                int length = synapseInput.length < oldInput.length ? synapseInput.length : oldInput.length;
+                System.arraycopy(oldInput, 0, synapseInput, 0, length);
             }
 
         }
@@ -78,12 +85,10 @@ class KernelInitializer implements Runnable {
             // Increment the synapse inputs and advance them in the filter pipe only in case of firing
             for (char indexJ = Constants.MAX_MULTIPLICATIONS - 1; indexJ >= 1; indexJ--) {
 
-                char increment = (char) (synapseInput[indexJ + indexI * Constants.MAX_MULTIPLICATIONS - bitValue] + 1) >= Constants.SYNAPSE_FILTER_ORDER ? 0 :
-                        (char) (synapseInput[indexJ + indexI * Constants.MAX_MULTIPLICATIONS - bitValue] + 1);
-
                 // Increment the input only if different from zero to begin with. Advance it if the synapse carries an action potential (bitValue = 1)
                 synapseInput[indexJ + indexI * Constants.MAX_MULTIPLICATIONS] =
-                        synapseInput[indexJ + indexI * Constants.MAX_MULTIPLICATIONS - bitValue] != 0 ? increment : 0;
+                        (synapseInput[indexJ + indexI * Constants.MAX_MULTIPLICATIONS - bitValue] != 0) && (synapseInput[indexJ + indexI * Constants.MAX_MULTIPLICATIONS - bitValue] < Constants.SYNAPSE_FILTER_ORDER) ?
+                                (char) (synapseInput[indexJ + indexI * Constants.MAX_MULTIPLICATIONS - bitValue] + 1) : 0;
 
             }
 
@@ -92,7 +97,8 @@ class KernelInitializer implements Runnable {
             if (bitValue == 1) {
                 synapseInput[indexI * Constants.MAX_MULTIPLICATIONS] = 1;
             } else {
-                synapseInput[indexI * Constants.MAX_MULTIPLICATIONS] = synapseInput[indexI * Constants.MAX_MULTIPLICATIONS] != 0 ?
+                synapseInput[indexI * Constants.MAX_MULTIPLICATIONS] =
+                        (synapseInput[indexI * Constants.MAX_MULTIPLICATIONS] != 0) && (synapseInput[indexI * Constants.MAX_MULTIPLICATIONS] < Constants.SYNAPSE_FILTER_ORDER) ?
                         (char)(synapseInput[indexI * Constants.MAX_MULTIPLICATIONS] + 1) : 0;
             }
 
@@ -102,9 +108,6 @@ class KernelInitializer implements Runnable {
          * To create the total input put together the contributes of each thread. The computation needs to be serialized
          * thus it is contained in the following synchronized block
          */
-
-        // TODO this piece of code can be further optimized by allowing each thread to copy its partial input in the
-        // TODO result and leaving to the last thread the job of putting it in the queue
 
         synchronized (lock) {
 

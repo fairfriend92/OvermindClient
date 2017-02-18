@@ -14,14 +14,14 @@
 #define d simulationParameters[3]
 
 __kernel void simulate_dynamics(__constant float* coeff, __constant uchar* weights,
-				__constant uchar* input, __global long* current, __global int* counter,
+				__constant char* input, __global long* current, __global int* counter,
 				__global double* neuronalDynVar, __global uchar* actionPotentials, __constant double* simulationParameters)
 {
 
   ushort localId = get_local_id(0);
   ushort workId = get_group_id(0);
 
-  uchar16 index = vload16(localId, input);
+  char16 index = vload16(localId, input);
 
   // Coefficients of the synapse kernel
   float4 coeffVec = (float4)(coeff[index.s0] + coeff[index.s1] + coeff[index.s2] + coeff[index.s3],

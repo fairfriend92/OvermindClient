@@ -52,7 +52,7 @@ class ServerConnect extends AsyncTask<Context, Integer, Socket> {
         if (MainActivity.numOfNeuronsDetermineByApp) {
             switch (MainActivity.renderer) {
                 case "Mali-T720":
-                    numOfNeurons = 59;
+                    numOfNeurons = 56;
                     break;
                 default:
                     // TODO default means could not identify GPU, exit app.

@@ -36,7 +36,7 @@ struct OpenCLObject {
     // Pointers to the memory buffers
     cl_float *synapseCoeff;
     cl_uchar *synapseWeights;
-    cl_uchar *synapseInput;
+    cl_char *synapseInput;
     cl_long *current;
     cl_int  *counter;
     cl_double *neuronalDynVar;

@@ -4,7 +4,7 @@
  int maxNumberMultiplications = (int) (SYNAPSE_FILTER_ORDER * SAMPLING_RATE / ABSOLUTE_REFRACTORY_PERIOD);
 // Size of the buffers needed to store data
 size_t synapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * 2 * sizeof(cl_float);
-size_t synapseInputBufferSize = maxNumberMultiplications * (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * sizeof(cl_uchar);
+size_t synapseInputBufferSize = maxNumberMultiplications * (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * sizeof(cl_char);
 size_t simulationParametersBufferSize = 4 * sizeof(cl_double);
 
 extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
@@ -242,7 +242,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
      */
     bool mapMemoryObjectsSuccess = true;
     // Map the buffer
-    obj->synapseInput = (cl_uchar*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[2], CL_TRUE, CL_MAP_WRITE, 0, synapseInputBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    obj->synapseInput = (cl_char*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[2], CL_TRUE, CL_MAP_WRITE, 0, synapseInputBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     // Catch eventual errors
@@ -255,7 +255,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     // Initialize the buffer on the CPU side with the data received from Java Native Interface
     for (int index = 0; index < maxNumberMultiplications * (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES); index++)
     {
-        obj->synapseInput[index] = (cl_uchar)synapseInput[index];
+        obj->synapseInput[index] = (cl_char)synapseInput[index];
     }
 
     // Un-map the buffer
