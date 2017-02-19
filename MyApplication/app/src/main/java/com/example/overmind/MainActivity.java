@@ -137,10 +137,13 @@ public class MainActivity extends AppCompatActivity {
 
     public static boolean ServerConnectFailed = false;
     public static short ServerConnectErrorNumber;
+    private double current = 0.0f;
 
     /**
      * Called when the start simulation button is pressed
      */
+
+    TextView currentView = null;
 
     public void startSimulation(View view) {
 
@@ -222,7 +225,7 @@ public class MainActivity extends AppCompatActivity {
 
                     regularSpikingRadioButton.setChecked(true);
 
-                    SimulationParameters.setParameters(0.02f, 0.2f, -65.0f, 8.0f);
+                    SimulationParameters.setParameters(0.02f, 0.2f, -65.0f, 8.0f, 0.0f);
 
                     Resources res = getResources();
 
@@ -246,6 +249,17 @@ public class MainActivity extends AppCompatActivity {
                     mainActivityLayout.addView(rendererView);
                     mainActivityLayout.addView(vendorView);
 
+                    /**
+                     * Display text info about selected stimulation
+                     */
+
+                    currentView = new TextView(MainActivity.this);
+                    String currentString = String.format(res.getString(R.string.current), 0.0f);
+                    currentView.setText(currentString);
+                    ViewGroup stimulusSelectionLayout = (ViewGroup) findViewById(R.id.stimulus_selection_layout);
+                    assert stimulusSelectionLayout != null;
+                    stimulusSelectionLayout.addView(currentView);
+
                     startSimulation();
 
                 }
@@ -254,6 +268,38 @@ public class MainActivity extends AppCompatActivity {
 
             }
         }.start();
+    }
+
+    /**
+     * Called when the user clicks the buttons to increase or decrease the simulation current.
+     */
+
+    public void increaseCurrent(View view) {
+        double[] parameters = SimulationParameters.getParameters();
+
+        Resources res = getResources();
+        parameters[4] += 0.5f;
+        current = parameters[4];
+        String currentString = String.format(res.getString(R.string.current), current);
+        currentView.setText(currentString);
+
+        SimulationParameters.setParameters(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4]);
+
+    }
+
+    public void decreaseCurrent(View view) {
+        double[] parameters = SimulationParameters.getParameters();
+
+        if (parameters[4] > 0) {
+            Resources res = getResources();
+            parameters[4] -= 0.5f;
+            current = parameters[4];
+            String currentString = String.format(res.getString(R.string.current), current);
+            currentView.setText(currentString);
+        }
+
+        SimulationParameters.setParameters(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4]);
+
     }
 
     /**
@@ -290,15 +336,15 @@ public class MainActivity extends AppCompatActivity {
         switch(view.getId()) {
             case R.id.radio_fs:
                 if (checked)
-                    SimulationParameters.setParameters(0.1f, 0.2f, -65.0f, 2.0f);
+                    SimulationParameters.setParameters(0.1f, 0.2f, -65.0f, 2.0f, current);
                     break;
             case R.id.radio_rs:
                 if (checked)
-                    SimulationParameters.setParameters(0.02f, 0.2f, -65.0f, 8.0f);
+                    SimulationParameters.setParameters(0.02f, 0.2f, -65.0f, 8.0f, current);
                     break;
             case R.id.radio_ch:
                 if (checked)
-                    SimulationParameters.setParameters(0.02f, 0.2f, -50.0f, 2.0f);
+                    SimulationParameters.setParameters(0.02f, 0.2f, -50.0f, 2.0f, current);
                     break;
         }
     }

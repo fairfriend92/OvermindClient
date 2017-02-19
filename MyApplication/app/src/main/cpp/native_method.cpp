@@ -5,7 +5,7 @@
 // Size of the buffers needed to store data
 size_t synapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * 2 * sizeof(cl_float);
 size_t synapseInputBufferSize = maxNumberMultiplications * (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * sizeof(cl_char);
-size_t simulationParametersBufferSize = 4 * sizeof(cl_double);
+size_t simulationParametersBufferSize = 5 * sizeof(cl_double);
 
 extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
         JNIEnv *env, jobject thiz, jstring jKernel, jshort jNumOfNeurons) {
@@ -276,7 +276,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
         LOGE("Failed to map buffer");
     }
 
-    for (int index = 0; index < 4; index++)
+    for (int index = 0; index < 5; index++)
     {
         obj->simulationParameters[index] = (cl_double)simulationParameters[index];
     }

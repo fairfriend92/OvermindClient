@@ -31,6 +31,8 @@
     <string name="local_network_parameters">"Local network parameters"</string>
     <string name="renderer">"Renderer: %1$s"</string>
     <string name="venodr">"Vendor: %1$s"</string>
+    <string name="current">"Current: %1$f pA"</string>
     <string name="device_info">Device info</string>
+    <string name="stimulus_selection">Stimulus selection</string>
 
 </resources>

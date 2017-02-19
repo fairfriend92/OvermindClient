@@ -12,6 +12,7 @@
 #define b simulationParameters[1]
 #define c simulationParameters[2]
 #define d simulationParameters[3]
+#define I simulationParameters[4]
 
 __kernel void simulate_dynamics(__constant float* coeff, __constant uchar* weights,
 				__constant char* input, __global long* current, __global int* counter,
@@ -54,7 +55,7 @@ __kernel void simulate_dynamics(__constant float* coeff, __constant uchar* weigh
       double currentDouble = current[workId] > 0 ? unsignedCurrentDouble : (-unsignedCurrentDouble);
 
       // Compute the potential using Euler integration and Izhikevich model
-      potential += 0.5f * (0.04f * pown(potential, 2) + 5.0f * potential + 140.0f - recovery + currentDouble);
+      potential += 0.5f * (0.04f * pown(potential, 2) + 5.0f * potential + 140.0f - recovery + currentDouble + I);
 
       // Uncomment the following to use inverse Euler for the recovery variable
       

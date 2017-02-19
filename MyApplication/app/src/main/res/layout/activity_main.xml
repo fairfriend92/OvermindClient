@@ -33,6 +33,28 @@
             android:onClick="onRadioButtonClicked"/>
     </RadioGroup>
 
+    <TextView android:id="@+id/stimulus"
+        style="?android:attr/listSeparatorTextViewStyle"
+        android:text="@string/stimulus_selection"
+        />
+
+    <LinearLayout
+        android:id="@+id/stimulus_selection_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+"
+            android:onClick="increaseCurrent"/>
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-"
+            android:onClick="decreaseCurrent"/>
+    </LinearLayout>
+
     <TextView android:id="@+id/device_info"
         style="?android:attr/listSeparatorTextViewStyle"
         android:text="@string/device_info"
