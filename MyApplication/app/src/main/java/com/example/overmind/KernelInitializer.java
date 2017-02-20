@@ -56,7 +56,7 @@ class KernelInitializer implements Runnable {
 
         synchronized (lock) {
 
-            if (partialSynapseInput.size() < thisDevice.presynapticNodes.size()) {
+            if (partialSynapseInput.size() < (currentPresynapticDevice + 1)) {
                 for (int i = partialSynapseInput.size(); i < thisDevice.presynapticNodes.size(); i++) {
                     partialSynapseInput.add(null);
                 }
@@ -125,7 +125,9 @@ class KernelInitializer implements Runnable {
 
                 short offset = 0;
 
-                for (int i = 0; i < thisDevice.presynapticNodes.size(); i++) {
+                Log.d("batman", "current pre device " + currentPresynapticDevice);
+
+                for (int i = 0; i < partialSynapseInput.size(); i++) {
                     char[] tmpSynapseInput = partialSynapseInput.get(i);
                     System.arraycopy(tmpSynapseInput, 0, totalSynapseInput, offset, tmpSynapseInput.length);
                     offset += tmpSynapseInput.length;

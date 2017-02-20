@@ -51,11 +51,13 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     cl_bool compilerAvailable;
     char deviceName[256];
 
-    clGetDeviceInfo(obj->device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT, sizeof(cl_uint), &obj->floatVectorWidth, NULL);
-    LOGD("Device info: Preferred vector width for integers: %d ", obj->floatVectorWidth);
+    clGetDeviceInfo(obj->device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT, sizeof(cl_uint), &obj->intVectorWidth, NULL);
+    LOGD("Device info: Preferred vector width for integers: %d ", obj->intVectorWidth);
 
     clGetDeviceInfo(obj->device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &maxWorkGroupSize, NULL);
     LOGD("Device info: Maximum work group size: %d ", maxWorkGroupSize);
+
+    obj->maxWorkGroupSize = maxWorkGroupSize < (1024 / obj->intVectorWidth) ? maxWorkGroupSize : (1024 / obj->intVectorWidth);
 
     clGetDeviceInfo(obj->device, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(cl_uint), &maxWorkItemDimension, NULL);
     LOGD("Device info: Maximum work item dimension: %d", maxWorkItemDimension);
@@ -326,8 +328,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     //cl_event event = 0;
 
     // Number of kernel instances
-    // TODO Must keep in mind maximum work group size too in determining localWorkSize
-    size_t localWorksize[1] = {1024 / obj->floatVectorWidth};
+    size_t localWorksize[1] = {obj->maxWorkGroupSize};
     size_t globalWorksize[1] = {localWorksize[0] * jNumOfNeurons};
 
     bool openCLFailed = false;

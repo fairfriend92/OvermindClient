@@ -197,9 +197,13 @@ public class SimulationService extends IntentService {
 
                 int index = thisDevice.presynapticNodes.indexOf(presynapticDevice);
 
+                Log.d("batman", "index " + index);
+
                 if (index != -1) {
                     // If the device was found put the workload in the queue
                     kernelInitExecutor.execute(new KernelInitializer(kernelInitQueue, index, thisDevice, inputSpikesBuffer));
+                } else {
+                    Log.e("SimulationService", "Could not find presynaptic device with ip " + presynapticDevice.ip );
                 }
 
             } catch (SocketTimeoutException e) {

@@ -31,7 +31,8 @@ struct OpenCLObject {
     cl_int errorNumber = 0;
     int numberOfMemoryObjects = 8;
     cl_mem memoryObjects[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-    cl_uint floatVectorWidth;
+    cl_uint intVectorWidth;
+    size_t maxWorkGroupSize;
 
     // Pointers to the memory buffers
     cl_float *synapseCoeff;
