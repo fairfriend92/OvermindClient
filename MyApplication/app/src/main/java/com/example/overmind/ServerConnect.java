@@ -60,7 +60,7 @@ class ServerConnect extends AsyncTask<Context, Integer, Socket> {
             }
         } else {
 
-            // Else the number of neurons is retrieved is chosen by the user and as such must be
+            // Else the number of neurons is chosen by the user and as such must be
             // retrieved from the text box
 
             try {
@@ -81,7 +81,7 @@ class ServerConnect extends AsyncTask<Context, Integer, Socket> {
 
         thisDevice.numOfNeurons = numOfNeurons;
         thisDevice.numOfDendrites = 1024;
-        thisDevice.numOfSynapses = 1024;
+        thisDevice.numOfSynapses = getNumOfSynapses();
         thisDevice.natPort = 0;
         thisDevice.presynapticNodes = new ArrayList<>();
         thisDevice.postsynapticNodes = new ArrayList<>();
@@ -132,5 +132,7 @@ class ServerConnect extends AsyncTask<Context, Integer, Socket> {
                 Toast.makeText(context, text, duration).show();
         }
     }
+
+    public native short getNumOfSynapses();
 
 }

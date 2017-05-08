@@ -13,6 +13,3 @@
 -- Configuring done
 -- Generating done
 -- Build files have been written to: /home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/release/armeabi-v7a
-/home/rodolfo/Android/Sdk/cmake/3.6.3155560/bin/cmake: /usr/lib/libcrypto.so.1.0.0: no version information available (required by /home/rodolfo/Android/Sdk/cmake/3.6.3155560/bin/cmake)
-/home/rodolfo/Android/Sdk/cmake/3.6.3155560/bin/cmake: /usr/lib/libssl.so.1.0.0: no version information available (required by /home/rodolfo/Android/Sdk/cmake/3.6.3155560/bin/cmake)
-/home/rodolfo/Android/Sdk/cmake/3.6.3155560/bin/cmake: /usr/lib/libssl.so.1.0.0: no version information available (required by /home/rodolfo/Android/Sdk/cmake/3.6.3155560/bin/cmake)

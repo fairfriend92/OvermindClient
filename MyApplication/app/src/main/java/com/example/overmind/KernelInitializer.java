@@ -125,8 +125,6 @@ class KernelInitializer implements Runnable {
 
                 short offset = 0;
 
-                Log.d("batman", "current pre device " + currentPresynapticDevice);
-
                 for (int i = 0; i < partialSynapseInput.size(); i++) {
                     char[] tmpSynapseInput = partialSynapseInput.get(i);
                     System.arraycopy(tmpSynapseInput, 0, totalSynapseInput, offset, tmpSynapseInput.length);

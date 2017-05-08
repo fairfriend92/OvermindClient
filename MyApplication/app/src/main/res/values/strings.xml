@@ -34,5 +34,7 @@
     <string name="current">"Current: %1$f pA"</string>
     <string name="device_info">Device info</string>
     <string name="stimulus_selection">Stimulus selection</string>
+    <string name="opencl_failure_title">"OpenCL failure"</string>
+    <string name="opencl_failure_message">"An error has occurred during the simulation."</string>
 
 </resources>

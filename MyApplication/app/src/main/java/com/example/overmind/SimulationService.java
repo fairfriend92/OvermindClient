@@ -197,8 +197,6 @@ public class SimulationService extends IntentService {
 
                 int index = thisDevice.presynapticNodes.indexOf(presynapticDevice);
 
-                Log.d("batman", "index " + index);
-
                 if (index != -1) {
                     // If the device was found put the workload in the queue
                     kernelInitExecutor.execute(new KernelInitializer(kernelInitQueue, index, thisDevice, inputSpikesBuffer));
@@ -365,7 +363,7 @@ public class SimulationService extends IntentService {
                     shutDown();
                     if (!errorRaised) {
                         Intent broadcastError = new Intent("ErrorMessage");
-                        broadcastError.putExtra("ErrorNumber", 2);
+                        broadcastError.putExtra("ErrorNumber", 6);
                         LocalBroadcastManager.getInstance(context).sendBroadcast(broadcastError);
                         errorRaised = true;
                     }

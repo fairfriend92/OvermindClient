@@ -66,6 +66,15 @@ public class ErrorDialogFragment extends android.support.v4.app.DialogFragment {
                             }
                         });
                 break;
+            case 6:
+                builder.setMessage(R.string.opencl_failure_message)
+                        .setTitle(R.string.opencl_failure_title)
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                dismiss();
+                            }
+                        });
+                break;
         }
 
         return builder.create();

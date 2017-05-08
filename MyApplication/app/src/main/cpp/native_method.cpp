@@ -7,12 +7,44 @@ size_t synapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * 2 * sizeof(cl_float);
 size_t synapseInputBufferSize = maxNumberMultiplications * (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * sizeof(cl_char);
 size_t simulationParametersBufferSize = 5 * sizeof(cl_double);
 
+extern "C" jshort Java_com_example_overmind_ServerConnect_getNumOfSynapses (
+        JNIEnv *env, jobject  thiz) {
+
+    struct OpenCLObject *obj;
+    obj = (struct OpenCLObject *)malloc(sizeof(struct OpenCLObject));
+
+    if (!createContext(&obj->context))
+    {
+        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+        LOGE("Failed to create an OpenCL context");
+    }
+
+    if (!createCommandQueue(obj->context, &obj->commandQueue, &obj->device))
+    {
+        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+        LOGE("Failed to create an OpenCL command queue");
+    }
+
+    size_t maxWorkGroupSize;
+
+    clGetDeviceInfo(obj->device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT, sizeof(cl_uint), &obj->intVectorWidth, NULL);
+    LOGD("Device info: Preferred vector width for integers: %d ", obj->intVectorWidth);
+
+    clGetDeviceInfo(obj->device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &maxWorkGroupSize, NULL);
+    LOGD("Device info: Maximum work group size: %d ", maxWorkGroupSize);
+
+    obj->maxWorkGroupSize = maxWorkGroupSize < (1024 / obj->intVectorWidth) ? maxWorkGroupSize : (1024 / obj->intVectorWidth);
+
+    return (short) (4 * obj->maxWorkGroupSize);
+
+}
+
 extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
         JNIEnv *env, jobject thiz, jstring jKernel, jshort jNumOfNeurons) {
 
     size_t synapseWeightsBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * jNumOfNeurons * sizeof(cl_uchar);
-    size_t currentBufferSize = jNumOfNeurons * sizeof(cl_long);
     size_t counterBufferSize = jNumOfNeurons * sizeof(cl_int);
+    size_t currentBufferSize = jNumOfNeurons * sizeof(cl_long);
     size_t neuronalDynVarBufferSize = jNumOfNeurons * 3 * sizeof(cl_double);
     char dataBytes = (jNumOfNeurons % 8) == 0 ? (char)(jNumOfNeurons / 8) : (char)(jNumOfNeurons / 8 + 1);
     size_t actionPotentialsBufferSize = dataBytes* sizeof(cl_uchar);
@@ -22,6 +54,8 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
 
     const char *kernelString = env->GetStringUTFChars(jKernel, JNI_FALSE);
 
+    // The context must be created anew since the first time getNumOfSynapses didn't pass it back
+    // to the java side of the application
     if (!createContext(&obj->context))
     {
         cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
@@ -41,7 +75,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     }
 
     /**
-     * Query the device to find various information. These are merely indicative since we must account for ther
+     * Query the device to find various information. These are merely indicative since we must account for the
      * complexity of the Kernel. For more information look at clGetKernelWorkGroupInfo in the simulateDynamics method.
      */
     size_t maxWorkGroupSize;
@@ -86,7 +120,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     env->ReleaseStringUTFChars(jKernel, kernelString);
 
     bool createMemoryObjectsSuccess = true;
-    obj->numberOfMemoryObjects= 7;
+    obj->numberOfMemoryObjects= 8;
 
     // Ask the OpenCL implementation to allocate buffers to pass data to and from the kernels
     obj->memoryObjects[0] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY| CL_MEM_ALLOC_HOST_PTR, synapseCoeffBufferSize, NULL, &obj->errorNumber);
@@ -152,7 +186,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     // Extend the loop beyond the synapse filter order to account for possible overflows of the filter input
     for (int index = 0; index < SYNAPSE_FILTER_ORDER * 2; index++)
     {
-        obj->synapseCoeff[index] = index%2 == 0 ? (cl_float )index * tExc * expf( - index * tExc) : obj->synapseCoeff[index] = (cl_float)(-index * tInh * expf( - index * tInh));
+        obj->synapseCoeff[index] = index%2 == 0 ? (cl_float )index * tExc * expf( - index * tExc) : (cl_float)(-index * tInh * expf( - index * tInh));
         //LOGD("The synapse coefficients are: \tcoefficient %d \tvalue %f", index, (float) (obj->synapseCoeff[index]));
     }
 
@@ -223,6 +257,9 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
 extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynamics(
         JNIEnv *env, jobject thiz, jcharArray jSynapseInput, jlong jOpenCLObject, jshort jNumOfNeurons, jdoubleArray jSimulationParameters) {
 
+    struct OpenCLObject *obj;
+    obj = (struct OpenCLObject *)jOpenCLObject;
+
     size_t synapseWeightsBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES)* jNumOfNeurons * sizeof(cl_uchar);
 
     size_t currentBufferSize = jNumOfNeurons * sizeof(cl_long);
@@ -231,8 +268,6 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     char dataBytes = (jNumOfNeurons % 8) == 0 ? (char)(jNumOfNeurons / 8) : (char)(jNumOfNeurons / 8 + 1);
     size_t actionPotentialsBufferSize = dataBytes * sizeof(cl_uchar);
 
-    struct OpenCLObject *obj;
-    obj = (struct OpenCLObject *)jOpenCLObject;
 
     jchar *synapseInput = env->GetCharArrayElements(jSynapseInput, JNI_FALSE);
     jdouble *simulationParameters = env->GetDoubleArrayElements(jSimulationParameters, JNI_FALSE);
@@ -324,14 +359,28 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     LOGD("Kernel info: local memory size in B: %lu", localMemorySize);
     */
 
-    //  An event to associate with the kernel. Allows us to to retrieve profiling information later
-    //cl_event event = 0;
-
     // Number of kernel instances
     size_t localWorksize[1] = {obj->maxWorkGroupSize};
     size_t globalWorksize[1] = {localWorksize[0] * jNumOfNeurons};
 
     bool openCLFailed = false;
+
+    // Uncomment the following for profiling info
+
+    /*
+    //  An event to associate with the kernel. Allows us to to retrieve profiling information later
+    cl_event event = 0;
+
+    // Enqueue the kernel
+    if (!checkSuccess(clEnqueueNDRangeKernel(obj->commandQueue, obj->kernel, 1, NULL, globalWorksize, localWorksize, 0, NULL, &event)))
+    {
+        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+        LOGE("Failed to enqueue OpenCL kernel");
+        openCLFailed = true;
+    }
+    */
+
+    // Comment out this clEnqueueNDRangeKernel when profiling
 
     // Enqueue the kernel
     if (!checkSuccess(clEnqueueNDRangeKernel(obj->commandQueue, obj->kernel, 1, NULL, globalWorksize, localWorksize, 0, NULL, NULL)))
@@ -349,17 +398,13 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
         openCLFailed = true;
     }
 
-    if (openCLFailed) {
-        jbyteArray errorByte = env->NewByteArray(0);
-        return errorByte;
-    }
-
     // Print the profiling information for the event
     /*
     if(!printProfilingInfo(event))
     {
         cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
         LOGE("Failed to print profiling info");
+        openCLFailed = true;
     }
 
     // Release the event object
@@ -367,8 +412,15 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     {
         cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
         LOGE("Failed releasing the event");
+        openCLFailed = true;
     }
     */
+
+    if (openCLFailed) {
+        jbyteArray errorByte = env->NewByteArray(0);
+        return errorByte;
+    }
+
     /* [Kernel execution] */
 
     /* [Output buffer read] */
