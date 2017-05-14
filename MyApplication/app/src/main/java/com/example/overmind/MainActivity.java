@@ -175,12 +175,12 @@ public class MainActivity extends AppCompatActivity {
                 // Load the appropriate OpenCL library based on the GPU vendor
                 loadGLLibrary();
 
-                // Create and launch the AsyncTask to retrieve the global IP of the device and to send the info
-                // of the local network to the Overmind server
+                // Create and launch the AsyncTask to retrieve the global IP of the terminal and to send the info
+                // of the terminal to the Overmind server
                 ServerConnect serverConnect = new ServerConnect();
                 serverConnect.execute(getApplicationContext());
 
-                // Get from the AsyncTask the struct holding all the info regardinf the local network
+                // Get from the AsyncTask the struct holding all the info regarding the terminal
                 try {
                     thisClient = serverConnect.get();
                 } catch (InterruptedException | ExecutionException e) {
@@ -230,7 +230,7 @@ public class MainActivity extends AppCompatActivity {
                     Resources res = getResources();
 
                     /**
-                     * Show some info about the device running the simulation
+                     * Show some info about the terminal running the simulation
                      */
 
                     TextView rendererView = new TextView(MainActivity.this);

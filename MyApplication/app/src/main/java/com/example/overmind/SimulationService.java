@@ -51,8 +51,8 @@ public class SimulationService extends IntentService {
 
     }
 
-    // Object used to hold all the relevant info pertaining this device
-    private LocalNetwork thisDevice = new LocalNetwork();
+    // Object used to hold all the relevant info pertaining this terminal
+    private Terminal thisTerminal = new Terminal();
 
     @Override
     protected void onHandleIntent (Intent workIntent) {
@@ -98,7 +98,7 @@ public class SimulationService extends IntentService {
         }
 
         /**
-         * Retrieve info regarding the connected devices.
+         * Retrieve info regarding the connected terminals.
          */
 
         try {
@@ -108,11 +108,11 @@ public class SimulationService extends IntentService {
 
             Log.d("Shutdown test", "New input stream read");
 
-            // Save the object from the stream into the local variable thisDevice
-            thisDevice.update((LocalNetwork) input.readObject());
+            // Save the object from the stream into the local variable thisTerminal
+            thisTerminal.update((Terminal) input.readObject());
 
             // The local number of neurons never changes, so it can be made constant
-            NUMBER_OF_NEURONS = thisDevice.numOfNeurons;
+            NUMBER_OF_NEURONS = thisTerminal.numOfNeurons;
 
         } catch (IOException | NullPointerException | ClassNotFoundException e) {
             String stackTrace = Log.getStackTraceString(e);
@@ -127,7 +127,7 @@ public class SimulationService extends IntentService {
         }
 
         assert input != null;
-        assert thisDevice != null;
+        assert thisTerminal != null;
 
         /**
          * Get the string holding the kernel and initialize the OpenCL implementation.
@@ -150,28 +150,28 @@ public class SimulationService extends IntentService {
 
         ExecutorService dataSenderExecutor = Executors.newSingleThreadExecutor();
 
-        ExecutorService localNetworkUpdaterExecutor = Executors.newSingleThreadExecutor();
-        BlockingQueue<LocalNetwork> updatedLocalNetwork = new ArrayBlockingQueue<>(1);
+        ExecutorService terminalUpdaterExecutor = Executors.newSingleThreadExecutor();
+        BlockingQueue<Terminal> updatedTerminal = new ArrayBlockingQueue<>(1);
 
         newOpenCLObject = kernelExcExecutor.submit(new KernelExecutor(kernelInitQueue, kernelExcQueue, openCLObject, this));
         dataSenderExecutor.execute(new DataSender(kernelExcQueue, datagramSocket));
-        localNetworkUpdaterExecutor.execute(new LocalNetworkUpdater(input, updatedLocalNetwork, this));
+        terminalUpdaterExecutor.execute(new TerminalUpdater(input, updatedTerminal, this));
 
         while (!shutdown) {
 
-            // Firstly get the updated info about the connected devices stored in the LocalNetwork
+            // Firstly get the updated info about the connected terminals stored in the Terminal
             // class
             try {
-                LocalNetwork tmp = updatedLocalNetwork.poll(100, TimeUnit.MICROSECONDS);
+                Terminal tmp = updatedTerminal.poll(100, TimeUnit.MICROSECONDS);
                 if (tmp != null) {
-                    thisDevice.update(tmp);
+                    thisTerminal.update(tmp);
                 }
             } catch (InterruptedException e) {
                 String stackTrace = Log.getStackTraceString(e);
                 Log.e("SimulationService", stackTrace);
             }
 
-            // Then received the packets from the known connected devices
+            // Then received the packets from the known connected terminals
 
             try {
 
@@ -183,30 +183,30 @@ public class SimulationService extends IntentService {
 
                 inputSpikesBuffer = inputSpikesPacket.getData();
 
-                InetAddress presynapticDeviceAddr = inputSpikesPacket.getAddress();
+                InetAddress presynapticTerminalAddr = inputSpikesPacket.getAddress();
 
                 /**
-                 * Build a temporary LocalNetwork using the ip included in the header of the received
-                 * datagram packet and use its equals method to identify the device among the
-                 * presynapticNodes which has sent said packet
+                 * Build a temporary Terminal using the ip included in the header of the received
+                 * datagram packet and use its equals method to identify the terminal among the
+                 * presynapticTerminals which have sent said packet
                  */
 
-                LocalNetwork presynapticDevice = new LocalNetwork();
+                Terminal presynapticTerminal = new Terminal();
 
-                presynapticDevice.ip = presynapticDeviceAddr.toString().substring(1);
+                presynapticTerminal.ip = presynapticTerminalAddr.toString().substring(1);
 
-                int index = thisDevice.presynapticNodes.indexOf(presynapticDevice);
+                int index = thisTerminal.presynapticTerminals.indexOf(presynapticTerminal);
 
                 if (index != -1) {
-                    // If the device was found put the workload in the queue
-                    kernelInitExecutor.execute(new KernelInitializer(kernelInitQueue, index, thisDevice, inputSpikesBuffer));
+                    // If the terminal was found put the workload in the queue
+                    kernelInitExecutor.execute(new KernelInitializer(kernelInitQueue, index, thisTerminal, inputSpikesBuffer));
                 } else {
-                    Log.e("SimulationService", "Could not find presynaptic device with ip " + presynapticDevice.ip );
+                    Log.e("SimulationService", "Could not find presynaptic terminal with ip " + presynapticTerminal.ip );
                 }
 
             } catch (SocketTimeoutException e) {
                 String stackTrace = Log.getStackTraceString(e);
-                Log.e("LocalNetworkUpdater", stackTrace);
+                Log.e("TerminalUpdater", stackTrace);
                 shutDown();
                 if (!errorRaised) {
                     Intent broadcastError = new Intent("ErrorMessage");
@@ -236,19 +236,19 @@ public class SimulationService extends IntentService {
          * Shut down the Threads
          */
 
-        localNetworkUpdaterExecutor.shutdownNow();
+        terminalUpdaterExecutor.shutdownNow();
         kernelInitExecutor.shutdownNow();
         kernelExcExecutor.shutdownNow();
         dataSenderExecutor.shutdownNow();
 
-        boolean localNetworkUpdaterIsShutdown = false;
+        boolean terminalUpdatersIsShutdown = false;
         boolean kernelInitializerIsShutdown = false;
         boolean kernelExecutorIsShutdown = false;
         boolean dataSenderIsShutdown = false;
 
         // Print whether or not the shutdowns were successful
         try {
-            localNetworkUpdaterIsShutdown = localNetworkUpdaterExecutor.awaitTermination(300, TimeUnit.MILLISECONDS);
+            terminalUpdatersIsShutdown = terminalUpdaterExecutor.awaitTermination(300, TimeUnit.MILLISECONDS);
             kernelInitializerIsShutdown = kernelInitExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
             kernelExecutorIsShutdown = kernelExcExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
             dataSenderIsShutdown = dataSenderExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
@@ -257,8 +257,8 @@ public class SimulationService extends IntentService {
             Log.e("SimulationService", stackTrace);
         }
 
-        if (!localNetworkUpdaterIsShutdown || !kernelExecutorIsShutdown || !kernelInitializerIsShutdown || dataSenderIsShutdown) {
-            Log.e("SimulationService", "network updater is shutdown: " + localNetworkUpdaterIsShutdown +
+        if (!terminalUpdatersIsShutdown || !kernelExecutorIsShutdown || !kernelInitializerIsShutdown || dataSenderIsShutdown) {
+            Log.e("SimulationService", "terminal updater is shutdown: " + terminalUpdatersIsShutdown +
                     " kernel initializer is shutdown: " + kernelInitializerIsShutdown + " kernel executor is shutdown: " + kernelExcExecutor +
                     " data sender is shutdown: " + dataSenderIsShutdown);
         }
@@ -271,21 +271,21 @@ public class SimulationService extends IntentService {
     }
 
     /**
-     * Update the info about the local network using the object sent back by server whenever the
+     * Update the info about the terminal using the object sent back by the server whenever the
      * topology of the virtual layer changes
      */
 
-    public class LocalNetworkUpdater implements Runnable {
+    public class TerminalUpdater implements Runnable {
 
         private ObjectInputStream input;
-        private LocalNetwork thisDevice = new LocalNetwork();
-        private BlockingQueue<LocalNetwork> updatedLocalNetwork;
+        private Terminal thisTerminal = new Terminal();
+        private BlockingQueue<Terminal> updatedTerminal;
         private Context context;
 
-        LocalNetworkUpdater(ObjectInputStream o, BlockingQueue<LocalNetwork> a, Context c) {
+        TerminalUpdater(ObjectInputStream o, BlockingQueue<Terminal> a, Context c) {
 
             this.input = o;
-            this.updatedLocalNetwork = a;
+            this.updatedTerminal = a;
             this.context = c;
 
         }
@@ -296,10 +296,10 @@ public class SimulationService extends IntentService {
             while (!shutdown) {
 
                 try {
-                    thisDevice.update((LocalNetwork) input.readObject());
+                    thisTerminal.update((Terminal) input.readObject());
                 } catch (IOException | ClassNotFoundException e) {
                     String stackTrace = Log.getStackTraceString(e);
-                    Log.e("LocalNetworkUpdater", stackTrace);
+                    Log.e("TerminalUpdater", stackTrace);
                     shutDown();
                     if (!errorRaised) {
                         Intent broadcastError = new Intent("ErrorMessage");
@@ -310,10 +310,10 @@ public class SimulationService extends IntentService {
                 }
 
                 try {
-                    updatedLocalNetwork.put(thisDevice);
+                    updatedTerminal.put(thisTerminal);
                 } catch (InterruptedException e) {
                     String stackTrace = Log.getStackTraceString(e);
-                    Log.e("LocalNetworkUpdater", stackTrace);
+                    Log.e("TerminalUpdater", stackTrace);
                 }
 
             }
@@ -387,7 +387,7 @@ public class SimulationService extends IntentService {
     }
 
     /**
-     * Runnable class which sends the spikes produced by the local network to the postsynaptic devices,
+     * Runnable class which sends the spikes produced by the local network to the postsynaptic terminals,
      * including the server itself
      */
 
@@ -418,17 +418,17 @@ public class SimulationService extends IntentService {
                     Log.e("DataSender", stackTrace);
                 }
 
-                LocalNetwork thisDeviceLocal = thisDevice.get();
+                Terminal thisTerminalLocal = thisTerminal.get();
 
-                for (short index = 0; index < thisDeviceLocal.postsynapticNodes.size(); index++) {
+                for (short index = 0; index < thisTerminalLocal.postsynapticTerminals.size(); index++) {
 
                     try {
 
-                        LocalNetwork postynapticDevice = thisDeviceLocal.postsynapticNodes.get(index);
+                        Terminal postsynapticTerminal = thisTerminalLocal.postsynapticTerminals.get(index);
 
-                        InetAddress postsynapticDeviceAddr = InetAddress.getByName(postynapticDevice.ip);
+                        InetAddress postsynapticTerminalAddr = InetAddress.getByName(postsynapticTerminal.ip);
 
-                        DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, data_bytes, postsynapticDeviceAddr, postynapticDevice.natPort);
+                        DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, data_bytes, postsynapticTerminalAddr, postsynapticTerminal.natPort);
 
                         outputSocket.send(outputSpikesPacket);
 

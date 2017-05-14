@@ -20,7 +20,7 @@ class ServerConnect extends AsyncTask<Context, Integer, Socket> {
     private String SERVER_IP = MainActivity.serverIP;
 
     private Context context;
-    private LocalNetwork thisDevice = new LocalNetwork();
+    private Terminal thisTerminal = new Terminal();
     private Socket clientSocket = null;
 
     private static final int SERVER_PORT_TCP = 4195;
@@ -40,7 +40,7 @@ class ServerConnect extends AsyncTask<Context, Integer, Socket> {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("ServerConnect", stackTrace);
         }
-        thisDevice.ip = ip;
+        thisTerminal.ip = ip;
 
         /**
          * Choose the number of neurons of the local network
@@ -79,15 +79,15 @@ class ServerConnect extends AsyncTask<Context, Integer, Socket> {
             MainActivity.ServerConnectFailed = true;
         }
 
-        thisDevice.numOfNeurons = numOfNeurons;
-        thisDevice.numOfDendrites = 1024;
-        thisDevice.numOfSynapses = getNumOfSynapses();
-        thisDevice.natPort = 0;
-        thisDevice.presynapticNodes = new ArrayList<>();
-        thisDevice.postsynapticNodes = new ArrayList<>();
+        thisTerminal.numOfNeurons = numOfNeurons;
+        thisTerminal.numOfDendrites = 1024;
+        thisTerminal.numOfSynapses = getNumOfSynapses();
+        thisTerminal.natPort = 0;
+        thisTerminal.presynapticTerminals = new ArrayList<>();
+        thisTerminal.postsynapticTerminals = new ArrayList<>();
 
         /**
-         * Establish connection with the Overmind and send local network info
+         * Establish connection with the Overmind and send terminal info
          */
 
         if (!MainActivity.ServerConnectFailed) {
@@ -106,13 +106,13 @@ class ServerConnect extends AsyncTask<Context, Integer, Socket> {
         }
 
         /**
-         * If no error has occurred the infor about the local network are sent to the server
+         * If no error has occurred the info about the terminal are sent to the server
          */
 
         if (clientSocket != null && !MainActivity.ServerConnectFailed) {
             try {
                 ObjectOutputStream output = new ObjectOutputStream(clientSocket.getOutputStream());
-                output.writeObject(thisDevice);
+                output.writeObject(thisTerminal);
                 publishProgress(0);
             } catch (IOException | NullPointerException e) {
                 String stackTrace = Log.getStackTraceString(e);

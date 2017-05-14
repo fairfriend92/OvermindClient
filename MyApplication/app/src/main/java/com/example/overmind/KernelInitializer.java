@@ -8,8 +8,8 @@ import java.util.concurrent.BlockingQueue;
 class KernelInitializer implements Runnable {
 
     private BlockingQueue<char[]> kernelInitQueue;
-    private int currentPresynapticDevice;
-    private static LocalNetwork thisDevice = new LocalNetwork();
+    private int currentPresynapticTerminal;
+    private static Terminal thisTerminal = new Terminal();
     private byte[] inputSpikesBuffer;
 
     static final Object lock = new Object();
@@ -17,20 +17,20 @@ class KernelInitializer implements Runnable {
     // Static variable used to synchronize threads when the spikes need to be passed to KernelExecutor
     static private short threadsCounter = 0;
 
-    // List made of the spikes arrays received from each presynaptic device
+    // List made of the spikes arrays received from each presynaptic terminal
     // TODO At this point perhaps a double array would be more efficient?
     private static ArrayList<char[]> partialSynapseInput = new ArrayList<>();
 
     // Array obtained by joinining together each element of partialSynapseInput
     private char[] totalSynapseInput = new char[Constants.MAX_NUM_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
 
-    KernelInitializer(BlockingQueue<char[]> b, int i, LocalNetwork l, byte[] b1) {
+    KernelInitializer(BlockingQueue<char[]> b, int i, Terminal l, byte[] b1) {
         this.kernelInitQueue = b;
-        this.currentPresynapticDevice = i;
-        if (KernelInitializer.thisDevice == null) {
-            KernelInitializer.thisDevice = l.get();
+        this.currentPresynapticTerminal = i;
+        if (KernelInitializer.thisTerminal == null) {
+            KernelInitializer.thisTerminal = l.get();
         } else {
-            KernelInitializer.thisDevice.update(l);
+            KernelInitializer.thisTerminal.update(l);
         }
 
         this.inputSpikesBuffer = b1;
@@ -39,15 +39,15 @@ class KernelInitializer implements Runnable {
     @Override
     public void run () {
 
-        LocalNetwork presynapticNetwork =  thisDevice.presynapticNodes.get(currentPresynapticDevice);
+        Terminal presynapticTerminal =  thisTerminal.presynapticTerminals.get(currentPresynapticTerminal);
 
-        int dataBytes = (presynapticNetwork.numOfNeurons % 8) == 0 ?
-                (short) (presynapticNetwork.numOfNeurons / 8) : (short)(presynapticNetwork.numOfNeurons / 8 + 1);
+        int dataBytes = (presynapticTerminal.numOfNeurons % 8) == 0 ?
+                (short) (presynapticTerminal.numOfNeurons / 8) : (short)(presynapticTerminal.numOfNeurons / 8 + 1);
 
         byte[] inputSpikes = new byte[dataBytes];
         System.arraycopy(inputSpikesBuffer, 0, inputSpikes, 0, dataBytes);
 
-        char[] synapseInput = new char[presynapticNetwork.numOfNeurons * Constants.MAX_MULTIPLICATIONS];
+        char[] synapseInput = new char[presynapticTerminal.numOfNeurons * Constants.MAX_MULTIPLICATIONS];
 
         /**
          * Add new empty elements to the list of partial inputs if the size is not sufficient to hold all
@@ -56,14 +56,14 @@ class KernelInitializer implements Runnable {
 
         synchronized (lock) {
 
-            if (partialSynapseInput.size() < (currentPresynapticDevice + 1)) {
-                for (int i = partialSynapseInput.size(); i < thisDevice.presynapticNodes.size(); i++) {
+            if (partialSynapseInput.size() < (currentPresynapticTerminal + 1)) {
+                for (int i = partialSynapseInput.size(); i < thisTerminal.presynapticTerminals.size(); i++) {
                     partialSynapseInput.add(null);
                 }
             }
 
-            if (partialSynapseInput.get(currentPresynapticDevice) != null) {
-                char[] oldInput = partialSynapseInput.get(currentPresynapticDevice);
+            if (partialSynapseInput.get(currentPresynapticTerminal) != null) {
+                char[] oldInput = partialSynapseInput.get(currentPresynapticTerminal);
                 int length = synapseInput.length < oldInput.length ? synapseInput.length : oldInput.length;
                 System.arraycopy(oldInput, 0, synapseInput, 0, length);
             }
@@ -71,10 +71,10 @@ class KernelInitializer implements Runnable {
         }
 
         /**
-         * For each synapse of the presynapticNetwork compute the appropriate input
+         * For each synapse of the presynapticTerminal compute the appropriate input
          */
 
-        for (int indexI = 0; indexI < presynapticNetwork.numOfNeurons; indexI++) {
+        for (int indexI = 0; indexI < presynapticTerminal.numOfNeurons; indexI++) {
 
             // Calculate the byte to which the current indexI belongs
             short byteIndex = (short) (indexI / 8);
@@ -113,11 +113,11 @@ class KernelInitializer implements Runnable {
 
             // TODO This way we cannot tell if we are serving the same synapse before the totalinput is complete...
             threadsCounter++;
-            partialSynapseInput.set(currentPresynapticDevice, synapseInput);
+            partialSynapseInput.set(currentPresynapticTerminal, synapseInput);
 
             // Proceed only if all the partial results have been computed
 
-            if (threadsCounter == thisDevice.presynapticNodes.size()) {
+            if (threadsCounter == thisTerminal.presynapticTerminals.size()) {
 
                 threadsCounter = 0;
 
