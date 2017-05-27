@@ -14,9 +14,11 @@
 #define d simulationParameters[3]
 #define I simulationParameters[4]
 
-__kernel void simulate_dynamics(__constant float* coeff, __constant uchar* weights,
-				__constant char* input, __global long* current, __global int* counter,
-				__global double* neuronalDynVar, __global uchar* actionPotentials, __constant double* simulationParameters)
+__kernel __attribute__((work_group_size_hint(256, 1, 1))) __attribute__((vec_type_hint(float4)))
+void simulate_dynamics(__global float* restrict coeff, __global float* restrict weights,
+		       __global char* restrict input, __global long* restrict current,
+		       __global int* restrict counter, __global double* restrict neuronalDynVar,
+		       __global uchar* restrict actionPotentials, __global double* restrict simulationParameters)
 {
 
   ushort localId = get_local_id(0);
@@ -30,28 +32,32 @@ __kernel void simulate_dynamics(__constant float* coeff, __constant uchar* weigh
 			     coeff[index.s8] + coeff[index.s9] + coeff[index.sa] + coeff[index.sb],
 			     coeff[index.sc] + coeff[index.sd] + coeff[index.se] + coeff[index.sf]);
   // Synaptic weights
-  float4 weightsVec = convert_float4(vload4(localId, weights + workId * 1024));
+  float4 weightsVec = vload4(localId, weights + workId * 1024);
 
-  float result = dot(coeffVec, weightsVec) * 32768.0f;
+  float result = dot(coeffVec, weightsVec);
 
   // OpenCL 1.1 doesn't support atomic operations on float, so we cast
   // the result to long
   long resultLong = convert_long(result);
   long increment = result > 0 ? resultLong : (-resultLong);
+  increment <<= 15;
 
   // Increment the synaptic current
   atom_add(&current[workId], increment);
 
+  mem_fence(CLK_GLOBAL_MEM_FENCE); 
+  
   // The counter is used to count the synapses that have been served
   atomic_inc(&counter[workId]);
 
-  mem_fence(CLK_LOCAL_MEM_FENCE); 
+  //barrier(CLK_GLOBAL_MEM_FENCE);
 
   // Proceed inside the block only when the last synapse has been served
   if (counter[workId] == get_local_size(0))
     {
-
-      double unsignedCurrentDouble = convert_double(current[workId]) / 32768000.0f;
+      
+      current[workId] >>= 25;
+      double unsignedCurrentDouble = convert_double(current[workId]);
       double currentDouble = current[workId] > 0 ? unsignedCurrentDouble : (-unsignedCurrentDouble);
 
       // Compute the potential using Euler integration and Izhikevich model

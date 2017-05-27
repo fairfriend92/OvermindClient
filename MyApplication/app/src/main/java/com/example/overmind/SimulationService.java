@@ -8,6 +8,7 @@ package com.example.overmind;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Process;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
@@ -143,7 +144,7 @@ public class SimulationService extends IntentService {
         BlockingQueue<char[]> kernelInitQueue = new ArrayBlockingQueue<>(4);
         ExecutorService kernelInitExecutor = Executors.newCachedThreadPool();
 
-        BlockingQueue<byte[]> kernelExcQueue = new ArrayBlockingQueue<>(4);
+        BlockingQueue<byte[]> kernelExcQueue = new ArrayBlockingQueue<>(16);
         ExecutorService kernelExcExecutor = Executors.newSingleThreadExecutor();
         // Future object which holds the pointer to the OpenCL structure defined in native_method.h
         Future<Long> newOpenCLObject;

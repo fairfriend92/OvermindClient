@@ -1,14 +1,18 @@
 package com.example.overmind;
 
+import android.os.Process;
 import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 class KernelInitializer implements Runnable {
 
     private BlockingQueue<char[]> kernelInitQueue;
     private int currentPresynapticTerminal;
+    private static short waitBeforeSending = 3;
+    private static int counterOfSentPackets = 0;
     private static Terminal thisTerminal = new Terminal();
     private byte[] inputSpikesBuffer;
 
@@ -56,12 +60,15 @@ class KernelInitializer implements Runnable {
 
         synchronized (lock) {
 
+            // The size of partialSynapseInput must be changed dynamically
             if (partialSynapseInput.size() < (currentPresynapticTerminal + 1)) {
                 for (int i = partialSynapseInput.size(); i < thisTerminal.presynapticTerminals.size(); i++) {
                     partialSynapseInput.add(null);
                 }
             }
 
+            // The runnable initializes the kernel at time n using the input at time n - 1, which
+            // must be first retrieved from partialSynapseInput
             if (partialSynapseInput.get(currentPresynapticTerminal) != null) {
                 char[] oldInput = partialSynapseInput.get(currentPresynapticTerminal);
                 int length = synapseInput.length < oldInput.length ? synapseInput.length : oldInput.length;
@@ -83,7 +90,7 @@ class KernelInitializer implements Runnable {
             char bitValue = (char) ((inputSpikes[byteIndex] >> (indexI - byteIndex * 8)) & 1);
 
             // Increment the synapse inputs and advance them in the filter pipe only in case of firing
-            for (char indexJ = Constants.MAX_MULTIPLICATIONS - 1; indexJ >= 1; indexJ--) {
+            for (char indexJ = (Constants.MAX_MULTIPLICATIONS - 1); indexJ >= 1; indexJ--) {
 
                 // Increment the input only if different from zero to begin with. Advance it if the synapse carries an action potential (bitValue = 1)
                 synapseInput[indexJ + indexI * Constants.MAX_MULTIPLICATIONS] =
@@ -131,10 +138,24 @@ class KernelInitializer implements Runnable {
                     offset += tmpSynapseInput.length;
                 }
 
-                // TODO Change blocking put in offer (?)
+                // Use a counter to count the number of times a spikes packet has been accepted by the KernelExecutor queue.
+                // When the counter reaches a certain threshold, decrease the time waited before dropping the packet altogether.
+                // Every time a packet id dropped, increase the time by 3 ms.
 
+                // TODO Perhaps to improve algorithm look up branch prediction algorithms
                 try {
-                    kernelInitQueue.put(totalSynapseInput);
+                    boolean packetDropped = !kernelInitQueue.offer(totalSynapseInput, waitBeforeSending, TimeUnit.MILLISECONDS);
+                    if (packetDropped) {
+                        waitBeforeSending += 3;
+                        counterOfSentPackets = 0;
+                        //Log.e("KernelInitializer", "dropped packet " + waitBeforeSending);
+                    } else {
+                        counterOfSentPackets++;
+                        if (counterOfSentPackets > 1024 && waitBeforeSending > 3) {
+                            waitBeforeSending--;
+                            counterOfSentPackets = 0;
+                        }
+                    }
                 } catch (InterruptedException e) {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("KernelInitializer", stackTrace);

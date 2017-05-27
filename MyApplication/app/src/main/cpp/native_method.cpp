@@ -4,7 +4,7 @@
  int maxNumberMultiplications = (int) (SYNAPSE_FILTER_ORDER * SAMPLING_RATE / ABSOLUTE_REFRACTORY_PERIOD);
 // Size of the buffers needed to store data
 size_t synapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * 2 * sizeof(cl_float);
-size_t synapseInputBufferSize = maxNumberMultiplications * (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * sizeof(cl_char);
+size_t synapseInputBufferSize =  maxNumberMultiplications * (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * sizeof(cl_char);
 size_t simulationParametersBufferSize = 5 * sizeof(cl_double);
 
 extern "C" jshort Java_com_example_overmind_ServerConnect_getNumOfSynapses (
@@ -42,7 +42,7 @@ extern "C" jshort Java_com_example_overmind_ServerConnect_getNumOfSynapses (
 extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
         JNIEnv *env, jobject thiz, jstring jKernel, jshort jNumOfNeurons) {
 
-    size_t synapseWeightsBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * jNumOfNeurons * sizeof(cl_uchar);
+    size_t synapseWeightsBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * jNumOfNeurons * sizeof(cl_float);
     size_t counterBufferSize = jNumOfNeurons * sizeof(cl_int);
     size_t currentBufferSize = jNumOfNeurons * sizeof(cl_long);
     size_t neuronalDynVarBufferSize = jNumOfNeurons * 3 * sizeof(cl_double);
@@ -78,20 +78,13 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
      * Query the device to find various information. These are merely indicative since we must account for the
      * complexity of the Kernel. For more information look at clGetKernelWorkGroupInfo in the simulateDynamics method.
      */
-    size_t maxWorkGroupSize;
+
     size_t maxWorkItems[3];
     cl_uint maxWorkItemDimension;
     cl_uint maxComputeUnits;
     cl_bool compilerAvailable;
+    cl_uint addressBits;
     char deviceName[256];
-
-    clGetDeviceInfo(obj->device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT, sizeof(cl_uint), &obj->intVectorWidth, NULL);
-    LOGD("Device info: Preferred vector width for integers: %d ", obj->intVectorWidth);
-
-    clGetDeviceInfo(obj->device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &maxWorkGroupSize, NULL);
-    LOGD("Device info: Maximum work group size: %d ", maxWorkGroupSize);
-
-    obj->maxWorkGroupSize = maxWorkGroupSize < (1024 / obj->intVectorWidth) ? maxWorkGroupSize : (1024 / obj->intVectorWidth);
 
     clGetDeviceInfo(obj->device, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(cl_uint), &maxWorkItemDimension, NULL);
     LOGD("Device info: Maximum work item dimension: %d", maxWorkItemDimension);
@@ -108,6 +101,8 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     clGetDeviceInfo(obj->device, CL_DEVICE_COMPILER_AVAILABLE, sizeof(cl_bool), &compilerAvailable, NULL);
     LOGD("Device info: Device compiler available: %d", compilerAvailable);
 
+    clGetDeviceInfo(obj->device, CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint), &addressBits, NULL);
+    LOGD("Device info: Device address bits: %d", addressBits);
 
     obj->kernel = clCreateKernel(obj->program, "simulate_dynamics", &obj->errorNumber);
     if (!checkSuccess(obj->errorNumber))
@@ -159,10 +154,10 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     obj->synapseCoeff = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[0], CL_TRUE, CL_MAP_WRITE, 0, synapseCoeffBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-    obj->synapseWeights = (cl_uchar*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    obj->synapseWeights = (cl_float *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-    obj->current = (cl_long*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[3], CL_TRUE, CL_MAP_WRITE, 0, currentBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    obj->current = (cl_long *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[3], CL_TRUE, CL_MAP_WRITE, 0, currentBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     obj->counter = (cl_int *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[4], CL_TRUE, CL_MAP_WRITE, 0, counterBufferSize, 0, NULL, NULL, &obj->errorNumber);
@@ -194,7 +189,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     // For testing purposes we initialize the synapses weights here
     for (int index = 0; index < (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * jNumOfNeurons; index++)
     {
-        obj->synapseWeights[index] = index%2 == 0 ? (cl_uchar)(100) : (cl_uchar)(33);
+        obj->synapseWeights[index] = index%2 == 0 ? 100.0f : 33.0f;
     }
 
     // The following could be local kernel variables as well, but that would call for a costly thread
@@ -260,7 +255,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     struct OpenCLObject *obj;
     obj = (struct OpenCLObject *)jOpenCLObject;
 
-    size_t synapseWeightsBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES)* jNumOfNeurons * sizeof(cl_uchar);
+    size_t synapseWeightsBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES)* jNumOfNeurons * sizeof(cl_float);
 
     size_t currentBufferSize = jNumOfNeurons * sizeof(cl_long);
     size_t counterBufferSize = jNumOfNeurons * sizeof(cl_int);
@@ -331,14 +326,14 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     /* [Set Kernel Arguments] */
     // Tell the kernels which data to use before they are scheduled
     bool setKernelArgumentSuccess = true;
-    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 0, sizeof(synapseCoeffBufferSize), &obj->memoryObjects[0]));
-    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 1, sizeof(synapseWeightsBufferSize), &obj->memoryObjects[1]));
-    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 2, sizeof(synapseInputBufferSize), &obj->memoryObjects[2]));
-    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 3, sizeof(currentBufferSize), &obj->memoryObjects[3]));
-    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 4, sizeof(counterBufferSize), &obj->memoryObjects[4]));
-    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 5, sizeof(neuronalDynVarBufferSize), &obj->memoryObjects[5]));
-    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 6, sizeof(actionPotentialsBufferSize), &obj->memoryObjects[6]));
-    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 7, sizeof(simulationParametersBufferSize), &obj->memoryObjects[7]));
+    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 0, sizeof(cl_mem), &obj->memoryObjects[0]));
+    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 1, sizeof(cl_mem), &obj->memoryObjects[1]));
+    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 2, sizeof(cl_mem), &obj->memoryObjects[2]));
+    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 3, sizeof(cl_mem), &obj->memoryObjects[3]));
+    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 4, sizeof(cl_mem), &obj->memoryObjects[4]));
+    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 5, sizeof(cl_mem), &obj->memoryObjects[5]));
+    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 6, sizeof(cl_mem), &obj->memoryObjects[6]));
+    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 7, sizeof(cl_mem), &obj->memoryObjects[7]));
 
     // Catch eventual errors
     if (!setKernelArgumentSuccess)
@@ -350,17 +345,28 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
     /* [Kernel execution] */
     // Uncomment for more information on the kernel
+
     /*
-    size_t kernelWorkGroupSize;
+    size_t compileWorkGroupSize[3];
     cl_ulong localMemorySize;
+    cl_ulong privateMemorySize;
+    */
+
+    size_t kernelWorkGroupSize;
     clGetKernelWorkGroupInfo(obj->kernel, obj->device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &kernelWorkGroupSize, NULL);
+
+    /*
     LOGD("Kernel info: maximum work group size: %d", kernelWorkGroupSize);
+    clGetKernelWorkGroupInfo(obj->kernel, obj->device, CL_KERNEL_COMPILE_WORK_GROUP_SIZE, sizeof(size_t[3]), &compileWorkGroupSize, NULL);
+    LOGD("Kernel info: compile work group size: %d %d %d", compileWorkGroupSize[0], compileWorkGroupSize[1], compileWorkGroupSize[2]);
     clGetKernelWorkGroupInfo(obj->kernel, obj->device, CL_KERNEL_LOCAL_MEM_SIZE, sizeof(cl_ulong), &localMemorySize, NULL);
     LOGD("Kernel info: local memory size in B: %lu", localMemorySize);
+    clGetKernelWorkGroupInfo(obj->kernel, obj->device, CL_KERNEL_PRIVATE_MEM_SIZE, sizeof(cl_ulong), &privateMemorySize, NULL);
+    LOGD("Kernel info: private memory size in B: %lu", privateMemorySize);
     */
 
     // Number of kernel instances
-    size_t localWorksize[1] = {obj->maxWorkGroupSize};
+    size_t localWorksize[1] = {kernelWorkGroupSize};
     size_t globalWorksize[1] = {localWorksize[0] * jNumOfNeurons};
 
     bool openCLFailed = false;
