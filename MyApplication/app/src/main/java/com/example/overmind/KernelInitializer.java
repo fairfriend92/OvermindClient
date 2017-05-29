@@ -144,6 +144,8 @@ class KernelInitializer implements Runnable {
 
                 // TODO Perhaps to improve algorithm look up branch prediction algorithms
                 try {
+                    kernelInitQueue.put(totalSynapseInput);
+                    /*
                     boolean packetDropped = !kernelInitQueue.offer(totalSynapseInput, waitBeforeSending, TimeUnit.MILLISECONDS);
                     if (packetDropped) {
                         waitBeforeSending += 3;
@@ -156,6 +158,7 @@ class KernelInitializer implements Runnable {
                             counterOfSentPackets = 0;
                         }
                     }
+                    */
                 } catch (InterruptedException e) {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("KernelInitializer", stackTrace);

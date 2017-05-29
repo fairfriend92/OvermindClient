@@ -29,6 +29,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -141,8 +143,12 @@ public class SimulationService extends IntentService {
          * Queues and Thread executors used to parallelize the computation.
          */
 
+        // TODO Fine tune the queues' capacities, using perhaps SoC info...
+
+        BlockingQueue<Runnable> kernelInitWorkerThreadsQueue = new ArrayBlockingQueue<>(12);
         BlockingQueue<char[]> kernelInitQueue = new ArrayBlockingQueue<>(4);
-        ExecutorService kernelInitExecutor = Executors.newCachedThreadPool();
+        ThreadPoolExecutor.AbortPolicy rejectedExecutionHandler = new ThreadPoolExecutor.AbortPolicy();
+        ThreadPoolExecutor kernelInitExecutor = new ThreadPoolExecutor(2, 4, 3, TimeUnit.MILLISECONDS, kernelInitWorkerThreadsQueue, rejectedExecutionHandler);
 
         BlockingQueue<byte[]> kernelExcQueue = new ArrayBlockingQueue<>(16);
         ExecutorService kernelExcExecutor = Executors.newSingleThreadExecutor();
@@ -166,8 +172,10 @@ public class SimulationService extends IntentService {
                 Terminal tmp = updatedTerminal.poll(100, TimeUnit.MICROSECONDS);
                 if (tmp != null) {
                     thisTerminal.update(tmp);
+                    kernelInitExecutor.setMaximumPoolSize(2 * thisTerminal.presynapticTerminals.size());
+                    kernelInitExecutor.setCorePoolSize(thisTerminal.presynapticTerminals.size());
                 }
-            } catch (InterruptedException e) {
+            } catch (InterruptedException | IllegalArgumentException  e) {
                 String stackTrace = Log.getStackTraceString(e);
                 Log.e("SimulationService", stackTrace);
             }
@@ -200,7 +208,12 @@ public class SimulationService extends IntentService {
 
                 if (index != -1) {
                     // If the terminal was found put the workload in the queue
-                    kernelInitExecutor.execute(new KernelInitializer(kernelInitQueue, index, thisTerminal, inputSpikesBuffer));
+                    try {
+                        kernelInitExecutor.execute(new KernelInitializer(kernelInitQueue, index, thisTerminal, inputSpikesBuffer));
+                    } catch (RejectedExecutionException e) {
+                        String stackTrace = Log.getStackTraceString(e);
+                        Log.e("SimulationService", stackTrace);
+                    }
                 } else {
                     Log.e("SimulationService", "Could not find presynaptic terminal with ip " + presynapticTerminal.ip );
                 }
