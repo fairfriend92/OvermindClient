@@ -5,6 +5,7 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 class KernelInitializer implements Runnable {
@@ -44,6 +45,8 @@ class KernelInitializer implements Runnable {
     public void run () {
 
         Terminal presynapticTerminal =  thisTerminal.presynapticTerminals.get(currentPresynapticTerminal);
+
+        android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
 
         int dataBytes = (presynapticTerminal.numOfNeurons % 8) == 0 ?
                 (short) (presynapticTerminal.numOfNeurons / 8) : (short)(presynapticTerminal.numOfNeurons / 8 + 1);

@@ -17,13 +17,13 @@ add_library( ARM
              src/main/cpp/common.h )
 include_directories( src/main/assets/ )
 
-add_library( Qualcomm
-             SHARED
-             src/main/cpp/native_method.cpp
-             src/main/cpp/native_method.h
-             src/main/cpp/common.cpp
-             src/main/cpp/common.h )
-include_directories( src/main/assets/ )
+#add_library( Qualcomm
+#             SHARED
+#             src/main/cpp/native_method.cpp
+#             src/main/cpp/native_method.h
+#             src/main/cpp/common.cpp
+#             src/main/cpp/common.h )
+#include_directories( src/main/assets/ )
 
 add_library( GLES_mali
              SHARED
@@ -33,12 +33,12 @@ set_target_properties( GLES_mali
              ../../../../OpenCL/src/${ANDROID_ABI}/libGLES_mali.so )
 include_directories( OpenCL/include/ )
 
-add_library( OpenCL_adreno
-             SHARED
-             IMPORTED )
-set_target_properties( OpenCL_adreno
-             PROPERTIES IMPORTED_LOCATION
-             ../../../../OpenCL/src/${ANDROID_ABI}/libOpenCL.so )
+#add_library( OpenCL_adreno
+#             SHARED
+#             IMPORTED )
+#set_target_properties( OpenCL_adreno
+#             PROPERTIES IMPORTED_LOCATION
+#             ../../../../OpenCL/src/${ANDROID_ABI}/libOpenCL.so )
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because system libraries are included in the search path by
@@ -58,5 +58,5 @@ find_library( # Sets the name of the path variable.
 # build script, prebuilt third-party libraries, or system libraries.
 
 target_link_libraries ( ARM log GLES_mali )
-target_link_libraries ( Qualcomm log OpenCL_adreno )
+#target_link_libraries ( Qualcomm log OpenCL_adreno )
 

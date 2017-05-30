@@ -1,4 +1,6 @@
 # ninja log v5
-0	169	0	CMakeFiles/native-lib.dir/src/main/cpp/native-lib.cpp.o	f38ecea90be9e517
-169	335	0	../../../../build/intermediates/cmake/debug/obj/arm64-v8a/libnative-lib.so	5c0adc4ee5beaff4
-0	143	0	CMakeFiles/hello-world.dir/src/main/cpp/hello_world_opencl.cpp.o	1ba0cfe6f9429de5
+0	238	0	CMakeFiles/ARM.dir/src/main/cpp/common.cpp.o	5b7018af87c3173c
+0	263	0	CMakeFiles/ARM.dir/src/main/cpp/native_method.cpp.o	74b39c8fbdbe5fc2
+264	456	0	../../../../build/intermediates/cmake/debug/obj/arm64-v8a/libARM.so	e2943d46ec028e8b
+0	330	0	CMakeFiles/ARM.dir/src/main/cpp/native_method.cpp.o	74b39c8fbdbe5fc2
+330	539	0	../../../../build/intermediates/cmake/debug/obj/arm64-v8a/libARM.so	e2943d46ec028e8b

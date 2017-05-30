@@ -9,6 +9,7 @@ import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Process;
+import android.provider.Telephony;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
@@ -59,6 +60,8 @@ public class SimulationService extends IntentService {
 
     @Override
     protected void onHandleIntent (Intent workIntent) {
+
+        android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
 
         // Socket and stream used for TCP communications with the Overmind server
         Socket clientSocket = MainActivity.thisClient;
@@ -307,6 +310,8 @@ public class SimulationService extends IntentService {
         @Override
         public void run(){
 
+            android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
+
             while (!shutdown) {
 
                 try {
@@ -360,6 +365,8 @@ public class SimulationService extends IntentService {
 
         @Override
         public Long call () {
+
+            android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
 
             while (!shutdown) {
 
@@ -422,6 +429,8 @@ public class SimulationService extends IntentService {
 
         @Override
         public void run () {
+
+            android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
 
             while (!shutdown) {
 

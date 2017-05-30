@@ -11,48 +11,36 @@
 	"cppFileExtensions" : [ "cpp" ],
 	"libraries" : 
 	{
+		"ARM-Debug-arm64-v8a" : 
+		{
+			"abi" : "arm64-v8a",
+			"artifactName" : "ARM",
+			"buildCommand" : "/home/rodolfo/Android/Sdk/cmake/3.6.3155560/bin/cmake --build /home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/debug/arm64-v8a --target ARM",
+			"buildType" : "debug",
+			"files" : 
+			[
+				
+				{
+					"flags" : "  --target=aarch64-none-linux-android --gcc-toolchain=/home/rodolfo/Android/Sdk/ndk-bundle/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_64 --sysroot=/home/rodolfo/Android/Sdk/ndk-bundle/platforms/android-21/arch-arm64  -DARM_EXPORTS -I../../../../src/main/assets -I../../../../OpenCL/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/arm64-v8a/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include/backward  -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security  -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security  -std=c++11 -O0 -fno-limit-debug-info -O0 -fno-limit-debug-info  -fPIC    -c ",
+					"src" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/src/main/cpp/native_method.cpp",
+					"workingDirectory" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/debug/arm64-v8a"
+				},
+				
+				{
+					"flags" : "  --target=aarch64-none-linux-android --gcc-toolchain=/home/rodolfo/Android/Sdk/ndk-bundle/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_64 --sysroot=/home/rodolfo/Android/Sdk/ndk-bundle/platforms/android-21/arch-arm64  -DARM_EXPORTS -I../../../../src/main/assets -I../../../../OpenCL/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/arm64-v8a/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include/backward  -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security  -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security  -std=c++11 -O0 -fno-limit-debug-info -O0 -fno-limit-debug-info  -fPIC    -c ",
+					"src" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/src/main/cpp/common.cpp",
+					"workingDirectory" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/debug/arm64-v8a"
+				}
+			],
+			"output" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/cmake/debug/obj/arm64-v8a/libARM.so",
+			"toolchain" : "989357106649298674"
+		},
 		"GLES_mali-Debug-arm64-v8a" : 
 		{
 			"abi" : "arm64-v8a",
 			"artifactName" : "GLES_mali",
 			"buildType" : "debug",
 			"output" : "../../../../OpenCL/src/arm64-v8a/libGLES_mali.so",
-			"toolchain" : "989357106649298674"
-		},
-		"hello-world-Debug-arm64-v8a" : 
-		{
-			"abi" : "arm64-v8a",
-			"artifactName" : "hello-world",
-			"buildCommand" : "/home/rodolfo/Android/Sdk/cmake/3.6.3155560/bin/cmake --build /home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/debug/arm64-v8a --target hello-world",
-			"buildType" : "debug",
-			"files" : 
-			[
-				
-				{
-					"flags" : "  -target aarch64-none-linux-android -gcc-toolchain /home/rodolfo/Android/Sdk/ndk-bundle/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_64 --sysroot=/home/rodolfo/Android/Sdk/ndk-bundle/platforms/android-21/arch-arm64  -Dhello_world_EXPORTS -I../../../../OpenCL/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/arm64-v8a/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include/backward  -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti  -O0 -fno-limit-debug-info -O0 -fno-limit-debug-info  -fPIC    -c ",
-					"src" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/src/main/cpp/hello_world_opencl.cpp",
-					"workingDirectory" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/debug/arm64-v8a"
-				}
-			],
-			"output" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/cmake/debug/obj/arm64-v8a/libhello-world.so",
-			"toolchain" : "989357106649298674"
-		},
-		"native-lib-Debug-arm64-v8a" : 
-		{
-			"abi" : "arm64-v8a",
-			"artifactName" : "native-lib",
-			"buildCommand" : "/home/rodolfo/Android/Sdk/cmake/3.6.3155560/bin/cmake --build /home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/debug/arm64-v8a --target native-lib",
-			"buildType" : "debug",
-			"files" : 
-			[
-				
-				{
-					"flags" : "  -target aarch64-none-linux-android -gcc-toolchain /home/rodolfo/Android/Sdk/ndk-bundle/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_64 --sysroot=/home/rodolfo/Android/Sdk/ndk-bundle/platforms/android-21/arch-arm64  -Dnative_lib_EXPORTS -I../../../../OpenCL/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/arm64-v8a/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include/backward  -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -fno-exceptions -fno-rtti  -O0 -fno-limit-debug-info -O0 -fno-limit-debug-info  -fPIC    -c ",
-					"src" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/src/main/cpp/native-lib.cpp",
-					"workingDirectory" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/debug/arm64-v8a"
-				}
-			],
-			"output" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/cmake/debug/obj/arm64-v8a/libnative-lib.so",
 			"toolchain" : "989357106649298674"
 		}
 	},

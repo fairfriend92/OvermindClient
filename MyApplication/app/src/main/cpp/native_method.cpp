@@ -346,16 +346,16 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     /* [Kernel execution] */
     // Uncomment for more information on the kernel
 
-    /*
+
     size_t compileWorkGroupSize[3];
     cl_ulong localMemorySize;
     cl_ulong privateMemorySize;
-    */
+
 
     size_t kernelWorkGroupSize;
     clGetKernelWorkGroupInfo(obj->kernel, obj->device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &kernelWorkGroupSize, NULL);
 
-    /*
+
     LOGD("Kernel info: maximum work group size: %d", kernelWorkGroupSize);
     clGetKernelWorkGroupInfo(obj->kernel, obj->device, CL_KERNEL_COMPILE_WORK_GROUP_SIZE, sizeof(size_t[3]), &compileWorkGroupSize, NULL);
     LOGD("Kernel info: compile work group size: %d %d %d", compileWorkGroupSize[0], compileWorkGroupSize[1], compileWorkGroupSize[2]);
@@ -363,7 +363,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     LOGD("Kernel info: local memory size in B: %lu", localMemorySize);
     clGetKernelWorkGroupInfo(obj->kernel, obj->device, CL_KERNEL_PRIVATE_MEM_SIZE, sizeof(cl_ulong), &privateMemorySize, NULL);
     LOGD("Kernel info: private memory size in B: %lu", privateMemorySize);
-    */
+
 
     // Number of kernel instances
     size_t localWorksize[1] = {kernelWorkGroupSize};
