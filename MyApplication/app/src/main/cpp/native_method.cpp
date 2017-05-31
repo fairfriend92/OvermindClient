@@ -1,11 +1,19 @@
 #include "native_method.h"
 
+#define potentialVar obj->neuronalDynVar[workId * 2]
+#define recoveryVar obj->neuronalDynVar[workId * 2 + 1]
+
+#define aPar simulationParameters[0]
+#define bPar simulationParameters[1]
+#define cPar simulationParameters[2]
+#define dPar simulationParameters[3]
+#define IPar simulationParameters[4]
+
 // Maximum number of multiplications needed to compute the current response of a synapse
  int maxNumberMultiplications = (int) (SYNAPSE_FILTER_ORDER * SAMPLING_RATE / ABSOLUTE_REFRACTORY_PERIOD);
 // Size of the buffers needed to store data
 size_t synapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * 2 * sizeof(cl_float);
 size_t synapseInputBufferSize =  maxNumberMultiplications * (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * sizeof(cl_char);
-size_t simulationParametersBufferSize = 5 * sizeof(cl_double);
 
 extern "C" jshort Java_com_example_overmind_ServerConnect_getNumOfSynapses (
         JNIEnv *env, jobject  thiz) {
@@ -43,11 +51,8 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
         JNIEnv *env, jobject thiz, jstring jKernel, jshort jNumOfNeurons) {
 
     size_t synapseWeightsBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * jNumOfNeurons * sizeof(cl_float);
-    size_t counterBufferSize = jNumOfNeurons * sizeof(cl_int);
     size_t currentBufferSize = jNumOfNeurons * sizeof(cl_long);
-    size_t neuronalDynVarBufferSize = jNumOfNeurons * 3 * sizeof(cl_double);
     char dataBytes = (jNumOfNeurons % 8) == 0 ? (char)(jNumOfNeurons / 8) : (char)(jNumOfNeurons / 8 + 1);
-    size_t actionPotentialsBufferSize = dataBytes* sizeof(cl_uchar);
 
     struct OpenCLObject *obj;
     obj = (struct OpenCLObject *)malloc(sizeof(struct OpenCLObject));
@@ -115,7 +120,11 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     env->ReleaseStringUTFChars(jKernel, kernelString);
 
     bool createMemoryObjectsSuccess = true;
-    obj->numberOfMemoryObjects= 8;
+    obj->numberOfMemoryObjects= 4;
+
+    // Allocate memory from the host
+    double *neuronalDynVar = new double[2 * jNumOfNeurons];
+    obj->neuronalDynVar = neuronalDynVar;
 
     // Ask the OpenCL implementation to allocate buffers to pass data to and from the kernels
     obj->memoryObjects[0] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY| CL_MEM_ALLOC_HOST_PTR, synapseCoeffBufferSize, NULL, &obj->errorNumber);
@@ -128,18 +137,6 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     obj->memoryObjects[3] = clCreateBuffer(obj->context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, currentBufferSize, NULL, &obj->errorNumber);
-    createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
-
-    obj->memoryObjects[4] = clCreateBuffer(obj->context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, counterBufferSize, NULL, &obj->errorNumber);
-    createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
-
-    obj->memoryObjects[5] = clCreateBuffer(obj->context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, neuronalDynVarBufferSize, NULL, &obj->errorNumber);
-    createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
-
-    obj->memoryObjects[6] = clCreateBuffer(obj->context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, actionPotentialsBufferSize, NULL, &obj->errorNumber);
-    createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
-
-    obj->memoryObjects[7] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, simulationParametersBufferSize, NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     if (!createMemoryObjectsSuccess)
@@ -158,15 +155,6 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     obj->current = (cl_long *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[3], CL_TRUE, CL_MAP_WRITE, 0, currentBufferSize, 0, NULL, NULL, &obj->errorNumber);
-    mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
-
-    obj->counter = (cl_int *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[4], CL_TRUE, CL_MAP_WRITE, 0, counterBufferSize, 0, NULL, NULL, &obj->errorNumber);
-    mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
-
-    obj->neuronalDynVar = (cl_double *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[5], CL_TRUE, CL_MAP_WRITE, 0, neuronalDynVarBufferSize, 0, NULL, NULL, &obj->errorNumber);
-    mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
-
-    obj->actionPotentials = (cl_uchar*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[6], CL_TRUE, CL_MAP_WRITE, 0, actionPotentialsBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     if (!mapMemoryObjectsSuccess)
@@ -197,16 +185,9 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     // memory access times are negligible due to the embedded nature of the device
     for (int index = 0; index < jNumOfNeurons; index++)
     {
-        obj->neuronalDynVar[3 * index] = (cl_double)(-65.0f);
-        obj->neuronalDynVar[3 * index + 1] = (cl_double)(-13.0f);
-        obj->neuronalDynVar[3 * index + 2] = (cl_double)(0.0f);
+        obj->neuronalDynVar[2 * index] = (cl_double)(-65.0f);
+        obj->neuronalDynVar[2 * index + 1] = (cl_double)(-13.0f);
         obj->current[index] = (cl_long)0;
-        obj->counter[index] = (cl_int)0;
-    }
-
-    for (int index = 0; index < dataBytes; index++)
-    {
-        obj->actionPotentials[index] = (cl_uchar)0;
     }
 
     // Un-map the pointers used to initialize the memory buffers
@@ -223,24 +204,6 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     }
 
     if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[3], obj->current, 0, NULL, NULL)))
-    {
-        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-        LOGE("Unmap memory objects failed");
-    }
-
-    if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[4], obj->counter, 0, NULL, NULL)))
-    {
-        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-        LOGE("Unmap memory objects failed");
-    }
-
-    if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[5], obj->neuronalDynVar, 0, NULL, NULL)))
-    {
-        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-        LOGE("Unmap memory objects failed");
-    }
-
-    if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[6], obj->actionPotentials, 0, NULL, NULL)))
     {
         cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
         LOGE("Unmap memory objects failed");
@@ -299,24 +262,10 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
     mapMemoryObjectsSuccess = true;
 
-    obj->simulationParameters = (cl_double *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[7], CL_TRUE, CL_MAP_WRITE, 0, simulationParametersBufferSize, 0, NULL, NULL, &obj->errorNumber);
-    mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
-
     if (!mapMemoryObjectsSuccess)
     {
         cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
         LOGE("Failed to map buffer");
-    }
-
-    for (int index = 0; index < 5; index++)
-    {
-        obj->simulationParameters[index] = (cl_double)simulationParameters[index];
-    }
-
-    if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[7], obj->simulationParameters, 0, NULL, NULL)))
-    {
-        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-        LOGE("Unmap memory objects failed");
     }
 
     // Release the java array since the data has been passed to the memory buffer
@@ -330,10 +279,6 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 1, sizeof(cl_mem), &obj->memoryObjects[1]));
     setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 2, sizeof(cl_mem), &obj->memoryObjects[2]));
     setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 3, sizeof(cl_mem), &obj->memoryObjects[3]));
-    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 4, sizeof(cl_mem), &obj->memoryObjects[4]));
-    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 5, sizeof(cl_mem), &obj->memoryObjects[5]));
-    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 6, sizeof(cl_mem), &obj->memoryObjects[6]));
-    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 7, sizeof(cl_mem), &obj->memoryObjects[7]));
 
     // Catch eventual errors
     if (!setKernelArgumentSuccess)
@@ -429,12 +374,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
     /* [Kernel execution] */
 
-    /* [Output buffer read] */
-    /**
-     * Map the output buffer wich holds the action potentials so we can pass them to the java byte array
-     * outputSpikes and return them to the application through the Java Native Interface
-     */
-    obj->actionPotentials = (cl_uchar*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[6], CL_TRUE, CL_MAP_READ, 0, actionPotentialsBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    obj->current = (cl_long *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[3], CL_TRUE, CL_MAP_READ, 0, actionPotentialsBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     if (!mapMemoryObjectsSuccess)
@@ -444,17 +384,41 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     }
 
     // Create the array where to store the output
+    long current[jNumOfNeurons * sizeof(cl_long)];
+
+    //jbyteArray actionPotentials = env->NewByteArray(dataBytes);
+    char actionPotentials[dataBytes];
+
+
+    for (short workId = 0; workId < jNumOfNeurons; workId++) {
+        current[workId] = (long)(obj->current[workId]);
+        current[workId] >>= 25;
+        double unsignedCurrentDouble = (double)(current[workId]);
+        double currentDouble = current[workId] > 0 ? unsignedCurrentDouble : (-unsignedCurrentDouble);
+
+        // Compute the potential using Euler integration and Izhikevich model
+        potentialVar += 0.5f * (0.04f * pow(potentialVar, 2) + 5.0f * potentialVar + 140.0f - recoveryVar + currentDouble + IPar);
+
+        recoveryVar += aPar * (bPar * potentialVar - recoveryVar);
+
+        if (potentialVar >= 30.0f)
+        {
+            actionPotentials[(short)(workId / 8)] |= (1 << (workId - (short)(workId / 8) * 8));
+            recoveryVar += dPar;
+            potentialVar = cPar;
+        }
+        else
+        {
+            actionPotentials[(short)(workId / 8)] &= ~(1 << (workId - (short)(workId / 8) * 8));
+        }
+
+        obj->current[workId] = (cl_long)0;
+    }
+
+    // Create the array where to store the output
     jbyteArray outputSpikes = env->NewByteArray(dataBytes);
     // Copy the content in the buffer to the java array, using the pointer created by the OpenCL implementation
-    env->SetByteArrayRegion(outputSpikes, 0, dataBytes, reinterpret_cast<jbyte*>(obj->actionPotentials));
-
-    // Now that the output data has been written in the java array un-map the output buffer
-    if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[6], obj->actionPotentials, 0, NULL, NULL)))
-    {
-        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-        LOGE("Unmap memory objects failed");
-    }
-    /* [Output buffer read] */
+    env->SetByteArrayRegion(outputSpikes, 0, dataBytes, reinterpret_cast<jbyte*>(&actionPotentials));
 
     return outputSpikes;
 
@@ -471,5 +435,8 @@ extern "C" void Java_com_example_overmind_SimulationService_closeOpenCL(
         LOGE("Failed to clean-up OpenCL");
     };
 
+    delete obj->neuronalDynVar;
+
     free(obj);
+
 }
