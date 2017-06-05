@@ -137,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static boolean ServerConnectFailed = false;
     public static short ServerConnectErrorNumber;
-    private double current = 0.0f;
+    private float current = 0.0f;
 
     /**
      * Called when the start simulation button is pressed
@@ -275,7 +275,7 @@ public class MainActivity extends AppCompatActivity {
      */
 
     public void increaseCurrent(View view) {
-        double[] parameters = SimulationParameters.getParameters();
+        float[] parameters = SimulationParameters.getParameters();
 
         Resources res = getResources();
         parameters[4] += 0.5f;
@@ -288,7 +288,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void decreaseCurrent(View view) {
-        double[] parameters = SimulationParameters.getParameters();
+        float[] parameters = SimulationParameters.getParameters();
 
         if (parameters[4] > 0) {
             Resources res = getResources();

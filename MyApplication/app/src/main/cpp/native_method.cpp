@@ -1,7 +1,8 @@
 #include "native_method.h"
 
-#define potentialVar obj->neuronalDynVar[workId * 2]
-#define recoveryVar obj->neuronalDynVar[workId * 2 + 1]
+#define potentialVar obj->neuronalDynVar[workId * 3]
+#define recoveryVar obj->neuronalDynVar[workId * 3 + 1]
+#define kahanCompensationVar obj->neuronalDynVar[workId * 3 + 2]
 
 #define aPar simulationParameters[0]
 #define bPar simulationParameters[1]
@@ -39,7 +40,7 @@ extern "C" jshort Java_com_example_overmind_ServerConnect_getNumOfSynapses (
     LOGD("Device info: Preferred vector width for integers: %d ", obj->intVectorWidth);
 
     clGetDeviceInfo(obj->device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &maxWorkGroupSize, NULL);
-    LOGD("Device info: Maximum work group size: %d ", maxWorkGroupSize);
+    LOGD("Device info: Maximum work group size: %d ", (int)maxWorkGroupSize);
 
     obj->maxWorkGroupSize = maxWorkGroupSize < (1024 / obj->intVectorWidth) ? maxWorkGroupSize : (1024 / obj->intVectorWidth);
 
@@ -51,8 +52,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
         JNIEnv *env, jobject thiz, jstring jKernel, jshort jNumOfNeurons) {
 
     size_t synapseWeightsBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * jNumOfNeurons * sizeof(cl_float);
-    size_t currentBufferSize = jNumOfNeurons * sizeof(cl_long);
-    char dataBytes = (jNumOfNeurons % 8) == 0 ? (char)(jNumOfNeurons / 8) : (char)(jNumOfNeurons / 8 + 1);
+    size_t currentBufferSize = jNumOfNeurons * sizeof(cl_int);
 
     struct OpenCLObject *obj;
     obj = (struct OpenCLObject *)malloc(sizeof(struct OpenCLObject));
@@ -85,17 +85,24 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
      */
 
     size_t maxWorkItems[3];
+    size_t maxWorkGroupSize;
     cl_uint maxWorkItemDimension;
     cl_uint maxComputeUnits;
     cl_bool compilerAvailable;
     cl_uint addressBits;
     char deviceName[256];
 
+    clGetDeviceInfo(obj->device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT, sizeof(cl_uint), &obj->intVectorWidth, NULL);
+
+    clGetDeviceInfo(obj->device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &maxWorkGroupSize, NULL);
+
+    obj->maxWorkGroupSize = maxWorkGroupSize < (1024 / obj->intVectorWidth) ? maxWorkGroupSize : (1024 / obj->intVectorWidth);
+
     clGetDeviceInfo(obj->device, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(cl_uint), &maxWorkItemDimension, NULL);
     LOGD("Device info: Maximum work item dimension: %d", maxWorkItemDimension);
 
     clGetDeviceInfo(obj->device, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(size_t[3]), maxWorkItems, NULL);
-    LOGD("Device info: Maximum work item sizes for each dimension: %d, %d, %d", maxWorkItems[0], maxWorkItems[1], maxWorkItems[2]);
+    LOGD("Device info: Maximum work item sizes for each dimension: %d, %d, %d", (int)maxWorkItems[0], (int)maxWorkItems[1], (int)maxWorkItems[2]);
 
     clGetDeviceInfo(obj->device, CL_DEVICE_NAME, sizeof(char[256]), deviceName, NULL);
     LOGD("Device info: Device name: %s", deviceName);
@@ -123,7 +130,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     obj->numberOfMemoryObjects= 4;
 
     // Allocate memory from the host
-    double *neuronalDynVar = new double[2 * jNumOfNeurons];
+    float *neuronalDynVar = new float[3 * jNumOfNeurons];
     obj->neuronalDynVar = neuronalDynVar;
 
     // Ask the OpenCL implementation to allocate buffers to pass data to and from the kernels
@@ -136,7 +143,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     obj->memoryObjects[2] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, synapseInputBufferSize, NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-    obj->memoryObjects[3] = clCreateBuffer(obj->context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, currentBufferSize, NULL, &obj->errorNumber);
+    obj->memoryObjects[3] = clCreateBuffer(obj->context, CL_MEM_READ_WRITE| CL_MEM_ALLOC_HOST_PTR, currentBufferSize, NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     if (!createMemoryObjectsSuccess)
@@ -154,7 +161,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     obj->synapseWeights = (cl_float *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-    obj->current = (cl_long *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[3], CL_TRUE, CL_MAP_WRITE, 0, currentBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    obj->current = (cl_int *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[3], CL_TRUE, CL_MAP_WRITE, 0, currentBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     if (!mapMemoryObjectsSuccess)
@@ -173,7 +180,6 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
         //LOGD("The synapse coefficients are: \tcoefficient %d \tvalue %f", index, (float) (obj->synapseCoeff[index]));
     }
 
-
     // For testing purposes we initialize the synapses weights here
     for (int index = 0; index < (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * jNumOfNeurons; index++)
     {
@@ -185,9 +191,10 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     // memory access times are negligible due to the embedded nature of the device
     for (int index = 0; index < jNumOfNeurons; index++)
     {
-        obj->neuronalDynVar[2 * index] = (cl_double)(-65.0f);
-        obj->neuronalDynVar[2 * index + 1] = (cl_double)(-13.0f);
-        obj->current[index] = (cl_long)0;
+        obj->neuronalDynVar[3 * index] = -65.0f;
+        obj->neuronalDynVar[3 * index + 1] = -13.0f;
+        obj->neuronalDynVar[3 * index + 2] = 0.0f;
+        obj->current[index] = (cl_int)0;
     }
 
     // Un-map the pointers used to initialize the memory buffers
@@ -213,22 +220,21 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
 }
 
 extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynamics(
-        JNIEnv *env, jobject thiz, jcharArray jSynapseInput, jlong jOpenCLObject, jshort jNumOfNeurons, jdoubleArray jSimulationParameters) {
+        JNIEnv *env, jobject thiz, jcharArray jSynapseInput, jlong jOpenCLObject, jshort jNumOfNeurons, jfloatArray jSimulationParameters) {
 
     struct OpenCLObject *obj;
     obj = (struct OpenCLObject *)jOpenCLObject;
 
     size_t synapseWeightsBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES)* jNumOfNeurons * sizeof(cl_float);
 
-    size_t currentBufferSize = jNumOfNeurons * sizeof(cl_long);
-    size_t counterBufferSize = jNumOfNeurons * sizeof(cl_int);
-    size_t neuronalDynVarBufferSize = jNumOfNeurons * 3 * sizeof(cl_double);
+    size_t currentBufferSize = jNumOfNeurons * sizeof(cl_int);
+    size_t neuronalDynVarBufferSize = jNumOfNeurons * 3 * sizeof(cl_float);
     char dataBytes = (jNumOfNeurons % 8) == 0 ? (char)(jNumOfNeurons / 8) : (char)(jNumOfNeurons / 8 + 1);
     size_t actionPotentialsBufferSize = dataBytes * sizeof(cl_uchar);
 
 
     jchar *synapseInput = env->GetCharArrayElements(jSynapseInput, JNI_FALSE);
-    jdouble *simulationParameters = env->GetDoubleArrayElements(jSimulationParameters, JNI_FALSE);
+    jfloat *simulationParameters = env->GetFloatArrayElements(jSimulationParameters, JNI_FALSE);
 
     /* [Input initialization] */
     /**
@@ -260,16 +266,9 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
         LOGE("Unmap memory objects failed");
     }
 
-    mapMemoryObjectsSuccess = true;
-
-    if (!mapMemoryObjectsSuccess)
-    {
-        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-        LOGE("Failed to map buffer");
-    }
-
     // Release the java array since the data has been passed to the memory buffer
     env->ReleaseCharArrayElements(jSynapseInput, synapseInput, 0);
+
     /* [Input initialization] */
 
     /* [Set Kernel Arguments] */
@@ -291,16 +290,17 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     /* [Kernel execution] */
     // Uncomment for more information on the kernel
 
-
+    /*
     size_t compileWorkGroupSize[3];
     cl_ulong localMemorySize;
     cl_ulong privateMemorySize;
+    */
 
-
+    // Get the maximum number of work items allowed based on scheduled kernel
     size_t kernelWorkGroupSize;
     clGetKernelWorkGroupInfo(obj->kernel, obj->device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &kernelWorkGroupSize, NULL);
 
-
+    /*
     LOGD("Kernel info: maximum work group size: %d", kernelWorkGroupSize);
     clGetKernelWorkGroupInfo(obj->kernel, obj->device, CL_KERNEL_COMPILE_WORK_GROUP_SIZE, sizeof(size_t[3]), &compileWorkGroupSize, NULL);
     LOGD("Kernel info: compile work group size: %d %d %d", compileWorkGroupSize[0], compileWorkGroupSize[1], compileWorkGroupSize[2]);
@@ -308,7 +308,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     LOGD("Kernel info: local memory size in B: %lu", localMemorySize);
     clGetKernelWorkGroupInfo(obj->kernel, obj->device, CL_KERNEL_PRIVATE_MEM_SIZE, sizeof(cl_ulong), &privateMemorySize, NULL);
     LOGD("Kernel info: private memory size in B: %lu", privateMemorySize);
-
+     */
 
     // Number of kernel instances
     size_t localWorksize[1] = {kernelWorkGroupSize};
@@ -316,8 +316,11 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
     bool openCLFailed = false;
 
-    // Uncomment the following for profiling info
+    // Exit with error if # workitems allowed is different from the theoretic one provided
+    // by the device
+    if (kernelWorkGroupSize != obj->maxWorkGroupSize) { openCLFailed = true; }
 
+    // Uncomment the following for profiling info
     /*
     //  An event to associate with the kernel. Allows us to to retrieve profiling information later
     cl_event event = 0;
@@ -367,14 +370,17 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     }
     */
 
+    // If an error occurred return an empty byte array
     if (openCLFailed) {
         jbyteArray errorByte = env->NewByteArray(0);
         return errorByte;
     }
-
     /* [Kernel execution] */
 
-    obj->current = (cl_long *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[3], CL_TRUE, CL_MAP_READ, 0, actionPotentialsBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    /* [Simulate the neuronal dynamics] */
+
+    // Map the OpenCL memory buffer so that it can be accessed by the host
+    obj->current = (cl_int *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[3], CL_TRUE, CL_MEM_READ_WRITE, 0, currentBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     if (!mapMemoryObjectsSuccess)
@@ -383,37 +389,63 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
         LOGE("Failed to map buffer");
     }
 
-    // Create the array where to store the output
-    long current[jNumOfNeurons * sizeof(cl_long)];
-
-    //jbyteArray actionPotentials = env->NewByteArray(dataBytes);
     char actionPotentials[dataBytes];
 
+    //LOGD("Inizio");
 
-    for (short workId = 0; workId < jNumOfNeurons; workId++) {
-        current[workId] = (long)(obj->current[workId]);
-        current[workId] >>= 25;
-        double unsignedCurrentDouble = (double)(current[workId]);
-        double currentDouble = current[workId] > 0 ? unsignedCurrentDouble : (-unsignedCurrentDouble);
+    // Simulate the neuronal dynamics using the current computer by the OpenCL implementation
+    for (short workId = 0; workId < jNumOfNeurons; workId++)
+    {
+        // Convert back from int to float
+        float unsignedCurrentFloat = (float)(obj->current[workId]) / 32768000.0f;
+        float currentFloat = obj->current[workId] > 0 ? unsignedCurrentFloat : (-unsignedCurrentFloat);
 
-        // Compute the potential using Euler integration and Izhikevich model
-        potentialVar += 0.5f * (0.04f * pow(potentialVar, 2) + 5.0f * potentialVar + 140.0f - recoveryVar + currentDouble + IPar);
-
+        // Compute the potential and the recovery variable using Euler integration and Izhikevich model
+        potentialVar += 0.04f * pow(potentialVar, 2) + 5.0f * potentialVar + 140.0f - recoveryVar + currentFloat + IPar;
         recoveryVar += aPar * (bPar * potentialVar - recoveryVar);
 
+        // Uncomment the following to use inverse Euler for the recovery variable
+        /*
+        recoveryVar = (0.5f * 0.02f * 0.2f * potentialVar + recoveryVar) / (1.0f + 0.5f * 0.02f);
+        recoveryVar += 0.5f * 0.02f * (0.2f * potentialVar - recoveryVar);
+        */
+
+        // Uncomment the following to use Kahan compensation on the recovery variable
+        /*
+        float y = aPar * (bPar * potentialVar - recoveryVar) - kahanCompensationVar;
+        float t = recoveryVar + y;
+        kahanCompensationVar = (t - recoveryVar) - y;
+        recoveryVar = t;
+        */
+
+        // Set the bits corresponding to the neurons that have fired
         if (potentialVar >= 30.0f)
         {
+            //LOGD("Set %f %f %f %d", potentialVar, recoveryVar, currentFloat, workId);
             actionPotentials[(short)(workId / 8)] |= (1 << (workId - (short)(workId / 8) * 8));
             recoveryVar += dPar;
             potentialVar = cPar;
         }
         else
         {
+            //LOGD("Unset %f %f %f %d", potentialVar, recoveryVar, currentFloat, workId);
             actionPotentials[(short)(workId / 8)] &= ~(1 << (workId - (short)(workId / 8) * 8));
         }
 
         obj->current[workId] = (cl_long)0;
     }
+    /* [Simulate the neuronal dynamics] */
+
+    //LOGD("Fine");
+
+    if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[3], obj->current, 0, NULL, NULL)))
+    {
+        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+        LOGE("Unmap memory objects failed");
+    }
+
+    // Release the array storing the simulation parameters
+    env->ReleaseFloatArrayElements(jSimulationParameters, simulationParameters, 0);
 
     // Create the array where to store the output
     jbyteArray outputSpikes = env->NewByteArray(dataBytes);
@@ -435,6 +467,7 @@ extern "C" void Java_com_example_overmind_SimulationService_closeOpenCL(
         LOGE("Failed to clean-up OpenCL");
     };
 
+    // Delete the memory allocated by the host
     delete obj->neuronalDynVar;
 
     free(obj);

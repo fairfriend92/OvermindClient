@@ -153,7 +153,7 @@ bool createProgram(cl_context context, cl_device_id device, const char* kernelSt
 
     // Try to build the OpenCL program
 
-    char options[128] = "-cl-opt-disable";
+    char options[128] = "-cl-strict-aliasing -cl-fast-relaxed-math";
 
     bool buildSuccess = checkSuccess(clBuildProgram(*program, 0, NULL, NULL, NULL, NULL));
 

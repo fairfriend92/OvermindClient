@@ -38,7 +38,7 @@ struct OpenCLObject {
     cl_float *synapseCoeff;
     cl_float *synapseWeights;
     cl_char *synapseInput;
-    cl_long *current;
-    double *neuronalDynVar;
+    cl_int *current;
+    float *neuronalDynVar;
 };
 
