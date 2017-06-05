@@ -143,7 +143,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     obj->memoryObjects[2] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, synapseInputBufferSize, NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-    obj->memoryObjects[3] = clCreateBuffer(obj->context, CL_MEM_READ_WRITE| CL_MEM_ALLOC_HOST_PTR, currentBufferSize, NULL, &obj->errorNumber);
+    obj->memoryObjects[3] = clCreateBuffer(obj->context, CL_MEM_WRITE_ONLY| CL_MEM_ALLOC_HOST_PTR, currentBufferSize, NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     if (!createMemoryObjectsSuccess)
@@ -314,11 +314,9 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     size_t localWorksize[1] = {kernelWorkGroupSize};
     size_t globalWorksize[1] = {localWorksize[0] * jNumOfNeurons};
 
-    bool openCLFailed = false;
-
     // Exit with error if # workitems allowed is different from the theoretic one provided
     // by the device
-    if (kernelWorkGroupSize != obj->maxWorkGroupSize) { openCLFailed = true; }
+    bool openCLFailed = kernelWorkGroupSize != obj->maxWorkGroupSize;
 
     // Uncomment the following for profiling info
     /*
@@ -380,7 +378,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     /* [Simulate the neuronal dynamics] */
 
     // Map the OpenCL memory buffer so that it can be accessed by the host
-    obj->current = (cl_int *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[3], CL_TRUE, CL_MEM_READ_WRITE, 0, currentBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    obj->current = (cl_int *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[3], CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, currentBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     if (!mapMemoryObjectsSuccess)
@@ -391,9 +389,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
     char actionPotentials[dataBytes];
 
-    //LOGD("Inizio");
-
-    // Simulate the neuronal dynamics using the current computer by the OpenCL implementation
+    // Simulate the neuronal dynamics using the current computed by the OpenCL implementation
     for (short workId = 0; workId < jNumOfNeurons; workId++)
     {
         // Convert back from int to float
@@ -421,22 +417,18 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
         // Set the bits corresponding to the neurons that have fired
         if (potentialVar >= 30.0f)
         {
-            //LOGD("Set %f %f %f %d", potentialVar, recoveryVar, currentFloat, workId);
             actionPotentials[(short)(workId / 8)] |= (1 << (workId - (short)(workId / 8) * 8));
             recoveryVar += dPar;
             potentialVar = cPar;
         }
         else
         {
-            //LOGD("Unset %f %f %f %d", potentialVar, recoveryVar, currentFloat, workId);
             actionPotentials[(short)(workId / 8)] &= ~(1 << (workId - (short)(workId / 8) * 8));
         }
 
-        obj->current[workId] = (cl_long)0;
+        obj->current[workId] = (cl_int)0;
     }
     /* [Simulate the neuronal dynamics] */
-
-    //LOGD("Fine");
 
     if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[3], obj->current, 0, NULL, NULL)))
     {
