@@ -27,6 +27,7 @@ import android.widget.TextView;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
@@ -96,7 +97,7 @@ public class MainActivity extends AppCompatActivity {
     private static SharedPreferences prefs;
 
     // Socket used for TCP communications with the Overmind server
-    public static Socket thisClient;
+    public static SocketInfo thisClient;
 
     static String serverIP;
     static String numOfNeurons;
@@ -437,7 +438,7 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     System.loadLibrary("Qualcomm");
                 } catch (UnsatisfiedLinkError linkError) {
-                    Log.e("Unsatisfied link", "libGLES_mali.so not found");
+                    Log.e("Unsatisfied link", "libOpenCL.so not found");
                 }
                 break;
             default:

@@ -15,7 +15,7 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
 
-class ServerConnect extends AsyncTask<Context, Integer, Socket> {
+class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
 
     private String SERVER_IP = MainActivity.serverIP;
 
@@ -26,7 +26,7 @@ class ServerConnect extends AsyncTask<Context, Integer, Socket> {
     private static final int SERVER_PORT_TCP = 4195;
     private static final int IPTOS_RELIABILITY = 0x04;
 
-    protected Socket doInBackground(Context ... contexts) {
+    protected SocketInfo doInBackground(Context ... contexts) {
 
         /**
          * Retrieve the global IP of this device
@@ -94,7 +94,8 @@ class ServerConnect extends AsyncTask<Context, Integer, Socket> {
 
             try {
                 clientSocket = new Socket(SERVER_IP, SERVER_PORT_TCP);
-                //clientSocket.setTrafficClass(IPTOS_RELIABILITY);
+                clientSocket.setTrafficClass(IPTOS_RELIABILITY);
+                clientSocket.setKeepAlive(true);
                 //clientSocket.setTcpNoDelay(true);
             } catch (IOException e) {
                 String stackTrace = Log.getStackTraceString(e);
@@ -109,10 +110,13 @@ class ServerConnect extends AsyncTask<Context, Integer, Socket> {
          * If no error has occurred the info about the terminal are sent to the server
          */
 
+        ObjectOutputStream output = null;
+
         if (clientSocket != null && !MainActivity.ServerConnectFailed) {
             try {
-                ObjectOutputStream output = new ObjectOutputStream(clientSocket.getOutputStream());
+                output = new ObjectOutputStream(clientSocket.getOutputStream());
                 output.writeObject(thisTerminal);
+                output.flush();
                 publishProgress(0);
             } catch (IOException | NullPointerException e) {
                 String stackTrace = Log.getStackTraceString(e);
@@ -121,7 +125,8 @@ class ServerConnect extends AsyncTask<Context, Integer, Socket> {
         }
 
         assert ip != null;
-        return clientSocket;
+        assert output != null;
+        return new SocketInfo(clientSocket, output, null);
     }
 
     protected void onProgressUpdate(Integer... progress) {

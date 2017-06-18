@@ -16,6 +16,7 @@ class KernelInitializer implements Runnable {
     private static int counterOfSentPackets = 0;
     private static Terminal thisTerminal = new Terminal();
     private byte[] inputSpikesBuffer;
+    private boolean terminalWasUpdated = false;
 
     static final Object lock = new Object();
 
@@ -29,24 +30,26 @@ class KernelInitializer implements Runnable {
     // Array obtained by joinining together each element of partialSynapseInput
     private char[] totalSynapseInput = new char[Constants.MAX_NUM_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
 
-    KernelInitializer(BlockingQueue<char[]> b, int i, Terminal l, byte[] b1) {
+    KernelInitializer(BlockingQueue<char[]> b, int i, Terminal l, byte[] b1, boolean b2 ) {
         this.kernelInitQueue = b;
         this.currentPresynapticTerminal = i;
+
         if (KernelInitializer.thisTerminal == null) {
-            KernelInitializer.thisTerminal = l.get();
+            //KernelInitializer.thisTerminal = l.get();
+            KernelInitializer.thisTerminal = new Terminal();
+            KernelInitializer.thisTerminal.update(l);
         } else {
             KernelInitializer.thisTerminal.update(l);
         }
 
         this.inputSpikesBuffer = b1;
+        this.terminalWasUpdated = b2;
     }
 
     @Override
     public void run () {
 
         Terminal presynapticTerminal =  thisTerminal.presynapticTerminals.get(currentPresynapticTerminal);
-
-        android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
 
         int dataBytes = (presynapticTerminal.numOfNeurons % 8) == 0 ?
                 (short) (presynapticTerminal.numOfNeurons / 8) : (short)(presynapticTerminal.numOfNeurons / 8 + 1);
@@ -61,7 +64,7 @@ class KernelInitializer implements Runnable {
          * the presynaptic spikes
          */
 
-        synchronized (lock) {
+        synchronized (KernelInitializer.lock) {
 
             // The size of partialSynapseInput must be changed dynamically
             if (partialSynapseInput.size() < (currentPresynapticTerminal + 1)) {
@@ -72,7 +75,9 @@ class KernelInitializer implements Runnable {
 
             // The runnable initializes the kernel at time n using the input at time n - 1, which
             // must be first retrieved from partialSynapseInput
-            if (partialSynapseInput.get(currentPresynapticTerminal) != null) {
+            // Initialization is discarded if the terminal has just been updated and the presynaptic
+            // connections have been decreased
+            if (partialSynapseInput.get(currentPresynapticTerminal) != null && !terminalWasUpdated) {
                 char[] oldInput = partialSynapseInput.get(currentPresynapticTerminal);
                 int length = synapseInput.length < oldInput.length ? synapseInput.length : oldInput.length;
                 System.arraycopy(oldInput, 0, synapseInput, 0, length);
@@ -119,15 +124,16 @@ class KernelInitializer implements Runnable {
          * thus it is contained in the following synchronized block
          */
 
-        synchronized (lock) {
+        synchronized (KernelInitializer.lock) {
 
             // TODO This way we cannot tell if we are serving the same synapse before the totalinput is complete...
             threadsCounter++;
             partialSynapseInput.set(currentPresynapticTerminal, synapseInput);
 
             // Proceed only if all the partial results have been computed
-
-            if (threadsCounter == thisTerminal.presynapticTerminals.size()) {
+            // Greater than is used instead of equals because in the meantime the number of
+            // presynaptic connections might have been decreased
+            if (threadsCounter >= thisTerminal.presynapticTerminals.size()) {
 
                 threadsCounter = 0;
 

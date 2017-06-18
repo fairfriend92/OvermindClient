@@ -14,8 +14,10 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -61,11 +63,8 @@ public class SimulationService extends IntentService {
     @Override
     protected void onHandleIntent (Intent workIntent) {
 
-        android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
-
         // Socket and stream used for TCP communications with the Overmind server
-        Socket clientSocket = MainActivity.thisClient;
-        ObjectInputStream input = null;
+        Socket clientSocket = MainActivity.thisClient.socket;
 
         /**
          * Build the datagram socket used for sending and receiving spikes
@@ -110,12 +109,14 @@ public class SimulationService extends IntentService {
         try {
 
             // Open input stream through TCP socket
-            input = new ObjectInputStream(clientSocket.getInputStream());
+            if (MainActivity.thisClient.objectInputStream == null) {
+                MainActivity.thisClient.objectInputStream  = new ObjectInputStream(clientSocket.getInputStream());
+            }
 
             Log.d("Shutdown test", "New input stream read");
 
             // Save the object from the stream into the local variable thisTerminal
-            thisTerminal.update((Terminal) input.readObject());
+            thisTerminal.update((Terminal) MainActivity.thisClient.objectInputStream.readObject());
 
             // The local number of neurons never changes, so it can be made constant
             NUMBER_OF_NEURONS = thisTerminal.numOfNeurons;
@@ -132,7 +133,6 @@ public class SimulationService extends IntentService {
             }
         }
 
-        assert input != null;
         assert thisTerminal != null;
 
         /**
@@ -165,7 +165,9 @@ public class SimulationService extends IntentService {
 
         newOpenCLObject = kernelExcExecutor.submit(new KernelExecutor(kernelInitQueue, kernelExcQueue, openCLObject, this));
         dataSenderExecutor.execute(new DataSender(kernelExcQueue, datagramSocket));
-        terminalUpdaterExecutor.execute(new TerminalUpdater(input, updatedTerminal, this));
+        terminalUpdaterExecutor.execute(new TerminalUpdater(updatedTerminal, this));
+
+        boolean terminalWasUpdated = false;
 
         while (!shutdown) {
 
@@ -175,6 +177,7 @@ public class SimulationService extends IntentService {
                 Terminal tmp = updatedTerminal.poll(100, TimeUnit.MICROSECONDS);
                 if (tmp != null) {
                     thisTerminal.update(tmp);
+                    terminalWasUpdated = true;
                     kernelInitExecutor.setMaximumPoolSize(2 * thisTerminal.presynapticTerminals.size());
                     kernelInitExecutor.setCorePoolSize(thisTerminal.presynapticTerminals.size());
                 }
@@ -210,9 +213,15 @@ public class SimulationService extends IntentService {
                 int index = thisTerminal.presynapticTerminals.indexOf(presynapticTerminal);
 
                 if (index != -1) {
+
+                    // If the terminal has been updated when the initialization of the kernel input
+                    // was not completed the next worker thread must be warned so that the
+                    // initialization is suspended until the next batch of inputs
+                    terminalWasUpdated = index != 0 && terminalWasUpdated;
+
                     // If the terminal was found put the workload in the queue
                     try {
-                        kernelInitExecutor.execute(new KernelInitializer(kernelInitQueue, index, thisTerminal, inputSpikesBuffer));
+                        kernelInitExecutor.execute(new KernelInitializer(kernelInitQueue, index, thisTerminal, inputSpikesBuffer, terminalWasUpdated));
                     } catch (RejectedExecutionException e) {
                         String stackTrace = Log.getStackTraceString(e);
                         Log.e("SimulationService", stackTrace);
@@ -276,11 +285,23 @@ public class SimulationService extends IntentService {
 
         if (!terminalUpdatersIsShutdown || !kernelExecutorIsShutdown || !kernelInitializerIsShutdown || dataSenderIsShutdown) {
             Log.e("SimulationService", "terminal updater is shutdown: " + terminalUpdatersIsShutdown +
-                    " kernel initializer is shutdown: " + kernelInitializerIsShutdown + " kernel executor is shutdown: " + kernelExcExecutor +
+                    " kernel initializer is shutdown: " + kernelInitializerIsShutdown + " kernel executor is shutdown: " + kernelExecutorIsShutdown +
                     " data sender is shutdown: " + dataSenderIsShutdown);
         }
 
         closeOpenCL(openCLObject);
+
+        try {
+            MainActivity.thisClient.objectInputStream.close();
+            MainActivity.thisClient.objectOutputStream.close();
+            MainActivity.thisClient.socket.close();
+        } catch (IOException e) {
+            String stackTrace = Log.getStackTraceString(e);
+            Log.e("SimulationService", stackTrace);
+        }
+
+        //TODO If service is shutdown next time the simulation is launched the input stream should
+        //TODO not be created anew
 
         shutdown = false;
         stopSelf();
@@ -294,14 +315,12 @@ public class SimulationService extends IntentService {
 
     public class TerminalUpdater implements Runnable {
 
-        private ObjectInputStream input;
         private Terminal thisTerminal = new Terminal();
         private BlockingQueue<Terminal> updatedTerminal;
         private Context context;
 
-        TerminalUpdater(ObjectInputStream o, BlockingQueue<Terminal> a, Context c) {
+        TerminalUpdater(BlockingQueue<Terminal> a, Context c) {
 
-            this.input = o;
             this.updatedTerminal = a;
             this.context = c;
 
@@ -310,13 +329,19 @@ public class SimulationService extends IntentService {
         @Override
         public void run(){
 
-            android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
-
             while (!shutdown) {
 
                 try {
-                    thisTerminal.update((Terminal) input.readObject());
+                    Object obj = MainActivity.thisClient.objectInputStream.readObject();
+                    if (obj instanceof Terminal)
+                        thisTerminal.update((Terminal)obj);
+                    else {
+                        Log.e("TerminalUpdater", "Object is in wrong format");
+                        throw new IOException();
+                    }
                 } catch (IOException | ClassNotFoundException e) {
+                    Log.e("TerminalUpdater", "Socket is closed: " + MainActivity.thisClient.socket.isClosed());
+                    Log.e("TerminalUpdater", "Socket is connected: " + MainActivity.thisClient.socket.isConnected());
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("TerminalUpdater", stackTrace);
                     shutDown();
@@ -365,8 +390,6 @@ public class SimulationService extends IntentService {
 
         @Override
         public Long call () {
-
-            android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
 
             while (!shutdown) {
 
@@ -429,8 +452,6 @@ public class SimulationService extends IntentService {
 
         @Override
         public void run () {
-
-            android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
 
             while (!shutdown) {
 
