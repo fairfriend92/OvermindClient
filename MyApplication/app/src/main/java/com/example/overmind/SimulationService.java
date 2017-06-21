@@ -58,7 +58,7 @@ public class SimulationService extends IntentService {
     }
 
     // Object used to hold all the relevant info pertaining this terminal
-    private Terminal thisTerminal = new Terminal();
+    static Terminal thisTerminal = new Terminal();
 
     @Override
     protected void onHandleIntent (Intent workIntent) {
@@ -180,7 +180,8 @@ public class SimulationService extends IntentService {
                     terminalWasUpdated = true;
                     kernelInitExecutor.setMaximumPoolSize(2 * thisTerminal.presynapticTerminals.size());
                     kernelInitExecutor.setCorePoolSize(thisTerminal.presynapticTerminals.size());
-                }
+                } else
+                    terminalWasUpdated = false;
             } catch (InterruptedException | IllegalArgumentException  e) {
                 String stackTrace = Log.getStackTraceString(e);
                 Log.e("SimulationService", stackTrace);
@@ -200,34 +201,12 @@ public class SimulationService extends IntentService {
 
                 InetAddress presynapticTerminalAddr = inputSpikesPacket.getAddress();
 
-                /**
-                 * Build a temporary Terminal using the ip included in the header of the received
-                 * datagram packet and use its equals method to identify the terminal among the
-                 * presynapticTerminals which have sent said packet
-                 */
-
-                Terminal presynapticTerminal = new Terminal();
-
-                presynapticTerminal.ip = presynapticTerminalAddr.toString().substring(1);
-
-                int index = thisTerminal.presynapticTerminals.indexOf(presynapticTerminal);
-
-                if (index != -1) {
-
-                    // If the terminal has been updated when the initialization of the kernel input
-                    // was not completed the next worker thread must be warned so that the
-                    // initialization is suspended until the next batch of inputs
-                    terminalWasUpdated = index != 0 && terminalWasUpdated;
-
-                    // If the terminal was found put the workload in the queue
-                    try {
-                        kernelInitExecutor.execute(new KernelInitializer(kernelInitQueue, index, thisTerminal, inputSpikesBuffer, terminalWasUpdated));
-                    } catch (RejectedExecutionException e) {
-                        String stackTrace = Log.getStackTraceString(e);
-                        Log.e("SimulationService", stackTrace);
-                    }
-                } else {
-                    Log.e("SimulationService", "Could not find presynaptic terminal with ip " + presynapticTerminal.ip );
+                // If the terminal was found put the workload in the queue
+                try {
+                    kernelInitExecutor.execute(new KernelInitializer(kernelInitQueue, presynapticTerminalAddr.toString().substring(1), inputSpikesBuffer, terminalWasUpdated));
+                } catch (RejectedExecutionException e) {
+                    String stackTrace = Log.getStackTraceString(e);
+                    Log.e("SimulationService", stackTrace);
                 }
 
             } catch (SocketTimeoutException e) {
@@ -299,9 +278,6 @@ public class SimulationService extends IntentService {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("SimulationService", stackTrace);
         }
-
-        //TODO If service is shutdown next time the simulation is launched the input stream should
-        //TODO not be created anew
 
         shutdown = false;
         stopSelf();
@@ -441,7 +417,6 @@ public class SimulationService extends IntentService {
         private short data_bytes = (NUMBER_OF_NEURONS % 8) == 0 ?
                 (short) (NUMBER_OF_NEURONS / 8) : (short)(NUMBER_OF_NEURONS / 8 + 1);
         private byte[] outputSpikes = new byte[data_bytes];
-        // TODO Maybe it's better to have different sockets for send and receive but on the same port rather than just one socket
         private DatagramSocket outputSocket;
 
         DataSender(BlockingQueue<byte[]> b, DatagramSocket d) {
