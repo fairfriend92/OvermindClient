@@ -15,19 +15,19 @@ class KernelInitializer implements Runnable {
     // IP of the presynaptic terminal whose output must be processed
     private String presynTerminalIP;
 
-    // Local variable
+    // Local collection of the presynaptic terminals
     private static List<Terminal> presynapticTerminals = Collections.synchronizedList(new ArrayList<Terminal>());
+
+    // Local variable storing information about the terminal in use
+    private Terminal thisTerminal;
 
     // Buffer to hold the incoming spikes until the length of the synaptic input array has not been
     // figured out
     private byte[] inputSpikesBuffer;
 
     // Flag which signals whenever new info regarding the terminal have been received from the TCP
-    // stream. The local variable is necessary to avoid further thread synchronization
-    // The flag is initially set true to account for the first updated terminal ever received
-    // from the server
-    private static boolean terminalWasUpdated = true;
-    private boolean terminalWasUpdated_local = false;
+    // stream.
+    private static boolean terminalWasUpdated = false;
 
     // Object used for synchronization
     private static final Object lock = new Object();
@@ -46,11 +46,11 @@ class KernelInitializer implements Runnable {
     // Array obtained by joinining together each element of synapticInputCollection
     private char[] totalSynapticInput = new char[Constants.MAX_NUM_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
 
-    KernelInitializer(BlockingQueue<char[]> b, String s, byte[] b1, boolean b2 ) {
+    KernelInitializer(BlockingQueue<char[]> b, String s, byte[] b1, Terminal t) {
         this.kernelInitQueue = b;
         this.presynTerminalIP = s;
         this.inputSpikesBuffer = b1;
-        this.terminalWasUpdated_local = b2;
+        this.thisTerminal = t;
     }
 
     @Override
@@ -62,15 +62,14 @@ class KernelInitializer implements Runnable {
 
         synchronized (lock) {
 
-            terminalWasUpdated = terminalWasUpdated || terminalWasUpdated_local;
-
             if (threadsCounter == 0)  {
+
+                terminalWasUpdated = (terminalWasUpdated || thisTerminal != null);
 
                 // If the infomation of the terminal have been updated...
                 if (terminalWasUpdated) {
 
-                    // Create anew the ArrayList storing the presynaptic Terminals
-                    Collections.copy(presynapticTerminals, SimulationService.thisTerminal.get().presynapticTerminals);
+                    presynapticTerminals = thisTerminal.presynapticTerminals;
 
                     // Create the array storing the kernel input derived from the spikes produced
                     // by each presynaptic Terminal
@@ -83,6 +82,9 @@ class KernelInitializer implements Runnable {
                 // Create a new array storing the flags that tell which connection has been served
                 connectionWasServed = new boolean[presynapticTerminals.size()];
 
+            } else if (threadsCounter == presynapticTerminals.size()) {
+                Log.e("KernelInitializer", "Synaptic input is already complete");
+                return;
             }
 
         }
@@ -169,6 +171,7 @@ class KernelInitializer implements Runnable {
                 connectionWasServed[presynTerminalIndex] = true;
 
             threadsCounter++;
+
             synapticInputCollection[presynTerminalIndex] = synapticInput;
 
             // Proceed only if all the partial results have been computed

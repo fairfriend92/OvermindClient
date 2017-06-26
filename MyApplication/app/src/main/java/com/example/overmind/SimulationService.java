@@ -102,26 +102,17 @@ public class SimulationService extends IntentService {
             Log.e("SimulationService", stackTrace);
         }
 
-        /**
-         * Retrieve info regarding the connected terminals.
+        /*
+        Open input stream through TCP socket
          */
 
         try {
 
-            // Open input stream through TCP socket
             if (MainActivity.thisClient.objectInputStream == null) {
                 MainActivity.thisClient.objectInputStream  = new ObjectInputStream(clientSocket.getInputStream());
             }
 
-            Log.d("Shutdown test", "New input stream read");
-
-            // Save the object from the stream into the local variable thisTerminal
-            thisTerminal.update((Terminal) MainActivity.thisClient.objectInputStream.readObject());
-
-            // The local number of neurons never changes, so it can be made constant
-            NUMBER_OF_NEURONS = thisTerminal.numOfNeurons;
-
-        } catch (IOException | NullPointerException | ClassNotFoundException e) {
+        } catch (IOException | NullPointerException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("SimulationService", stackTrace);
             shutDown();
@@ -132,8 +123,6 @@ public class SimulationService extends IntentService {
                 errorRaised = true;
             }
         }
-
-        assert thisTerminal != null;
 
         /**
          * Get the string holding the kernel and initialize the OpenCL implementation.
@@ -151,7 +140,7 @@ public class SimulationService extends IntentService {
         BlockingQueue<Runnable> kernelInitWorkerThreadsQueue = new ArrayBlockingQueue<>(12);
         BlockingQueue<char[]> kernelInitQueue = new ArrayBlockingQueue<>(4);
         ThreadPoolExecutor.AbortPolicy rejectedExecutionHandler = new ThreadPoolExecutor.AbortPolicy();
-        ThreadPoolExecutor kernelInitExecutor = new ThreadPoolExecutor(2, 4, 3, TimeUnit.MILLISECONDS, kernelInitWorkerThreadsQueue, rejectedExecutionHandler);
+        ThreadPoolExecutor kernelInitExecutor = new ThreadPoolExecutor(2, 2, 3, TimeUnit.MILLISECONDS, kernelInitWorkerThreadsQueue, rejectedExecutionHandler);
 
         BlockingQueue<byte[]> kernelExcQueue = new ArrayBlockingQueue<>(16);
         ExecutorService kernelExcExecutor = Executors.newSingleThreadExecutor();
@@ -167,27 +156,28 @@ public class SimulationService extends IntentService {
         dataSenderExecutor.execute(new DataSender(kernelExcQueue, datagramSocket));
         terminalUpdaterExecutor.execute(new TerminalUpdater(updatedTerminal, this));
 
-        boolean terminalWasUpdated = false;
-
         while (!shutdown) {
 
             // Firstly get the updated info about the connected terminals stored in the Terminal
             // class
+            Terminal thisTerminal = new Terminal();
             try {
-                Terminal tmp = updatedTerminal.poll(100, TimeUnit.MICROSECONDS);
-                if (tmp != null) {
-                    thisTerminal.update(tmp);
-                    terminalWasUpdated = true;
-                    kernelInitExecutor.setMaximumPoolSize(2 * thisTerminal.presynapticTerminals.size());
-                    kernelInitExecutor.setCorePoolSize(thisTerminal.presynapticTerminals.size());
-                } else
-                    terminalWasUpdated = false;
+                thisTerminal = updatedTerminal.poll(100, TimeUnit.MICROSECONDS);
+                if (thisTerminal != null) {
+                    // TODO create assign method for Terminal ?
+                    SimulationService.thisTerminal.update(thisTerminal);
+                    int poolSize = thisTerminal.presynapticTerminals.size() > 0 ? thisTerminal.presynapticTerminals.size() :
+                            kernelInitExecutor.getPoolSize();
+                    kernelInitExecutor.setCorePoolSize(poolSize);
+                    kernelInitExecutor.setMaximumPoolSize(poolSize);
+
+                }
             } catch (InterruptedException | IllegalArgumentException  e) {
                 String stackTrace = Log.getStackTraceString(e);
                 Log.e("SimulationService", stackTrace);
             }
 
-            // Then received the packets from the known connected terminals
+            // Then receive the packets from the known connected terminals
 
             try {
 
@@ -201,13 +191,14 @@ public class SimulationService extends IntentService {
 
                 InetAddress presynapticTerminalAddr = inputSpikesPacket.getAddress();
 
-                // If the terminal was found put the workload in the queue
+                // Put the workload in the queue
                 try {
-                    kernelInitExecutor.execute(new KernelInitializer(kernelInitQueue, presynapticTerminalAddr.toString().substring(1), inputSpikesBuffer, terminalWasUpdated));
+                    kernelInitExecutor.execute(new KernelInitializer(kernelInitQueue, presynapticTerminalAddr.toString().substring(1), inputSpikesBuffer, thisTerminal));
                 } catch (RejectedExecutionException e) {
                     String stackTrace = Log.getStackTraceString(e);
-                    Log.e("SimulationService", stackTrace);
+                    //Log.e("SimulationService", stackTrace);
                 }
+
 
             } catch (SocketTimeoutException e) {
                 String stackTrace = Log.getStackTraceString(e);
@@ -226,8 +217,8 @@ public class SimulationService extends IntentService {
 
         }
 
-        /**
-         * Retrieve from the Future object the last updated openCLObject
+        /*
+        Retrieve from the Future object the last updated openCLObject
          */
 
         try {
@@ -237,8 +228,8 @@ public class SimulationService extends IntentService {
             Log.e("SimulationService", stackTrace);
         }
 
-        /**
-         * Shut down the Threads
+        /*
+          Shut down the Threads
          */
 
         terminalUpdaterExecutor.shutdownNow();
@@ -289,9 +280,8 @@ public class SimulationService extends IntentService {
      * topology of the virtual layer changes
      */
 
-    public class TerminalUpdater implements Runnable {
+    private class TerminalUpdater implements Runnable {
 
-        private Terminal thisTerminal = new Terminal();
         private BlockingQueue<Terminal> updatedTerminal;
         private Context context;
 
@@ -307,10 +297,12 @@ public class SimulationService extends IntentService {
 
             while (!shutdown) {
 
+                Terminal thisTerminal = new Terminal();
+
                 try {
                     Object obj = MainActivity.thisClient.objectInputStream.readObject();
                     if (obj instanceof Terminal)
-                        thisTerminal.update((Terminal)obj);
+                        thisTerminal = ((Terminal)obj);
                     else {
                         Log.e("TerminalUpdater", "Object is in wrong format");
                         throw new IOException();
@@ -346,7 +338,7 @@ public class SimulationService extends IntentService {
      * Class which calls the native method which schedules and runs the OpenCL kernel.
      */
 
-    public class KernelExecutor implements Callable<Long> {
+    private class KernelExecutor implements Callable<Long> {
 
         private BlockingQueue<char[]> kernelInitQueue;
         private long openCLObject;
@@ -406,12 +398,12 @@ public class SimulationService extends IntentService {
 
     }
 
-    /**
-     * Runnable class which sends the spikes produced by the local network to the postsynaptic terminals,
-     * including the server itself
-     */
+    /*
+    Runnable class which sends the spikes produced by the local network to the postsynaptic terminals,
+    including the server itself
+    */
 
-    public class DataSender implements Runnable {
+    private class DataSender implements Runnable {
 
         private BlockingQueue<byte[]> kernelExcQueue;
         private short data_bytes = (NUMBER_OF_NEURONS % 8) == 0 ?
@@ -437,6 +429,7 @@ public class SimulationService extends IntentService {
                     Log.e("DataSender", stackTrace);
                 }
 
+                // TODO
                 Terminal thisTerminalLocal = thisTerminal.get();
 
                 for (short index = 0; index < thisTerminalLocal.postsynapticTerminals.size(); index++) {

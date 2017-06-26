@@ -80,6 +80,7 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
         }
 
         thisTerminal.numOfNeurons = numOfNeurons;
+        Constants.NUMBER_OF_NEURONS = numOfNeurons;
         thisTerminal.numOfDendrites = 1024;
         thisTerminal.numOfSynapses = getNumOfSynapses();
         thisTerminal.natPort = 0;

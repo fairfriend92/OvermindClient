@@ -10,6 +10,11 @@ public class Terminal implements Serializable {
     public ArrayList<Terminal> presynapticTerminals;
     public ArrayList<Terminal> postsynapticTerminals;
 
+    public Terminal () {
+        presynapticTerminals = new ArrayList<>();
+        postsynapticTerminals = new ArrayList<>();
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (obj == null || obj.getClass() != this.getClass()) { return false; }
