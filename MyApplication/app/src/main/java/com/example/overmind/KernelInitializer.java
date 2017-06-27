@@ -20,20 +20,17 @@ class KernelInitializer implements Runnable {
 
     // Local variable storing information about the terminal in use
     private Terminal thisTerminal;
+    private static Terminal thisTerminal_static;
 
     // Buffer to hold the incoming spikes until the length of the synaptic input array has not been
     // figured out
     private byte[] inputSpikesBuffer;
 
-    // Flag which signals whenever new info regarding the terminal have been received from the TCP
-    // stream.
-    private static boolean terminalWasUpdated = false;
-
     // Object used for synchronization
     private static final Object lock = new Object();
 
     // Static variable used to synchronize threads when the spikes need to be passed to KernelExecutor
-    static private short threadsCounter = 0;
+    private static short threadsCounter = 0;
 
     // Double array with one dimension representing the presynaptic terminals and the other the
     // input of a certain terminal
@@ -62,27 +59,30 @@ class KernelInitializer implements Runnable {
 
         synchronized (lock) {
 
-            if (threadsCounter == 0)  {
+            thisTerminal_static = thisTerminal != null ? thisTerminal : thisTerminal_static;
 
-                terminalWasUpdated = (terminalWasUpdated || thisTerminal != null);
+            if (threadsCounter == 0) {
 
                 // If the infomation of the terminal have been updated...
-                if (terminalWasUpdated) {
+                if (thisTerminal_static != null) {
 
-                    presynapticTerminals = thisTerminal.presynapticTerminals;
+                    presynapticTerminals = new ArrayList<>(thisTerminal_static.presynapticTerminals);
 
                     // Create the array storing the kernel input derived from the spikes produced
                     // by each presynaptic Terminal
                     synapticInputCollection = new char[presynapticTerminals.size()][4096];
 
                     // Reset the flag
-                    terminalWasUpdated = false;
+                    thisTerminal_static = null;
+
                 }
 
                 // Create a new array storing the flags that tell which connection has been served
                 connectionWasServed = new boolean[presynapticTerminals.size()];
 
-            } else if (threadsCounter == presynapticTerminals.size()) {
+            }
+
+            if (threadsCounter == presynapticTerminals.size()) {
                 Log.e("KernelInitializer", "Synaptic input is already complete");
                 return;
             }
@@ -180,7 +180,6 @@ class KernelInitializer implements Runnable {
                 threadsCounter = 0;
 
                 // Put together the complete input
-
                 short offset = 0;
 
                 for (int i = 0; i < presynapticTerminals.size(); i++) {
