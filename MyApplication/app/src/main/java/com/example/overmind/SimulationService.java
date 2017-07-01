@@ -25,6 +25,9 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -156,6 +159,8 @@ public class SimulationService extends IntentService {
         dataSenderExecutor.execute(new DataSender(kernelExcQueue, datagramSocket));
         terminalUpdaterExecutor.execute(new TerminalUpdater(updatedTerminal, this));
 
+        List<Future<?>> kernelInitFutures = new ArrayList<Future<?>>();
+
         while (!shutdown) {
 
             // Firstly get the updated info about the connected terminals stored in the Terminal
@@ -191,14 +196,23 @@ public class SimulationService extends IntentService {
 
                 InetAddress presynapticTerminalAddr = inputSpikesPacket.getAddress();
 
-                // Put the workload in the queue
-                try {
-                    kernelInitExecutor.execute(new KernelInitializer(kernelInitQueue, presynapticTerminalAddr.toString().substring(1), inputSpikesBuffer, thisTerminal));
-                } catch (RejectedExecutionException e) {
-                    String stackTrace = Log.getStackTraceString(e);
-                    //Log.e("SimulationService", stackTrace);
+                Iterator iterator = kernelInitFutures.iterator();
+
+                while (iterator.hasNext()) {
+                    Future<?> future = (Future<?>) iterator.next();
+                    if (future.isDone())
+                        iterator.remove();
                 }
 
+                if (thisTerminal != null) {
+                    for (Future<?> future : kernelInitFutures)
+                        future.get();
+                    kernelInitFutures = new ArrayList<>();
+                }
+
+                // Put the workload in the queue
+                Future<?> future = kernelInitExecutor.submit(new KernelInitializer(kernelInitQueue, presynapticTerminalAddr.toString().substring(1), inputSpikesBuffer, thisTerminal));
+                kernelInitFutures.add(future);
 
             } catch (SocketTimeoutException e) {
                 String stackTrace = Log.getStackTraceString(e);
@@ -210,11 +224,11 @@ public class SimulationService extends IntentService {
                     LocalBroadcastManager.getInstance(this).sendBroadcast(broadcastError);
                     errorRaised = true;
                 }
-            } catch (IOException e) {
+            } catch (IOException | RejectedExecutionException |
+                    InterruptedException | ExecutionException e) {
                 String stackTrace = Log.getStackTraceString(e);
                 Log.e("SimulationService", stackTrace);
             }
-
         }
 
         /*
@@ -229,7 +243,7 @@ public class SimulationService extends IntentService {
         }
 
         /*
-          Shut down the Threads
+        Shut down the Threads
          */
 
         terminalUpdaterExecutor.shutdownNow();

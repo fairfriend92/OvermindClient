@@ -9,7 +9,7 @@ import java.util.concurrent.BlockingQueue;
 
 class KernelInitializer implements Runnable {
 
-    // Queue that stores the inputs to be sent to the ernelExecutor thread
+    // Queue that stores the inputs to be sent to the KernelExecutor thread
     private BlockingQueue<char[]> kernelInitQueue;
 
     // IP of the presynaptic terminal whose output must be processed
@@ -20,7 +20,6 @@ class KernelInitializer implements Runnable {
 
     // Local variable storing information about the terminal in use
     private Terminal thisTerminal;
-    private static Terminal thisTerminal_static;
 
     // Buffer to hold the incoming spikes until the length of the synaptic input array has not been
     // figured out
@@ -37,10 +36,10 @@ class KernelInitializer implements Runnable {
     private static char[][] synapticInputCollection;
 
     // An array used to remember which connections have already been served before putting together
-    // the input
-    private static boolean[] connectionWasServed;
+    // the input.
+    private static boolean connectionWasServed[];
 
-    // Array obtained by joinining together each element of synapticInputCollection
+    // Array obtained by joining together each element of synapticInputCollection
     private char[] totalSynapticInput = new char[Constants.MAX_NUM_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
 
     KernelInitializer(BlockingQueue<char[]> b, String s, byte[] b1, Terminal t) {
@@ -59,31 +58,26 @@ class KernelInitializer implements Runnable {
 
         synchronized (lock) {
 
-            thisTerminal_static = thisTerminal != null ? thisTerminal : thisTerminal_static;
+            // If the information of the terminal have been updated...
+            if (thisTerminal != null) {
 
-            if (threadsCounter == 0) {
+                // This ArrayList can't be a simple reference because we want the connections to
+                // be updated only when threadsCounter == 0
+                presynapticTerminals = new ArrayList<>(thisTerminal.presynapticTerminals);
 
-                // If the infomation of the terminal have been updated...
-                if (thisTerminal_static != null) {
+                // Create the array storing the kernel input derived from the spikes produced
+                // by each presynaptic Terminal
+                synapticInputCollection = new char[presynapticTerminals.size()][4096];
 
-                    presynapticTerminals = new ArrayList<>(thisTerminal_static.presynapticTerminals);
+                threadsCounter = 0;
 
-                    // Create the array storing the kernel input derived from the spikes produced
-                    // by each presynaptic Terminal
-                    synapticInputCollection = new char[presynapticTerminals.size()][4096];
-
-                    // Reset the flag
-                    thisTerminal_static = null;
-
-                }
-
-                // Create a new array storing the flags that tell which connection has been served
+                // Initialize to false the flags that tell which terminals have been served
                 connectionWasServed = new boolean[presynapticTerminals.size()];
 
             }
 
-            if (threadsCounter == presynapticTerminals.size()) {
-                Log.e("KernelInitializer", "Synaptic input is already complete");
+            if (presynapticTerminals.size() == 0) {
+                Log.e("KernelInitializer", "No presynaptic connection has been established: exiting KernelInitializer");
                 return;
             }
 
@@ -163,11 +157,11 @@ class KernelInitializer implements Runnable {
         synchronized (lock) {
 
             // If we are processing the input of a connection that has already been served discard
-            // it since we must first process all the inputs of the preceeding iteration
+            // it since we must first process all the inputs of the preceding iteration.
             if (connectionWasServed[presynTerminalIndex]) {
                 Log.e("KernelInitializer", "Terminal with ip " + presynTerminalIP + " has already been served");
                 return;
-            } else
+            } else if (!connectionWasServed[presynTerminalIndex])
                 connectionWasServed[presynTerminalIndex] = true;
 
             threadsCounter++;
@@ -178,6 +172,7 @@ class KernelInitializer implements Runnable {
             if (threadsCounter == presynapticTerminals.size()) {
 
                 threadsCounter = 0;
+                connectionWasServed = new boolean[presynapticTerminals.size()];
 
                 // Put together the complete input
                 short offset = 0;
