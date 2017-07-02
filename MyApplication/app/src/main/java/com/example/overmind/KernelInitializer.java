@@ -16,7 +16,7 @@ class KernelInitializer implements Runnable {
     private String presynTerminalIP;
 
     // Local collection of the presynaptic terminals
-    private static List<Terminal> presynapticTerminals = Collections.synchronizedList(new ArrayList<Terminal>());
+    private static volatile List<Terminal> presynapticTerminals = Collections.synchronizedList(new ArrayList<Terminal>());
 
     // Local variable storing information about the terminal in use
     private Terminal thisTerminal;
@@ -29,15 +29,15 @@ class KernelInitializer implements Runnable {
     private static final Object lock = new Object();
 
     // Static variable used to synchronize threads when the spikes need to be passed to KernelExecutor
-    private static short threadsCounter = 0;
+    private static volatile short threadsCounter = 0;
 
     // Double array with one dimension representing the presynaptic terminals and the other the
     // input of a certain terminal
-    private static char[][] synapticInputCollection;
+    private static volatile char[][] synapticInputCollection;
 
     // An array used to remember which connections have already been served before putting together
     // the input.
-    private static boolean connectionWasServed[];
+    private static volatile boolean connectionWasServed[];
 
     // Array obtained by joining together each element of synapticInputCollection
     private char[] totalSynapticInput = new char[Constants.MAX_NUM_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
@@ -138,13 +138,15 @@ class KernelInitializer implements Runnable {
             }
 
             // Make room for the new input in case bitValue = 1
-            //TODO Can be further optimized
-            if (bitValue == 1) {
-                synapticInput[indexI * Constants.MAX_MULTIPLICATIONS] = 1;
-            } else {
-                synapticInput[indexI * Constants.MAX_MULTIPLICATIONS] =
-                        (synapticInput[indexI * Constants.MAX_MULTIPLICATIONS] != 0) && (synapticInput[indexI * Constants.MAX_MULTIPLICATIONS] < Constants.SYNAPSE_FILTER_ORDER) ?
-                        (char)(synapticInput[indexI * Constants.MAX_MULTIPLICATIONS] + 1) : 0;
+            switch (bitValue) {
+                case 1:
+                    synapticInput[indexI * Constants.MAX_MULTIPLICATIONS] = 1;
+                    break;
+                default:
+                    synapticInput[indexI * Constants.MAX_MULTIPLICATIONS] =
+                            (synapticInput[indexI * Constants.MAX_MULTIPLICATIONS] != 0) && (synapticInput[indexI * Constants.MAX_MULTIPLICATIONS] < Constants.SYNAPSE_FILTER_ORDER) ?
+                                    (char)(synapticInput[indexI * Constants.MAX_MULTIPLICATIONS] + 1) : 0;
+                    break;
             }
 
         }
@@ -156,25 +158,21 @@ class KernelInitializer implements Runnable {
 
         synchronized (lock) {
 
-            // If we are processing the input of a connection that has already been served discard
-            // it since we must first process all the inputs of the preceding iteration.
+            boolean inputOverwritten = false;
+
             if (connectionWasServed[presynTerminalIndex]) {
-                Log.e("KernelInitializer", "Terminal with ip " + presynTerminalIP + " has already been served");
-                return;
-            } else if (!connectionWasServed[presynTerminalIndex])
+                inputOverwritten = true;
+            } else if (!connectionWasServed[presynTerminalIndex]) {
+                threadsCounter++;
                 connectionWasServed[presynTerminalIndex] = true;
+                synapticInputCollection[presynTerminalIndex] = synapticInput;
+            }
 
-            threadsCounter++;
-
-            synapticInputCollection[presynTerminalIndex] = synapticInput;
-
-            // Proceed only if all the partial results have been computed
-            if (threadsCounter == presynapticTerminals.size()) {
+            if (threadsCounter == presynapticTerminals.size() || inputOverwritten) {
 
                 threadsCounter = 0;
                 connectionWasServed = new boolean[presynapticTerminals.size()];
 
-                // Put together the complete input
                 short offset = 0;
 
                 for (int i = 0; i < presynapticTerminals.size(); i++) {
@@ -188,6 +186,11 @@ class KernelInitializer implements Runnable {
                 } catch (InterruptedException e) {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("KernelInitializer", stackTrace);
+                }
+
+                if (inputOverwritten){
+                    synapticInputCollection = new char[presynapticTerminals.size()][4096];
+                    synapticInputCollection[presynTerminalIndex] = synapticInput;
                 }
 
             }

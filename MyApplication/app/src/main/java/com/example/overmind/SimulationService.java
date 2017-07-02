@@ -61,7 +61,7 @@ public class SimulationService extends IntentService {
     }
 
     // Object used to hold all the relevant info pertaining this terminal
-    static Terminal thisTerminal = new Terminal();
+    static volatile Terminal thisTerminal = new Terminal();
 
     @Override
     protected void onHandleIntent (Intent workIntent) {
@@ -69,8 +69,8 @@ public class SimulationService extends IntentService {
         // Socket and stream used for TCP communications with the Overmind server
         Socket clientSocket = MainActivity.thisClient.socket;
 
-        /**
-         * Build the datagram socket used for sending and receiving spikes
+        /*
+        Build the datagram socket used for sending and receiving spikes
          */
 
         DatagramSocket datagramSocket = null;
@@ -86,8 +86,8 @@ public class SimulationService extends IntentService {
 
         assert datagramSocket != null;
 
-        /**
-         * Send a test packet to the server to initiate UDP hole punching
+        /*
+        Send a test packet to the server to initiate UDP hole punching
          */
 
         try {
@@ -127,15 +127,15 @@ public class SimulationService extends IntentService {
             }
         }
 
-        /**
-         * Get the string holding the kernel and initialize the OpenCL implementation.
+        /*
+        Get the string holding the kernel and initialize the OpenCL implementation.
          */
 
         String kernel = workIntent.getStringExtra("Kernel");
         long openCLObject = initializeOpenCL(kernel, NUMBER_OF_NEURONS);
 
-        /**
-         * Queues and Thread executors used to parallelize the computation.
+        /*
+        Queues and Thread executors used to parallelize the computation.
          */
 
         // TODO Fine tune the queues' capacities, using perhaps SoC info...
@@ -161,30 +161,27 @@ public class SimulationService extends IntentService {
 
         List<Future<?>> kernelInitFutures = new ArrayList<Future<?>>();
 
+        /*
+        Get the updated info about the connected terminals stored in the Terminal class. Then
+        receive the packets from the known connected terminals.
+         */
+
         while (!shutdown) {
 
-            // Firstly get the updated info about the connected terminals stored in the Terminal
-            // class
-            Terminal thisTerminal = new Terminal();
+            Terminal thisTerminal;
             try {
+
                 thisTerminal = updatedTerminal.poll(100, TimeUnit.MICROSECONDS);
+
                 if (thisTerminal != null) {
                     // TODO create assign method for Terminal ?
-                    SimulationService.thisTerminal.update(thisTerminal);
+                    SimulationService.thisTerminal = thisTerminal;
                     int poolSize = thisTerminal.presynapticTerminals.size() > 0 ? thisTerminal.presynapticTerminals.size() :
                             kernelInitExecutor.getPoolSize();
                     kernelInitExecutor.setCorePoolSize(poolSize);
                     kernelInitExecutor.setMaximumPoolSize(poolSize);
 
                 }
-            } catch (InterruptedException | IllegalArgumentException  e) {
-                String stackTrace = Log.getStackTraceString(e);
-                Log.e("SimulationService", stackTrace);
-            }
-
-            // Then receive the packets from the known connected terminals
-
-            try {
 
                 byte[] inputSpikesBuffer = new byte[128];
 
@@ -225,10 +222,11 @@ public class SimulationService extends IntentService {
                     errorRaised = true;
                 }
             } catch (IOException | RejectedExecutionException |
-                    InterruptedException | ExecutionException e) {
+                    InterruptedException | ExecutionException | IllegalArgumentException e) {
                 String stackTrace = Log.getStackTraceString(e);
                 Log.e("SimulationService", stackTrace);
             }
+
         }
 
         /*
@@ -348,8 +346,8 @@ public class SimulationService extends IntentService {
 
     }
 
-    /**
-     * Class which calls the native method which schedules and runs the OpenCL kernel.
+    /*
+    Class which calls the native method which schedules and runs the OpenCL kernel.
      */
 
     private class KernelExecutor implements Callable<Long> {
@@ -443,8 +441,7 @@ public class SimulationService extends IntentService {
                     Log.e("DataSender", stackTrace);
                 }
 
-                // TODO
-                Terminal thisTerminalLocal = thisTerminal.get();
+                Terminal thisTerminalLocal = thisTerminal;
 
                 for (short index = 0; index < thisTerminalLocal.postsynapticTerminals.size(); index++) {
 
@@ -462,8 +459,6 @@ public class SimulationService extends IntentService {
                         String stackTrace = Log.getStackTraceString(e);
                         Log.e("DataSender", stackTrace);
                     }
-
-                    //Log.d("DataSender", "Spikes have been sent!");
 
                 }
                 /* [End of the for loop] */

@@ -2,7 +2,6 @@
 
 #define potentialVar obj->neuronalDynVar[workId * 3]
 #define recoveryVar obj->neuronalDynVar[workId * 3 + 1]
-#define kahanCompensationVar obj->neuronalDynVar[workId * 3 + 2]
 
 #define aPar simulationParameters[0]
 #define bPar simulationParameters[1]
@@ -399,20 +398,6 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
         // Compute the potential and the recovery variable using Euler integration and Izhikevich model
         potentialVar += 0.04f * pow(potentialVar, 2) + 5.0f * potentialVar + 140.0f - recoveryVar + currentFloat + IPar;
         recoveryVar += aPar * (bPar * potentialVar - recoveryVar);
-
-        // Uncomment the following to use inverse Euler for the recovery variable
-        /*
-        recoveryVar = (0.5f * 0.02f * 0.2f * potentialVar + recoveryVar) / (1.0f + 0.5f * 0.02f);
-        recoveryVar += 0.5f * 0.02f * (0.2f * potentialVar - recoveryVar);
-        */
-
-        // Uncomment the following to use Kahan compensation on the recovery variable
-        /*
-        float y = aPar * (bPar * potentialVar - recoveryVar) - kahanCompensationVar;
-        float t = recoveryVar + y;
-        kahanCompensationVar = (t - recoveryVar) - y;
-        recoveryVar = t;
-        */
 
         // Set the bits corresponding to the neurons that have fired
         if (potentialVar >= 30.0f)
