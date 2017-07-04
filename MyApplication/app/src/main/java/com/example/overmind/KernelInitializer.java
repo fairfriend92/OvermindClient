@@ -17,6 +17,7 @@ class KernelInitializer implements Runnable {
 
     // Local collection of the presynaptic terminals
     private static volatile List<Terminal> presynapticTerminals = Collections.synchronizedList(new ArrayList<Terminal>());
+    private static int numOfConnections = 0;
 
     // Local variable storing information about the terminal in use
     private Terminal thisTerminal;
@@ -64,19 +65,20 @@ class KernelInitializer implements Runnable {
                 // This ArrayList can't be a simple reference because we want the connections to
                 // be updated only when threadsCounter == 0
                 presynapticTerminals = new ArrayList<>(thisTerminal.presynapticTerminals);
+                numOfConnections = presynapticTerminals.size();
 
                 // Create the array storing the kernel input derived from the spikes produced
                 // by each presynaptic Terminal
-                synapticInputCollection = new char[presynapticTerminals.size()][4096];
+                synapticInputCollection = new char[numOfConnections][4096];
 
                 threadsCounter = 0;
 
                 // Initialize to false the flags that tell which terminals have been served
-                connectionWasServed = new boolean[presynapticTerminals.size()];
+                connectionWasServed = new boolean[numOfConnections];
 
             }
 
-            if (presynapticTerminals.size() == 0) {
+            if (numOfConnections == 0) {
                 Log.e("KernelInitializer", "No presynaptic connection has been established: exiting KernelInitializer");
                 return;
             }
@@ -168,14 +170,14 @@ class KernelInitializer implements Runnable {
                 synapticInputCollection[presynTerminalIndex] = synapticInput;
             }
 
-            if (threadsCounter == presynapticTerminals.size() || inputOverwritten) {
+            if (threadsCounter == numOfConnections || inputOverwritten) {
 
                 threadsCounter = 0;
-                connectionWasServed = new boolean[presynapticTerminals.size()];
+                connectionWasServed = new boolean[numOfConnections];
 
                 short offset = 0;
 
-                for (int i = 0; i < presynapticTerminals.size(); i++) {
+                for (int i = 0; i < numOfConnections; i++) {
                     char[] tmpSynapticInput = synapticInputCollection[i];
                     System.arraycopy(tmpSynapticInput, 0, totalSynapticInput, offset, tmpSynapticInput.length);
                     offset += tmpSynapticInput.length;
@@ -189,9 +191,12 @@ class KernelInitializer implements Runnable {
                 }
 
                 if (inputOverwritten){
-                    synapticInputCollection = new char[presynapticTerminals.size()][4096];
+                    for (int i = 0; i < numOfConnections; i++)
+                        synapticInputCollection[i] = connectionWasServed[i] ? synapticInputCollection[i] : new char[4096];
                     synapticInputCollection[presynTerminalIndex] = synapticInput;
                 }
+
+                connectionWasServed = new boolean[numOfConnections];
 
             }
 
