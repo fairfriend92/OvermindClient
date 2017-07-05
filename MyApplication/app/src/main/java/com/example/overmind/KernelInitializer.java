@@ -17,7 +17,7 @@ class KernelInitializer implements Runnable {
 
     // Local collection of the presynaptic terminals
     private static volatile List<Terminal> presynapticTerminals = Collections.synchronizedList(new ArrayList<Terminal>());
-    private static int numOfConnections = 0;
+    static int numOfConnections = 0;
 
     // Local variable storing information about the terminal in use
     private Terminal thisTerminal;
