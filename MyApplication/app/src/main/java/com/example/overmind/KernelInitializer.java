@@ -5,12 +5,12 @@ import android.util.Log;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 class KernelInitializer implements Runnable {
 
     // Queue that stores the inputs to be sent to the KernelExecutor thread
-    private BlockingQueue<char[]> kernelInitQueue;
+    private LinkedBlockingQueue<Input> kernelInitQueue;
 
     // IP of the presynaptic terminal whose output must be processed
     private String presynTerminalIP;
@@ -29,21 +29,11 @@ class KernelInitializer implements Runnable {
     // Object used for synchronization
     private static final Object lock = new Object();
 
-    // Static variable used to synchronize threads when the spikes need to be passed to KernelExecutor
-    private static volatile short threadsCounter = 0;
-
     // Double array with one dimension representing the presynaptic terminals and the other the
     // input of a certain terminal
     private static volatile char[][] synapticInputCollection;
 
-    // An array used to remember which connections have already been served before putting together
-    // the input.
-    private static volatile boolean connectionWasServed[];
-
-    // Array obtained by joining together each element of synapticInputCollection
-    private char[] totalSynapticInput = new char[Constants.MAX_NUM_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
-
-    KernelInitializer(BlockingQueue<char[]> b, String s, byte[] b1, Terminal t) {
+    KernelInitializer(LinkedBlockingQueue<Input> b, String s, byte[] b1, Terminal t) {
         this.kernelInitQueue = b;
         this.presynTerminalIP = s;
         this.inputSpikesBuffer = b1;
@@ -70,11 +60,6 @@ class KernelInitializer implements Runnable {
                 // Create the array storing the kernel input derived from the spikes produced
                 // by each presynaptic Terminal
                 synapticInputCollection = new char[numOfConnections][4096];
-
-                threadsCounter = 0;
-
-                // Initialize to false the flags that tell which terminals have been served
-                connectionWasServed = new boolean[numOfConnections];
 
             }
 
@@ -153,55 +138,18 @@ class KernelInitializer implements Runnable {
 
         }
 
-        /*
-        To create the total input put together the contributes of each thread. The computation needs to be serialized
-        thus it is contained in the following synchronized block.
-         */
-
         synchronized (lock) {
 
-            boolean inputOverwritten = false;
+            synapticInputCollection[presynTerminalIndex] = synapticInput;
 
-            if (connectionWasServed[presynTerminalIndex]) {
-                inputOverwritten = true;
-            } else if (!connectionWasServed[presynTerminalIndex]) {
-                threadsCounter++;
-                connectionWasServed[presynTerminalIndex] = true;
-                synapticInputCollection[presynTerminalIndex] = synapticInput;
-            }
-
-            if (threadsCounter == numOfConnections || inputOverwritten) {
-
-                threadsCounter = 0;
-                connectionWasServed = new boolean[numOfConnections];
-
-                short offset = 0;
-
-                for (int i = 0; i < numOfConnections; i++) {
-                    char[] tmpSynapticInput = synapticInputCollection[i];
-                    System.arraycopy(tmpSynapticInput, 0, totalSynapticInput, offset, tmpSynapticInput.length);
-                    offset += tmpSynapticInput.length;
-                }
-
-                try {
-                    kernelInitQueue.put(totalSynapticInput);
-                } catch (InterruptedException e) {
-                    String stackTrace = Log.getStackTraceString(e);
-                    Log.e("KernelInitializer", stackTrace);
-                }
-
-                if (inputOverwritten){
-                    for (int i = 0; i < numOfConnections; i++)
-                        synapticInputCollection[i] = connectionWasServed[i] ? synapticInputCollection[i] : new char[4096];
-                    synapticInputCollection[presynTerminalIndex] = synapticInput;
-                }
-
-                connectionWasServed = new boolean[numOfConnections];
-
+            try {
+                kernelInitQueue.put(new Input(synapticInput, presynTerminalIndex));
+            } catch (InterruptedException e) {
+                String stackTrace = Log.getStackTraceString(e);
+                Log.e("KernelInitializer", stackTrace);
             }
 
         }
-        /* [End of synchronized block] */
 
     }
     /* [End of run() method] */

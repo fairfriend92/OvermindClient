@@ -4,14 +4,14 @@ import android.util.Log;
 
 import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.LinkedBlockingQueue;
 
 class InputCreator implements Runnable {
 
-    private LinkedBlockingDeque<Input> kernelInitQueue = new LinkedBlockingDeque<>(12);
+    private LinkedBlockingQueue<Input> kernelInitQueue = new LinkedBlockingQueue<>(12);
     private BlockingQueue<char[]> inputCreatorQueue;
 
-    InputCreator(LinkedBlockingDeque<Input> l, BlockingQueue<char[]> b) {
+    InputCreator(LinkedBlockingQueue<Input> l, BlockingQueue<char[]> b) {
 
         kernelInitQueue = l;
         inputCreatorQueue = b;
@@ -21,39 +21,41 @@ class InputCreator implements Runnable {
     @Override
     public void run() {
 
-        int connectionsServed = 0;
-        int numOfConnections;
-        char[] totalSynapticInput =  new char[Constants.MAX_NUM_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
-        int offset = 0;
+        // TODO Use local shutdown set by method
+        while (!SimulationService.shutdown) {
 
-        while (connectionsServed < (numOfConnections = KernelInitializer.numOfConnections)) {
+            int connectionsServed = 0;
+            char[] totalSynapticInput = new char[Constants.MAX_NUM_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
+            int offset = 0;
 
-            Iterator<Input> iterator = kernelInitQueue.iterator();
-            boolean inputFound = false;
+            while (connectionsServed < KernelInitializer.numOfConnections && !SimulationService.shutdown) {
 
-            while (iterator.hasNext() || inputFound) {
+                Iterator<Input> iterator = kernelInitQueue.iterator();
+                boolean inputFound = false;
 
-                Input currentInput = iterator.next();
+                while (iterator.hasNext() && !inputFound) {
 
-                if (currentInput.presynTerminalIndex == numOfConnections) {
-                    inputFound = true;
-                    System.arraycopy(currentInput.synapticInput, 0, totalSynapticInput, offset, currentInput.synapticInput.length);
-                    offset += currentInput.synapticInput.length;
-                    connectionsServed++;
-                    iterator.remove();
+                    Input currentInput = iterator.next();
+
+                    if (currentInput.presynTerminalIndex == connectionsServed) {
+                        inputFound = true;
+                        System.arraycopy(currentInput.synapticInput, 0, totalSynapticInput, offset, currentInput.synapticInput.length);
+                        offset += currentInput.synapticInput.length;
+                        connectionsServed++;
+                        iterator.remove();
+                    }
+
                 }
 
             }
 
-        }
+            try {
+                inputCreatorQueue.put(totalSynapticInput);
+            } catch (InterruptedException e) {
+                String stackTrace = Log.getStackTraceString(e);
+                Log.e("InputCreator", stackTrace);
+            }
 
-        offset = 0;
-
-        try {
-            inputCreatorQueue.put(totalSynapticInput);
-        } catch (InterruptedException e) {
-            String stackTrace = Log.getStackTraceString(e);
-            Log.e("InputCreator", stackTrace);
         }
 
     }

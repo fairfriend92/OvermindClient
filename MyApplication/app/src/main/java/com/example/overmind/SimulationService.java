@@ -35,6 +35,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -53,7 +54,7 @@ public class SimulationService extends IntentService {
         super("SimulationService");
     }
 
-    static boolean shutdown = false;
+    static volatile boolean shutdown = false;
     static public void shutDown () {
 
         shutdown = true;
@@ -141,12 +142,17 @@ public class SimulationService extends IntentService {
         // TODO Fine tune the queues' capacities, using perhaps SoC info...
 
         BlockingQueue<Runnable> kernelInitWorkerThreadsQueue = new ArrayBlockingQueue<>(12);
-        BlockingQueue<char[]> kernelInitQueue = new ArrayBlockingQueue<>(4);
+
+        // TODO capacity of the queue dynamic?
+        LinkedBlockingQueue<Input> kernelInitQueue = new LinkedBlockingQueue<>(24);
+        BlockingQueue<char[]> inputCreatorQueue = new ArrayBlockingQueue<>(24);
+
         ThreadPoolExecutor.AbortPolicy rejectedExecutionHandler = new ThreadPoolExecutor.AbortPolicy();
         ThreadPoolExecutor kernelInitExecutor = new ThreadPoolExecutor(2, 2, 3, TimeUnit.MILLISECONDS, kernelInitWorkerThreadsQueue, rejectedExecutionHandler);
 
         BlockingQueue<byte[]> kernelExcQueue = new ArrayBlockingQueue<>(16);
         ExecutorService kernelExcExecutor = Executors.newSingleThreadExecutor();
+        ExecutorService inputCreatorExecutor = Executors.newSingleThreadExecutor();
         // Future object which holds the pointer to the OpenCL structure defined in native_method.h
         Future<Long> newOpenCLObject;
 
@@ -155,7 +161,8 @@ public class SimulationService extends IntentService {
         ExecutorService terminalUpdaterExecutor = Executors.newSingleThreadExecutor();
         BlockingQueue<Terminal> updatedTerminal = new ArrayBlockingQueue<>(1);
 
-        newOpenCLObject = kernelExcExecutor.submit(new KernelExecutor(kernelInitQueue, kernelExcQueue, openCLObject, this));
+        inputCreatorExecutor.execute(new InputCreator(kernelInitQueue, inputCreatorQueue));
+        newOpenCLObject = kernelExcExecutor.submit(new KernelExecutor(inputCreatorQueue, kernelExcQueue, openCLObject, this));
         dataSenderExecutor.execute(new DataSender(kernelExcQueue, datagramSocket));
         terminalUpdaterExecutor.execute(new TerminalUpdater(updatedTerminal, this));
 
@@ -224,7 +231,7 @@ public class SimulationService extends IntentService {
             } catch (IOException | RejectedExecutionException |
                     InterruptedException | ExecutionException | IllegalArgumentException e) {
                 String stackTrace = Log.getStackTraceString(e);
-                Log.e("SimulationService", stackTrace);
+                //Log.e("SimulationService", stackTrace);
             }
 
         }
@@ -244,12 +251,15 @@ public class SimulationService extends IntentService {
         Shut down the Threads
          */
 
+        // TODO shutdown using variable shutdown.
         terminalUpdaterExecutor.shutdownNow();
         kernelInitExecutor.shutdownNow();
+        inputCreatorExecutor.shutdownNow();
         kernelExcExecutor.shutdownNow();
         dataSenderExecutor.shutdownNow();
 
         boolean terminalUpdatersIsShutdown = false;
+        boolean inputCreatorIsShutdown = false;
         boolean kernelInitializerIsShutdown = false;
         boolean kernelExecutorIsShutdown = false;
         boolean dataSenderIsShutdown = false;
@@ -258,6 +268,7 @@ public class SimulationService extends IntentService {
         try {
             terminalUpdatersIsShutdown = terminalUpdaterExecutor.awaitTermination(300, TimeUnit.MILLISECONDS);
             kernelInitializerIsShutdown = kernelInitExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
+            inputCreatorIsShutdown = inputCreatorExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
             kernelExecutorIsShutdown = kernelExcExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
             dataSenderIsShutdown = dataSenderExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
@@ -265,10 +276,11 @@ public class SimulationService extends IntentService {
             Log.e("SimulationService", stackTrace);
         }
 
-        if (!terminalUpdatersIsShutdown || !kernelExecutorIsShutdown || !kernelInitializerIsShutdown || dataSenderIsShutdown) {
+        if (!terminalUpdatersIsShutdown || !kernelExecutorIsShutdown || !kernelInitializerIsShutdown
+                || !dataSenderIsShutdown || !inputCreatorIsShutdown) {
             Log.e("SimulationService", "terminal updater is shutdown: " + terminalUpdatersIsShutdown +
                     " kernel initializer is shutdown: " + kernelInitializerIsShutdown + " kernel executor is shutdown: " + kernelExecutorIsShutdown +
-                    " data sender is shutdown: " + dataSenderIsShutdown);
+                    " data sender is shutdown: " + dataSenderIsShutdown + " input creator is shutdown: " + inputCreatorIsShutdown);
         }
 
         closeOpenCL(openCLObject);
