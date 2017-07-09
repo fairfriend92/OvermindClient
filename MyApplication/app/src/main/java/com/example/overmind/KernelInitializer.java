@@ -188,8 +188,7 @@ class KernelInitializer implements Runnable {
         synapticInputCollection[presynTerminalIndex] = synapticInput;
 
         try {
-            Log.e("KernelInitializer", " " + kernelInitQueue.remainingCapacity() + " " + presynTerminalIndex);
-            kernelInitQueue.put(new Input(synapticInput, presynTerminalIndex));
+            kernelInitQueue.put(new Input(synapticInput, presynTerminalIndex, false));
         } catch (InterruptedException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("KernelInitializer", stackTrace);

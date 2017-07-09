@@ -145,7 +145,7 @@ public class SimulationService extends IntentService {
 
         // TODO capacity of the queue dynamic?
         BlockingQueue<Input> kernelInitQueue = new LinkedBlockingQueue<>(24);
-        BlockingQueue<char[]> inputCreatorQueue = new ArrayBlockingQueue<>(24);
+        BlockingQueue<char[]> inputCreatorQueue = new ArrayBlockingQueue<>(1);
 
         ThreadPoolExecutor.AbortPolicy rejectedExecutionHandler = new ThreadPoolExecutor.AbortPolicy();
         ThreadPoolExecutor kernelInitExecutor = new ThreadPoolExecutor(2, 2, 3, TimeUnit.MILLISECONDS, kernelInitWorkerThreadsQueue, rejectedExecutionHandler);
