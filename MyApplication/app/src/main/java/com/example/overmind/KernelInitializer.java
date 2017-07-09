@@ -5,12 +5,14 @@ import android.util.Log;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 class KernelInitializer implements Runnable {
 
     // Queue that stores the inputs to be sent to the KernelExecutor thread
-    private LinkedBlockingQueue<Input> kernelInitQueue;
+    private BlockingQueue<Input> kernelInitQueue;
 
     // IP of the presynaptic terminal whose output must be processed
     private String presynTerminalIP;
@@ -29,11 +31,17 @@ class KernelInitializer implements Runnable {
     // Object used for synchronization
     private static final Object lock = new Object();
 
+    private static final Object[] threadsLocks = new Object[Constants.MAX_NUM_SYNAPSES];
+
+    private static volatile List<ArrayBlockingQueue<byte[]>> presynTerminalQueue;
+
+    private static volatile List<Boolean> threadIsFree = Collections.synchronizedList(new ArrayList<Boolean>());
+
     // Double array with one dimension representing the presynaptic terminals and the other the
     // input of a certain terminal
     private static volatile char[][] synapticInputCollection;
 
-    KernelInitializer(LinkedBlockingQueue<Input> b, String s, byte[] b1, Terminal t) {
+    KernelInitializer(BlockingQueue<Input> b, String s, byte[] b1, Terminal t) {
         this.kernelInitQueue = b;
         this.presynTerminalIP = s;
         this.inputSpikesBuffer = b1;
@@ -47,10 +55,10 @@ class KernelInitializer implements Runnable {
         When we are putting together a new input there is some initialization to do...
         */
 
-        synchronized (lock) {
+        if (thisTerminal != null) {
 
             // If the information of the terminal have been updated...
-            if (thisTerminal != null) {
+            synchronized (lock) {
 
                 // This ArrayList can't be a simple reference because we want the connections to
                 // be updated only when threadsCounter == 0
@@ -61,13 +69,21 @@ class KernelInitializer implements Runnable {
                 // by each presynaptic Terminal
                 synapticInputCollection = new char[numOfConnections][4096];
 
+                threadIsFree = new ArrayList<>(numOfConnections);
+                presynTerminalQueue = new ArrayList<>(numOfConnections);
+
+                for (int i = 0; i < numOfConnections; i++) {
+                    threadsLocks[i] = new Object();
+                    threadIsFree.add(false);
+                    presynTerminalQueue.add(new ArrayBlockingQueue<byte[]>(4));
+                }
             }
 
-            if (numOfConnections == 0) {
-                Log.e("KernelInitializer", "No presynaptic connection has been established: exiting KernelInitializer");
-                return;
-            }
+        }
 
+        if (numOfConnections == 0) {
+            Log.e("KernelInitializer", "No presynaptic connection has been established: exiting KernelInitializer");
+            return;
         }
 
         // Identify the presynaptic terminal using the IP contained in the header of the datagram
@@ -79,7 +95,38 @@ class KernelInitializer implements Runnable {
         // If it was not possible to identify the presynaptic terminal drop the packet and return
         if (presynTerminalIndex == -1) {
             Log.e("KernelInitializer", "Cannot find presynTerminal with ip " + presynTerminalIP);
+            KernelInitializer.threadIsFree.set(presynTerminalIndex, false);
             return;
+        }
+
+        try {
+            presynTerminalQueue.get(presynTerminalIndex).put(inputSpikesBuffer);
+        } catch (InterruptedException e) {
+            String stackTrace = Log.getStackTraceString(e);
+            Log.e("KernelInitializer", stackTrace);
+        }
+
+        boolean threadIsFree = false;
+
+        while (!threadIsFree) {
+
+            synchronized (threadsLocks[presynTerminalIndex]) {
+
+                if (!KernelInitializer.threadIsFree.get(presynTerminalIndex)) {
+
+                    try {
+                        presynTerminalQueue.get(presynTerminalIndex).take();
+                    } catch (InterruptedException e) {
+                        String stackTrace = Log.getStackTraceString(e);
+                        Log.e("KernelInitializer", stackTrace);
+                    }
+                    threadIsFree = true;
+                    KernelInitializer.threadIsFree.set(presynTerminalIndex, true);
+
+                }
+
+            }
+
         }
 
         /*
@@ -138,18 +185,17 @@ class KernelInitializer implements Runnable {
 
         }
 
-        synchronized (lock) {
+        synapticInputCollection[presynTerminalIndex] = synapticInput;
 
-            synapticInputCollection[presynTerminalIndex] = synapticInput;
-
-            try {
-                kernelInitQueue.put(new Input(synapticInput, presynTerminalIndex));
-            } catch (InterruptedException e) {
-                String stackTrace = Log.getStackTraceString(e);
-                Log.e("KernelInitializer", stackTrace);
-            }
-
+        try {
+            Log.e("KernelInitializer", " " + kernelInitQueue.remainingCapacity() + " " + presynTerminalIndex);
+            kernelInitQueue.put(new Input(synapticInput, presynTerminalIndex));
+        } catch (InterruptedException e) {
+            String stackTrace = Log.getStackTraceString(e);
+            Log.e("KernelInitializer", stackTrace);
         }
+
+        KernelInitializer.threadIsFree.set(presynTerminalIndex, false);
 
     }
     /* [End of run() method] */

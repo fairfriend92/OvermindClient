@@ -4,14 +4,13 @@ import android.util.Log;
 
 import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 class InputCreator implements Runnable {
 
-    private LinkedBlockingQueue<Input> kernelInitQueue = new LinkedBlockingQueue<>(12);
+    private BlockingQueue<Input> kernelInitQueue;
     private BlockingQueue<char[]> inputCreatorQueue;
 
-    InputCreator(LinkedBlockingQueue<Input> l, BlockingQueue<char[]> b) {
+    InputCreator(BlockingQueue<Input> l, BlockingQueue<char[]> b) {
 
         kernelInitQueue = l;
         inputCreatorQueue = b;
@@ -45,6 +44,11 @@ class InputCreator implements Runnable {
                         iterator.remove();
                     }
 
+                }
+
+                if (!inputFound && kernelInitQueue.remainingCapacity() < kernelInitQueue.size() / 3) {
+                    Log.e("InputCreator", "Queue is almost full, last input is disregarded");
+                    kernelInitQueue.remove();
                 }
 
             }

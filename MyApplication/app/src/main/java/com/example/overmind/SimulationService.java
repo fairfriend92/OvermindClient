@@ -144,7 +144,7 @@ public class SimulationService extends IntentService {
         BlockingQueue<Runnable> kernelInitWorkerThreadsQueue = new ArrayBlockingQueue<>(12);
 
         // TODO capacity of the queue dynamic?
-        LinkedBlockingQueue<Input> kernelInitQueue = new LinkedBlockingQueue<>(24);
+        BlockingQueue<Input> kernelInitQueue = new LinkedBlockingQueue<>(24);
         BlockingQueue<char[]> inputCreatorQueue = new ArrayBlockingQueue<>(24);
 
         ThreadPoolExecutor.AbortPolicy rejectedExecutionHandler = new ThreadPoolExecutor.AbortPolicy();
@@ -231,7 +231,7 @@ public class SimulationService extends IntentService {
             } catch (IOException | RejectedExecutionException |
                     InterruptedException | ExecutionException | IllegalArgumentException e) {
                 String stackTrace = Log.getStackTraceString(e);
-                //Log.e("SimulationService", stackTrace);
+                Log.e("SimulationService", stackTrace);
             }
 
         }
