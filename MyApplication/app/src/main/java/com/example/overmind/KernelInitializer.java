@@ -101,6 +101,8 @@ class KernelInitializer implements Runnable {
 
         try {
             presynTerminalQueue.get(presynTerminalIndex).put(inputSpikesBuffer);
+            if (presynTerminalIP.equals(MainActivity.serverIP))
+                DataSender.clockSignals.offer(new Object(), 100, TimeUnit.MICROSECONDS);
         } catch (InterruptedException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("KernelInitializer", stackTrace);

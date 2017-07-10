@@ -159,7 +159,7 @@ public class SimulationService extends IntentService {
         ExecutorService dataSenderExecutor = Executors.newSingleThreadExecutor();
 
         ExecutorService terminalUpdaterExecutor = Executors.newSingleThreadExecutor();
-        BlockingQueue<Terminal> updatedTerminal = new ArrayBlockingQueue<>(1);
+        BlockingQueue<Terminal> updatedTerminal = new ArrayBlockingQueue<>(4);
 
         inputCreatorExecutor.execute(new InputCreator(kernelInitQueue, inputCreatorQueue));
         newOpenCLObject = kernelExcExecutor.submit(new KernelExecutor(inputCreatorQueue, kernelExcQueue, openCLObject, this));
@@ -172,6 +172,9 @@ public class SimulationService extends IntentService {
         Get the updated info about the connected terminals stored in the Terminal class. Then
         receive the packets from the known connected terminals.
          */
+
+        Terminal server = new Terminal();
+        server.ip = MainActivity.serverIP;
 
         while (!shutdown) {
 
@@ -187,7 +190,7 @@ public class SimulationService extends IntentService {
                             kernelInitExecutor.getPoolSize();
                     kernelInitExecutor.setCorePoolSize(poolSize);
                     kernelInitExecutor.setMaximumPoolSize(poolSize);
-
+                    DataSender.terminalClocked = thisTerminal.presynapticTerminals.contains(server);
                 }
 
                 byte[] inputSpikesBuffer = new byte[128];
@@ -422,72 +425,83 @@ public class SimulationService extends IntentService {
 
     }
 
-    /*
-    Runnable class which sends the spikes produced by the local network to the postsynaptic terminals,
-    including the server itself
-    */
-
-    private class DataSender implements Runnable {
-
-        private BlockingQueue<byte[]> kernelExcQueue;
-        private short data_bytes = (NUMBER_OF_NEURONS % 8) == 0 ?
-                (short) (NUMBER_OF_NEURONS / 8) : (short)(NUMBER_OF_NEURONS / 8 + 1);
-        private byte[] outputSpikes = new byte[data_bytes];
-        private DatagramSocket outputSocket;
-
-        DataSender(BlockingQueue<byte[]> b, DatagramSocket d) {
-
-            this.kernelExcQueue = b;
-            this.outputSocket = d;
-        }
-
-        @Override
-        public void run () {
-
-            while (!shutdown) {
-
-                try {
-                    outputSpikes = kernelExcQueue.take();
-                } catch (InterruptedException e) {
-                    String stackTrace = Log.getStackTraceString(e);
-                    Log.e("DataSender", stackTrace);
-                }
-
-                Terminal thisTerminalLocal = thisTerminal;
-
-                for (short index = 0; index < thisTerminalLocal.postsynapticTerminals.size(); index++) {
-
-                    try {
-
-                        Terminal postsynapticTerminal = thisTerminalLocal.postsynapticTerminals.get(index);
-
-                        InetAddress postsynapticTerminalAddr = InetAddress.getByName(postsynapticTerminal.ip);
-
-                        DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, data_bytes, postsynapticTerminalAddr, postsynapticTerminal.natPort);
-
-                        outputSocket.send(outputSpikesPacket);
-
-                    } catch (IOException e) {
-                        String stackTrace = Log.getStackTraceString(e);
-                        Log.e("DataSender", stackTrace);
-                    }
-
-                }
-                /* [End of the for loop] */
-
-            }
-            /* [End of the while loop] */
-
-            // TODO Close the datagram outputsocket
-
-        }
-        /* [End of the run loop] */
-
-    }
-    /* [End of the DataSender class] */
-
     public native long initializeOpenCL(String synapseKernel, short numOfNeurons);
     public native byte[] simulateDynamics(char[] synapseInput, long openCLObject, short numOfNeurons, float[] simulationParameters);
     public native void closeOpenCL(long openCLObject);
 
 }
+
+ /*
+ Runnable class which sends the spikes produced by the local network to the postsynaptic terminals,
+ including the server itself
+ */
+
+class DataSender implements Runnable {
+
+    private BlockingQueue<byte[]> kernelExcQueue;
+    private short data_bytes = (NUMBER_OF_NEURONS % 8) == 0 ?
+            (short) (NUMBER_OF_NEURONS / 8) : (short)(NUMBER_OF_NEURONS / 8 + 1);
+    private byte[] outputSpikes = new byte[data_bytes];
+    private DatagramSocket outputSocket;
+
+    static BlockingQueue<Object> clockSignals = new ArrayBlockingQueue<>(1);
+    static volatile boolean terminalClocked = false;
+
+    DataSender(BlockingQueue<byte[]> b, DatagramSocket d) {
+
+        kernelExcQueue = b;
+        outputSocket = d;
+    }
+
+    @Override
+    public void run () {
+
+        while (!SimulationService.shutdown) {
+
+            try {
+                outputSpikes = kernelExcQueue.take();
+            } catch (InterruptedException e) {
+                String stackTrace = Log.getStackTraceString(e);
+                Log.e("DataSender", stackTrace);
+            }
+
+            Terminal thisTerminalLocal = SimulationService.thisTerminal;
+
+            if (terminalClocked)
+                try {
+                    clockSignals.take();
+                } catch (InterruptedException e) {
+                    String stackTrace = Log.getStackTraceString(e);
+                    Log.e("DataSender", stackTrace);
+                }
+
+            for (short index = 0; index < thisTerminalLocal.postsynapticTerminals.size(); index++) {
+
+                try {
+
+                    Terminal postsynapticTerminal = thisTerminalLocal.postsynapticTerminals.get(index);
+
+                    InetAddress postsynapticTerminalAddr = InetAddress.getByName(postsynapticTerminal.ip);
+
+                    DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, data_bytes, postsynapticTerminalAddr, postsynapticTerminal.natPort);
+
+                    outputSocket.send(outputSpikesPacket);
+
+                } catch (IOException e) {
+                    String stackTrace = Log.getStackTraceString(e);
+                    Log.e("DataSender", stackTrace);
+                }
+
+            }
+                /* [End of the for loop] */
+
+        }
+            /* [End of the while loop] */
+
+        // TODO Close the datagram outputsocket
+
+    }
+        /* [End of the run loop] */
+
+}
+    /* [End of the DataSender class] */
