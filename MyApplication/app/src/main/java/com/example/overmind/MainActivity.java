@@ -100,6 +100,7 @@ public class MainActivity extends AppCompatActivity {
     public static SocketInfo thisClient;
 
     static String serverIP;
+    static Terminal server = new Terminal();
     static String numOfNeurons;
     static boolean numOfNeuronsDetermineByApp = false;
     static String renderer;
@@ -152,6 +153,8 @@ public class MainActivity extends AppCompatActivity {
 
         // Get the server ip from the text box
         serverIP = editText.getText().toString();
+
+        server.ip = serverIP;
 
         // Get the number of neurons ot the local netwowrk from the text box
         numOfNeurons = editNumOfNeurons.getText().toString();

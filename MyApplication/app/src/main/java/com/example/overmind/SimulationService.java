@@ -40,6 +40,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.example.overmind.Constants.NUMBER_OF_NEURONS;
 
@@ -141,16 +142,16 @@ public class SimulationService extends IntentService {
 
         // TODO Fine tune the queues' capacities, using perhaps SoC info...
 
-        BlockingQueue<Runnable> kernelInitWorkerThreadsQueue = new ArrayBlockingQueue<>(12);
+        BlockingQueue<Runnable> kernelInitWorkerThreadsQueue = new ArrayBlockingQueue<>(128);
 
         // TODO capacity of the queue dynamic?
-        BlockingQueue<Input> kernelInitQueue = new LinkedBlockingQueue<>(24);
-        BlockingQueue<char[]> inputCreatorQueue = new ArrayBlockingQueue<>(1);
+        BlockingQueue<Input> kernelInitQueue = new LinkedBlockingQueue<>(128);
+        BlockingQueue<char[]> inputCreatorQueue = new ArrayBlockingQueue<>(128);
 
         ThreadPoolExecutor.AbortPolicy rejectedExecutionHandler = new ThreadPoolExecutor.AbortPolicy();
         ThreadPoolExecutor kernelInitExecutor = new ThreadPoolExecutor(2, 2, 3, TimeUnit.MILLISECONDS, kernelInitWorkerThreadsQueue, rejectedExecutionHandler);
 
-        BlockingQueue<byte[]> kernelExcQueue = new ArrayBlockingQueue<>(16);
+        BlockingQueue<byte[]> kernelExcQueue = new ArrayBlockingQueue<>(128);
         ExecutorService kernelExcExecutor = Executors.newSingleThreadExecutor();
         ExecutorService inputCreatorExecutor = Executors.newSingleThreadExecutor();
         // Future object which holds the pointer to the OpenCL structure defined in native_method.h
@@ -173,9 +174,6 @@ public class SimulationService extends IntentService {
         receive the packets from the known connected terminals.
          */
 
-        Terminal server = new Terminal();
-        server.ip = MainActivity.serverIP;
-
         while (!shutdown) {
 
             Terminal thisTerminal;
@@ -190,7 +188,6 @@ public class SimulationService extends IntentService {
                             kernelInitExecutor.getPoolSize();
                     kernelInitExecutor.setCorePoolSize(poolSize);
                     kernelInitExecutor.setMaximumPoolSize(poolSize);
-                    DataSender.terminalClocked = thisTerminal.presynapticTerminals.contains(server);
                 }
 
                 byte[] inputSpikesBuffer = new byte[128];
@@ -444,8 +441,7 @@ class DataSender implements Runnable {
     private byte[] outputSpikes = new byte[data_bytes];
     private DatagramSocket outputSocket;
 
-    static BlockingQueue<Object> clockSignals = new ArrayBlockingQueue<>(1);
-    static volatile boolean terminalClocked = false;
+    static volatile BlockingQueue<Object> clockSignals = new ArrayBlockingQueue<>(32);
 
     DataSender(BlockingQueue<byte[]> b, DatagramSocket d) {
 
@@ -467,13 +463,13 @@ class DataSender implements Runnable {
 
             Terminal thisTerminalLocal = SimulationService.thisTerminal;
 
-            if (terminalClocked)
-                try {
-                    clockSignals.take();
-                } catch (InterruptedException e) {
-                    String stackTrace = Log.getStackTraceString(e);
-                    Log.e("DataSender", stackTrace);
-                }
+            try {
+                clockSignals.take();
+            } catch (InterruptedException e) {
+                String stackTrace = Log.getStackTraceString(e);
+                Log.e("DataSender", stackTrace);
+            }
+
 
             for (short index = 0; index < thisTerminalLocal.postsynapticTerminals.size(); index++) {
 

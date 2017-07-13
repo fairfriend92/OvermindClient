@@ -6,11 +6,14 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 class InputCreator implements Runnable {
 
     private BlockingQueue<Input> kernelInitQueue;
     private BlockingQueue<char[]> inputCreatorQueue;
+    static AtomicLong waitTime = new AtomicLong(0);
 
     InputCreator(BlockingQueue<Input> l, BlockingQueue<char[]> b) {
 
@@ -39,7 +42,7 @@ class InputCreator implements Runnable {
             try {
                 Input firstInput = kernelInitQueue.take();
                 if (!connectionsServed[firstInput.presynTerminalIndex]) {
-                    Log.e("InputCreator", " " + firstInput.presynTerminalIndex);
+                    Log.e("InputCreator", " " + firstInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
                     inputs.set(firstInput.presynTerminalIndex, firstInput);
                     connectionsServed[firstInput.presynTerminalIndex] = true;
                 }
@@ -53,7 +56,7 @@ class InputCreator implements Runnable {
             while (iterator.hasNext()) {
                 Input currentInput = iterator.next();
                 if (!connectionsServed[currentInput.presynTerminalIndex]) {
-                    Log.e("InputCreator", " " + currentInput.presynTerminalIndex);
+                    Log.e("InputCreator", " " + currentInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
                     inputs.set(currentInput.presynTerminalIndex, currentInput);
                     connectionsServed[currentInput.presynTerminalIndex] = true;
                     iterator.remove();
@@ -78,9 +81,16 @@ class InputCreator implements Runnable {
             }
 
             if (!inputIsNull) {
-                Log.e("InputCreator", "input sent");
                 try {
-                    inputCreatorQueue.put(totalSynapticInput);
+                    boolean inputSent = inputCreatorQueue.offer(totalSynapticInput, 3 * waitTime.get(), TimeUnit.NANOSECONDS);
+                    if (inputSent)
+                        Log.e("InputCreator", "input sent");
+                    else
+                        Log.e("InputCreator", "input NOT sent");
+                    if (kernelInitQueue.remainingCapacity() < (kernelInitQueue.size() / 3)) {
+                        Log.e("InputCreator", "Capacity 1/3rd of size: Must clear kernelInitQueue");
+                        kernelInitQueue.clear();
+                    }
                 } catch (InterruptedException e) {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("InputCreator", stackTrace);

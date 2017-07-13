@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 class KernelInitializer implements Runnable {
 
@@ -36,6 +38,10 @@ class KernelInitializer implements Runnable {
     private static volatile List<ArrayBlockingQueue<byte[]>> presynTerminalQueue;
 
     private static volatile List<Boolean> threadIsFree = Collections.synchronizedList(new ArrayList<Boolean>());
+
+    private static AtomicLong lastTime = new AtomicLong(0);
+
+    private static volatile boolean connectedToServer = false;
 
     // Double array with one dimension representing the presynaptic terminals and the other the
     // input of a certain terminal
@@ -72,6 +78,8 @@ class KernelInitializer implements Runnable {
                 threadIsFree = new ArrayList<>(numOfConnections);
                 presynTerminalQueue = new ArrayList<>(numOfConnections);
 
+                connectedToServer = presynapticTerminals.contains(MainActivity.server);
+
                 for (int i = 0; i < numOfConnections; i++) {
                     threadsLocks[i] = new Object();
                     threadIsFree.add(false);
@@ -101,8 +109,6 @@ class KernelInitializer implements Runnable {
 
         try {
             presynTerminalQueue.get(presynTerminalIndex).put(inputSpikesBuffer);
-            if (presynTerminalIP.equals(MainActivity.serverIP))
-                DataSender.clockSignals.offer(new Object(), 100, TimeUnit.MICROSECONDS);
         } catch (InterruptedException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("KernelInitializer", stackTrace);
@@ -122,6 +128,7 @@ class KernelInitializer implements Runnable {
                         String stackTrace = Log.getStackTraceString(e);
                         Log.e("KernelInitializer", stackTrace);
                     }
+
                     threadIsFree = true;
                     KernelInitializer.threadIsFree.set(presynTerminalIndex, true);
 
@@ -146,7 +153,7 @@ class KernelInitializer implements Runnable {
 
         char[] synapticInput = new char[presynTerminal.numOfNeurons * Constants.MAX_MULTIPLICATIONS];
 
-        // The runnable initializes the kernel at time n using the input at time n - 1, which
+        // The runnable initializes the kernel at lastTime n using the input at lastTime n - 1, which
         // must be first retrieved from synapticInputCollection
         char[] oldInput = synapticInputCollection[presynTerminalIndex];
         System.arraycopy(oldInput, 0, synapticInput, 0, synapticInput.length);
@@ -190,6 +197,12 @@ class KernelInitializer implements Runnable {
         synapticInputCollection[presynTerminalIndex] = synapticInput;
 
         try {
+            if ((!connectedToServer && presynTerminalIndex == 0) ||
+                    (connectedToServer && presynTerminalIP.equals(MainActivity.serverIP))) {
+                DataSender.clockSignals.put(new Object());
+                InputCreator.waitTime.set(System.nanoTime() - lastTime.get());
+                lastTime.set(System.nanoTime());
+            }
             kernelInitQueue.put(new Input(synapticInput, presynTerminalIndex, false));
         } catch (InterruptedException e) {
             String stackTrace = Log.getStackTraceString(e);
