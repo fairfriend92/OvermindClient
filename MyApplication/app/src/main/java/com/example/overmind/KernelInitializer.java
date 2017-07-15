@@ -7,8 +7,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 class KernelInitializer implements Runnable {
@@ -21,7 +19,7 @@ class KernelInitializer implements Runnable {
 
     // Local collection of the presynaptic terminals
     private static volatile List<Terminal> presynapticTerminals = Collections.synchronizedList(new ArrayList<Terminal>());
-    static int numOfConnections = 0;
+    private static int numOfConnections = 0;
 
     // Local variable storing information about the terminal in use
     private Terminal thisTerminal;
@@ -103,7 +101,6 @@ class KernelInitializer implements Runnable {
         // If it was not possible to identify the presynaptic terminal drop the packet and return
         if (presynTerminalIndex == -1) {
             Log.e("KernelInitializer", "Cannot find presynTerminal with ip " + presynTerminalIP);
-            KernelInitializer.threadIsFree.set(presynTerminalIndex, false);
             return;
         }
 
@@ -203,7 +200,7 @@ class KernelInitializer implements Runnable {
                 InputCreator.waitTime.set(System.nanoTime() - lastTime.get());
                 lastTime.set(System.nanoTime());
             }
-            kernelInitQueue.put(new Input(synapticInput, presynTerminalIndex, false));
+            kernelInitQueue.put(new Input(synapticInput, presynTerminalIndex, false, numOfConnections));
         } catch (InterruptedException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("KernelInitializer", stackTrace);

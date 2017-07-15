@@ -14,6 +14,9 @@ class InputCreator implements Runnable {
     private BlockingQueue<Input> kernelInitQueue;
     private BlockingQueue<char[]> inputCreatorQueue;
     static AtomicLong waitTime = new AtomicLong(0);
+    private int numOfConnections = 0;
+    private boolean[] connectionsServed;
+    private List<Input> inputs = new ArrayList<>();
 
     InputCreator(BlockingQueue<Input> l, BlockingQueue<char[]> b) {
 
@@ -25,36 +28,36 @@ class InputCreator implements Runnable {
     @Override
     public void run() {
 
-        int numOfConnections = 1;
-
-        List<Input> inputs = new ArrayList<>();
-
         // TODO Use local shutdown set by method
         while (!SimulationService.shutdown) {
 
             char[] totalSynapticInput = new char[Constants.MAX_NUM_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
-            numOfConnections = KernelInitializer.numOfConnections > numOfConnections ?
-                    KernelInitializer.numOfConnections : numOfConnections;
-            for (int i = inputs.size(); i < numOfConnections; i++)
-                inputs.add(null);
-            boolean[] connectionsServed = new boolean[numOfConnections];
+            Input firstInput = null;
 
             try {
-                Input firstInput = kernelInitQueue.take();
-                if (!connectionsServed[firstInput.presynTerminalIndex]) {
-                    Log.e("InputCreator", " " + firstInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
-                    inputs.set(firstInput.presynTerminalIndex, firstInput);
-                    connectionsServed[firstInput.presynTerminalIndex] = true;
-                }
+                firstInput = kernelInitQueue.take();
             } catch (InterruptedException e) {
                 String stackTrace = Log.getStackTraceString(e);
                 Log.e("InputCreator", stackTrace);
+                return;
+            }
+
+            assert firstInput != null;
+
+            connectionsServed  = new boolean[numOfConnections];
+
+            resizeArrays(firstInput.numOfConnections);
+            if (!connectionsServed[firstInput.presynTerminalIndex]) {
+                Log.e("InputCreator", " " + firstInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
+                inputs.set(firstInput.presynTerminalIndex, firstInput);
+                connectionsServed[firstInput.presynTerminalIndex] = true;
             }
 
             Iterator<Input> iterator = kernelInitQueue.iterator();
 
             while (iterator.hasNext()) {
                 Input currentInput = iterator.next();
+                resizeArrays(currentInput.numOfConnections);
                 if (!connectionsServed[currentInput.presynTerminalIndex]) {
                     Log.e("InputCreator", " " + currentInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
                     inputs.set(currentInput.presynTerminalIndex, currentInput);
@@ -74,7 +77,7 @@ class InputCreator implements Runnable {
                     if ((4096 - offset) >= arrayLength) {
                         System.arraycopy(currentInput.synapticInput, 0, totalSynapticInput, offset, arrayLength);
                         offset += arrayLength;
-                        inputs.set(i, new Input(new char[arrayLength], arrayLength, true));
+                        inputs.set(i, new Input(new char[arrayLength], arrayLength, true, numOfConnections));
                     }
                 } else
                     finished = true;
@@ -82,11 +85,13 @@ class InputCreator implements Runnable {
 
             if (!inputIsNull) {
                 try {
-                    boolean inputSent = inputCreatorQueue.offer(totalSynapticInput, 3 * waitTime.get(), TimeUnit.NANOSECONDS);
+                    boolean inputSent = inputCreatorQueue.offer(totalSynapticInput, 8 * waitTime.get(), TimeUnit.NANOSECONDS);
+
                     if (inputSent)
                         Log.e("InputCreator", "input sent");
                     else
                         Log.e("InputCreator", "input NOT sent");
+
                     if (kernelInitQueue.remainingCapacity() < (kernelInitQueue.size() / 3)) {
                         Log.e("InputCreator", "Capacity 1/3rd of size: Must clear kernelInitQueue");
                         kernelInitQueue.clear();
@@ -101,6 +106,25 @@ class InputCreator implements Runnable {
 
     }
 
+    private void resizeArrays(int newNumOfConnections) {
+
+        if (newNumOfConnections != numOfConnections) {
+
+            for (int i = inputs.size(); i < newNumOfConnections; i++)
+                inputs.add(null);
+
+            boolean[] tmpArray = new boolean[newNumOfConnections];
+
+            System.arraycopy(connectionsServed, 0, tmpArray, 0, numOfConnections < newNumOfConnections ? numOfConnections : newNumOfConnections);
+
+            connectionsServed = tmpArray;
+
+            numOfConnections = newNumOfConnections;
+
+        }
+
+    }
+
 }
 
 class Input {
@@ -108,12 +132,14 @@ class Input {
     char[] synapticInput;
     int presynTerminalIndex;
     boolean inputIsEmpty;
+    int numOfConnections;
 
-    Input(char[] c, int i, boolean b) {
+    Input(char[] c, int i, boolean b, int i1) {
 
         synapticInput = c;
         presynTerminalIndex = i;
         inputIsEmpty = b;
+        numOfConnections = i1;
 
     }
 

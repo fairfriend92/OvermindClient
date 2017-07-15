@@ -258,6 +258,7 @@ public class SimulationService extends IntentService {
         kernelExcExecutor.shutdownNow();
         dataSenderExecutor.shutdownNow();
 
+
         boolean terminalUpdatersIsShutdown = false;
         boolean inputCreatorIsShutdown = false;
         boolean kernelInitializerIsShutdown = false;
@@ -459,6 +460,7 @@ class DataSender implements Runnable {
             } catch (InterruptedException e) {
                 String stackTrace = Log.getStackTraceString(e);
                 Log.e("DataSender", stackTrace);
+                return;
             }
 
             Terminal thisTerminalLocal = SimulationService.thisTerminal;
