@@ -219,7 +219,8 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
 }
 
 extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynamics(
-        JNIEnv *env, jobject thiz, jcharArray jSynapseInput, jlong jOpenCLObject, jshort jNumOfNeurons, jfloatArray jSimulationParameters) {
+        JNIEnv *env, jobject thiz, jcharArray jSynapseInput, jlong jOpenCLObject, jshort jNumOfNeurons, jfloatArray jSimulationParameters,
+        jfloatArray jWeights, jintArray jWeightsIndexes, jint jNumOfWeights) {
 
     struct OpenCLObject *obj;
     obj = (struct OpenCLObject *)jOpenCLObject;
@@ -234,12 +235,15 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
     jchar *synapseInput = env->GetCharArrayElements(jSynapseInput, JNI_FALSE);
     jfloat *simulationParameters = env->GetFloatArrayElements(jSimulationParameters, JNI_FALSE);
+    jfloat *weights = env->GetFloatArrayElements(jWeights, JNI_FALSE);
+    jint *weightsIndexes = env->GetIntArrayElements(jWeightsIndexes, JNI_FALSE);
 
     /* [Input initialization] */
     /**
      * Map the memory buffer that holds the input of the synapses, initialize it with the data received
      * through the Java Native Interface and then un-map it
      */
+
     bool mapMemoryObjectsSuccess = true;
     // Map the buffer
     obj->synapseInput = (cl_char*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[2], CL_TRUE, CL_MAP_WRITE, 0, synapseInputBufferSize, 0, NULL, NULL, &obj->errorNumber);
@@ -267,6 +271,40 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
     // Release the java array since the data has been passed to the memory buffer
     env->ReleaseCharArrayElements(jSynapseInput, synapseInput, 0);
+
+    /*
+     * If the weights have changed, initialize them too
+     */
+
+    // Proceed only if some weights have been changed
+    if (jNumOfWeights != 0) {
+
+        obj->synapseWeights = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
+        mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
+        if (!mapMemoryObjectsSuccess)
+        {
+            cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+            LOGE("Failed to map buffer");
+        }
+
+        for (int i = 0; i < jNumOfWeights; i++)
+        {
+
+            obj->synapseWeights[weightsIndexes[i]] = (cl_float) weights[i];
+
+        }
+
+        if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[1], obj->synapseWeights, 0, NULL, NULL)))
+        {
+            cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+            LOGE("Unmap memory objects failed");
+        }
+
+        env->ReleaseFloatArrayElements(jWeights, weights, 0);
+        env->ReleaseIntArrayElements(jWeightsIndexes, weightsIndexes, 0);
+
+    }
 
     /* [Input initialization] */
 

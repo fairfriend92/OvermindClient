@@ -31,14 +31,19 @@ class KernelInitializer implements Runnable {
     // Object used for synchronization
     private static final Object lock = new Object();
 
+    // Array of Objects used to lock the single connections
     private static final Object[] threadsLocks = new Object[Constants.MAX_NUM_SYNAPSES];
 
+    // List of buffers, one for each connections
     private static volatile List<ArrayBlockingQueue<byte[]>> presynTerminalQueue;
 
+    // List of flags indicating whether the respective connections is being served already
     private static volatile List<Boolean> threadIsFree = Collections.synchronizedList(new ArrayList<Boolean>());
 
+    // Atomic long used to compute the refresh rate at which new packets are being received
     private static AtomicLong lastTime = new AtomicLong(0);
 
+    // Flag that signals whether the physical terminal is clocked by the server
     private static volatile boolean connectedToServer = false;
 
     // Double array with one dimension representing the presynaptic terminals and the other the
@@ -67,6 +72,7 @@ class KernelInitializer implements Runnable {
                 // This ArrayList can't be a simple reference because we want the connections to
                 // be updated only when threadsCounter == 0
                 presynapticTerminals = new ArrayList<>(thisTerminal.presynapticTerminals);
+
                 numOfConnections = presynapticTerminals.size();
 
                 // Create the array storing the kernel input derived from the spikes produced
@@ -74,6 +80,7 @@ class KernelInitializer implements Runnable {
                 synapticInputCollection = new char[numOfConnections][4096];
 
                 threadIsFree = new ArrayList<>(numOfConnections);
+
                 presynTerminalQueue = new ArrayList<>(numOfConnections);
 
                 connectedToServer = presynapticTerminals.contains(MainActivity.server);
@@ -83,6 +90,7 @@ class KernelInitializer implements Runnable {
                     threadIsFree.add(false);
                     presynTerminalQueue.add(new ArrayBlockingQueue<byte[]>(4));
                 }
+
             }
 
         }
@@ -104,6 +112,8 @@ class KernelInitializer implements Runnable {
             return;
         }
 
+        // Put in the buffer of the connection that is being served by this thread the packet just
+        // received
         try {
             presynTerminalQueue.get(presynTerminalIndex).put(inputSpikesBuffer);
         } catch (InterruptedException e) {
@@ -111,14 +121,19 @@ class KernelInitializer implements Runnable {
             Log.e("KernelInitializer", stackTrace);
         }
 
+        // Local flag that signals when this thread can proceed to serve its connection
         boolean threadIsFree = false;
 
         while (!threadIsFree) {
 
+            // This block is synchronized on the connection served by the thread
             synchronized (threadsLocks[presynTerminalIndex]) {
 
+                // If the connection that must be served is available the thread can proceed (and
+                // therefore is not free anymore)
                 if (!KernelInitializer.threadIsFree.get(presynTerminalIndex)) {
 
+                    // Retrieve from the buffer the oldest packets
                     try {
                         presynTerminalQueue.get(presynTerminalIndex).take();
                     } catch (InterruptedException e) {
@@ -126,7 +141,10 @@ class KernelInitializer implements Runnable {
                         Log.e("KernelInitializer", stackTrace);
                     }
 
+                    // Update the local variable
                     threadIsFree = true;
+
+                    // Lock the connection
                     KernelInitializer.threadIsFree.set(presynTerminalIndex, true);
 
                 }
@@ -194,13 +212,24 @@ class KernelInitializer implements Runnable {
         synapticInputCollection[presynTerminalIndex] = synapticInput;
 
         try {
+            // If the terminal is clocked and it's just received a packet from the server, or if it
+            // is not and the first connection has fired again, then DataSender can send the latest
+            // array of spikes produced by KernelExecutor
             if ((!connectedToServer && presynTerminalIndex == 0) ||
                     (connectedToServer && presynTerminalIP.equals(MainActivity.serverIP))) {
+
+                // Put in the queue an object which unblocks the waiting DataSender
                 DataSender.clockSignals.put(new Object());
+
+                // Update the refresh rate
                 InputCreator.waitTime.set(System.nanoTime() - lastTime.get());
+
                 lastTime.set(System.nanoTime());
+
             }
+
             kernelInitQueue.put(new Input(synapticInput, presynTerminalIndex, false, numOfConnections));
+
         } catch (InterruptedException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("KernelInitializer", stackTrace);

@@ -9,6 +9,11 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+/*
+The class retrieves the inputs elaborated by KernelInitializer and put them together before sending
+them to KernelExecutor
+ */
+
 class InputCreator implements Runnable {
 
     private BlockingQueue<Input> kernelInitQueue;
@@ -31,9 +36,13 @@ class InputCreator implements Runnable {
         // TODO Use local shutdown set by method
         while (!SimulationService.shutdown) {
 
+            // Array holding the complete input to be passed to KernelExecutor
             char[] totalSynapticInput = new char[Constants.MAX_NUM_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
-            Input firstInput = null;
 
+            // Object holding the first input in the kernelInitialzer queue
+            Input firstInput;
+
+            // The blocking "take" operation is used to prevent the thread from looping unnecessarily
             try {
                 firstInput = kernelInitQueue.take();
             } catch (InterruptedException e) {
@@ -42,38 +51,60 @@ class InputCreator implements Runnable {
                 return;
             }
 
-            assert firstInput != null;
-
+            // Array holding flags which specify which connections have been served
             connectionsServed  = new boolean[numOfConnections];
 
+            // Whenever a new Input is retrieved, we must check whether the number of connections has
+            // changed by inspecting it, and if that's the case the arrays must be resized
+            // accordingly
             resizeArrays(firstInput.numOfConnections);
-            if (!connectionsServed[firstInput.presynTerminalIndex]) {
-                Log.e("InputCreator", " " + firstInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
-                inputs.set(firstInput.presynTerminalIndex, firstInput);
-                connectionsServed[firstInput.presynTerminalIndex] = true;
-            }
+
+            // The retrieved Input si put in the list of inputs waiting to be put together, and the
+            // respective flag is set
+            inputs.set(firstInput.presynTerminalIndex, firstInput);
+            connectionsServed[firstInput.presynTerminalIndex] = true;
 
             Iterator<Input> iterator = kernelInitQueue.iterator();
 
+            // Iterate over the queue of Inputs to be served
             while (iterator.hasNext()) {
+
                 Input currentInput = iterator.next();
+
+                // As before check whether in the meantime the number of connection has changed
                 resizeArrays(currentInput.numOfConnections);
+
+                // Proceed if the current input comes from a connection that has not been served
                 if (!connectionsServed[currentInput.presynTerminalIndex]) {
-                    Log.e("InputCreator", " " + currentInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
+                    //Log.e("InputCreator", " " + currentInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
                     inputs.set(currentInput.presynTerminalIndex, currentInput);
                     connectionsServed[currentInput.presynTerminalIndex] = true;
                     iterator.remove();
                 }
+
             }
 
             int offset = 0;
             boolean finished = false, inputIsNull = true;
 
+            // Iterate over the collection of inputs take from the kernelInitialzer queue
             for (int i = 0; i < numOfConnections && !finished; i++) {
+
+                // If the input is null then the respective connection has not fired yet
                 if (inputs.get(i) != null) {
+
                     Input currentInput = inputs.get(i);
+
+                    // If all the inputs are empty, then there's no need to pass them to
+                    // KernelExecutor. The flag signals whether they should be passed or not
+                    // TODO: flag unnecessary
                     inputIsNull &= currentInput.inputIsEmpty;
+
                     int arrayLength = currentInput.synapticInput.length;
+
+                    // If the complete input we're building is made of inputs sampled at different
+                    // times, there's a possibility that not all of them may fit. Therefore, we must
+                    // check for the remaining space.
                     if ((4096 - offset) >= arrayLength) {
                         System.arraycopy(currentInput.synapticInput, 0, totalSynapticInput, offset, arrayLength);
                         offset += arrayLength;
@@ -86,16 +117,20 @@ class InputCreator implements Runnable {
             if (!inputIsNull) {
                 try {
                     boolean inputSent = inputCreatorQueue.offer(totalSynapticInput, 8 * waitTime.get(), TimeUnit.NANOSECONDS);
-
+                    /*
                     if (inputSent)
                         Log.e("InputCreator", "input sent");
                     else
                         Log.e("InputCreator", "input NOT sent");
+                    */
 
+                    // In cas the pressure on the buffer is such that the capacity goes under the
+                    // threshold, to prevent the application from stalling the queue is cleared
                     if (kernelInitQueue.remainingCapacity() < (kernelInitQueue.size() / 3)) {
                         Log.e("InputCreator", "Capacity 1/3rd of size: Must clear kernelInitQueue");
                         kernelInitQueue.clear();
                     }
+
                 } catch (InterruptedException e) {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("InputCreator", stackTrace);
