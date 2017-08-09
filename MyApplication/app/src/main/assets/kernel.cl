@@ -1,70 +1,31 @@
-#pragma OPENCL EXTENSION cl_khr_fp64 : enable
-#pragma OPENCL EXTENSION cl_khr_int64_base_atomics: enable
-#pragma OPENCL EXTENSION cl_khr_int64_base_atomics: enable
+/* This kernel is for devices with 32 bits wide register. 
+   It computes one synapse at a time. */
 
-#define potential neuronalDynVar[workId * 3]
-#define recovery neuronalDynVar[workId * 3 + 1]
-#define kahanCompensation neuronalDynVar[workId * 3 + 2]
+__kernel __attribute__((work_group_size_hint(256, 1, 1))) __attribute__((vec_type_hint(float4)))
+void simulate_dynamics(__global float* restrict coeff, __global float* restrict weights,
+		       __global char* restrict input, volatile __global int* restrict current)
+{
 
-#define a simulationParameters[0]
-#define b simulationParameters[1]
-#define c simulationParameters[2]
-#define d simulationParameters[3]
-
-__kernel void simulate_dynamics(__constant float* coeff, __constant uchar* weights,
-				__constant uchar* input, __global long* current, __global int* counter,
-				__global double* neuronalDynVar, __global uchar* actionPotentials, __constant double* simulationParameters)
-{  
-  uchar localId = get_local_id(0);
+  ushort localId = get_local_id(0);
   ushort workId = get_group_id(0);
+  ushort localSize = get_local_size(0);
 
-  uchar4 index = vload4(localId, input);
+  char4 index = vload4(localId, input);
 
-  float coeffVec = convert_float(coeff[index.s0] + coeff[index.s1] + coeff[index.s2] + coeff[index.s3]);
-
-  float weightsVec = convert_float(weights[workId * 1024 + localId]);
-
-  float result = coeffVec * weightsVec * 32768.0f;
-
-  long resultLong = conver_long(result);
-  long increment = result > 0 ? resultLong : (-resultLong);
+  // Coefficients of the synapse kernel
+  float localCoeff = (float)(coeff[index.s0] + coeff[index.s1] + coeff[index.s2] + coeff[index.s3]);
   
-  atom_add(&current[workId], increment);
-   
-  atomic_inc(&counter[workId]);
+  // Synaptic weights 
+  float localWeights = weights[localId + workId * localSize];
 
-  mem_fence(CLK_LOCAL_MEM_FENCE); 
- 
-  if (counter == get_local_size(0))
-    {      
-      double unsignedCurrentDouble = convert_double(current[workId]) / 32768000.0f;
-      double currentDouble = current[workId] > 0 ? unsignedCurrentDouble : (-unsignedCurrentDouble);
+  float result = localCoeff * localWeights * 32768.0f;
 
-      potential += 0.5f * (0.04f * pown(potential, 2) + 5.0f * potential + 140.0f - recovery + currentDouble);
-      
-      /*
-      recovery = (0.5f * 0.02f * 0.2f * potential + recovery) / (1.0f + 0.5f * 0.02f);      
-      recovery += 0.5f * 0.02f * (0.2f * potential - recovery);
-      */
-            
-      double y = 0.5f * a * (b * potential - recovery) - kahanCompensation;
-      double t = recovery + y;
-      kahanCompensation = (t - recovery) - y;
-      recovery = t;
-                        
-      if (potential >= 30.0f)
-	{
-	  actionPotentials[(ushort)(workId / 8)] |= (1 << (workId - (ushort)(workId / 8) * 8));
-	  recovery += d;
-	  potential = c;
-	}
-      else
-	{
-	  actionPotentials[(ushort)(workId / 8)] &= ~(1 << (workId - (ushort)(workId / 8) * 8));
-	}      
+  int resultInt = convert_int_rte(result);
+  int increment = result > 0 ? resultInt : (-resultInt);
 
-      current[workId] = 0;
-      counter[workId] = 0;
+  // Increment the synaptic current
+  atomic_add(&current[workId], increment);
+
 }
     
   

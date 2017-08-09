@@ -20,6 +20,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.RadioButton;
@@ -27,8 +28,6 @@ import android.widget.TextView;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectOutputStream;
-import java.net.Socket;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
 
@@ -102,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
     static String serverIP;
     static Terminal server = new Terminal();
     static String numOfNeurons;
-    static boolean numOfNeuronsDetermineByApp = false;
+    static boolean numOfNeuronsDeterminedByApp = false;
     static String renderer;
 
     EditText editText = null;
@@ -147,6 +146,125 @@ public class MainActivity extends AppCompatActivity {
 
     TextView currentView = null;
 
+    private class CountdownToSimulation extends CountDownTimer {
+
+        CountdownToSimulation (long millisInFuture, long countDownInterval) {
+
+            super (millisInFuture, countDownInterval);
+        }
+
+        @Override
+        public void onTick(long millisUntilFinished) {
+
+        }
+
+        @Override
+        public void onFinish() {
+
+            // Get the GPU model to set the number of neurons of the local network
+            SharedPreferences prefs = getSharedPreferences("GPUinfo", Context.MODE_PRIVATE);
+            renderer = prefs.getString("RENDERER", null);
+
+            // Load the appropriate OpenCL library based on the GPU vendor
+            loadGLLibrary();
+
+            // Create and launch the AsyncTask to retrieve the global IP of the terminal and to send the info
+            // of the terminal to the Overmind server
+            ServerConnect serverConnect = new ServerConnect();
+            serverConnect.execute(getApplicationContext());
+
+            // Get from the AsyncTask the struct holding all the info regarding the terminal
+            try {
+                thisClient = serverConnect.get();
+            } catch (InterruptedException | ExecutionException e) {
+                String stackTrace = Log.getStackTraceString(e);
+                Log.e("MainActivity", stackTrace);
+            }
+
+            // Display error message and bring back the home layout if the connection with the
+            // Overmind server fails
+            if (ServerConnectFailed) {
+
+                // When going back to the home menu the default settings must be restored
+                MainActivity.numOfNeuronsDeterminedByApp = false;
+                ServerConnectFailed = false;
+
+                // Show the appropriate error message
+                android.support.v4.app.DialogFragment dialogFragment = new ErrorDialogFragment();
+                Bundle args = new Bundle();
+                args.putInt("ErrorNumber", ServerConnectErrorNumber);
+                dialogFragment.setArguments(args);
+                dialogFragment.show(getSupportFragmentManager(), "Connection failed");
+
+                // Bring back the home menu view
+                setContentView(R.layout.pre_connection);
+                editText = (EditText) findViewById(R.id.edit_ip);
+                editNumOfNeurons = (EditText) findViewById(R.id.edit_num_of_neurons);
+
+            } else {
+
+                /**
+                 * If the async task server connect succeeded the simulation can be started
+                 */
+
+                // Now that the GPU info are available display the proper application layout
+                setContentView(R.layout.activity_main);
+
+                // By default the network is made of regular spiking neurons, so the appropriate parameters
+                // must be passed to the simulation and the default radio button must be selected
+                regularSpikingRadioButton = (RadioButton) findViewById(R.id.radio_rs);
+
+                assert regularSpikingRadioButton != null;
+
+                regularSpikingRadioButton.setChecked(true);
+
+                SimulationParameters.setParameters(0.02f, 0.2f, -65.0f, 8.0f, 0.0f);
+
+                Resources res = getResources();
+
+                /**
+                 * Show some info about the terminal running the simulation
+                 */
+
+                TextView rendererView = new TextView(MainActivity.this);
+                TextView vendorView = new TextView(MainActivity.this);
+
+                String rendererString = String.format(res.getString(R.string.renderer), renderer);
+                String vendorString = String.format(res.getString(R.string.venodr), vendor);
+
+                rendererView.setText(rendererString);
+                vendorView.setText(vendorString);
+
+                ViewGroup mainActivityLayout = (ViewGroup) findViewById(R.id.activity_main);
+
+                assert mainActivityLayout != null;
+
+                mainActivityLayout.addView(rendererView);
+                mainActivityLayout.addView(vendorView);
+
+                /**
+                 * Display text info about selected stimulation
+                 */
+
+                currentView = new TextView(MainActivity.this);
+                String currentString = String.format(res.getString(R.string.current), 0.0f);
+                currentView.setText(currentString);
+                ViewGroup stimulusSelectionLayout = (ViewGroup) findViewById(R.id.stimulus_selection_layout);
+                assert stimulusSelectionLayout != null;
+                stimulusSelectionLayout.addView(currentView);
+
+                startSimulation();
+
+            }
+
+            assert thisClient != null;
+
+        }
+
+    }
+
+    CountdownToSimulation timerToSimulation = new CountdownToSimulation(1000, 500);
+
     public void startSimulation(View view) {
 
         assert editText != null;
@@ -166,112 +284,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(mGlSurfaceView);
 
         // Use this countdown timer to give enough time to the renderer to retrieve the info
-        new CountDownTimer(1000, 500) {
-            public void onTick(long millisUntilFinished) {
-            }
-
-            public void onFinish() {
-
-                // Get the GPU model to set the number of neurons of the local network
-                SharedPreferences prefs = getSharedPreferences("GPUinfo", Context.MODE_PRIVATE);
-                renderer = prefs.getString("RENDERER", null);
-
-                // Load the appropriate OpenCL library based on the GPU vendor
-                loadGLLibrary();
-
-                // Create and launch the AsyncTask to retrieve the global IP of the terminal and to send the info
-                // of the terminal to the Overmind server
-                ServerConnect serverConnect = new ServerConnect();
-                serverConnect.execute(getApplicationContext());
-
-                // Get from the AsyncTask the struct holding all the info regarding the terminal
-                try {
-                    thisClient = serverConnect.get();
-                } catch (InterruptedException | ExecutionException e) {
-                    String stackTrace = Log.getStackTraceString(e);
-                    Log.e("MainActivity", stackTrace);
-                }
-
-                // Display error message and bring back the home layout if the connection with the
-                // Overmind server fails
-                if (ServerConnectFailed) {
-
-                    // When going back to the home menu the default settings must be restored
-                    MainActivity.numOfNeuronsDetermineByApp = false;
-                    ServerConnectFailed = false;
-
-                    // Show the appropriate error message
-                    android.support.v4.app.DialogFragment dialogFragment = new ErrorDialogFragment();
-                    Bundle args = new Bundle();
-                    args.putInt("ErrorNumber", ServerConnectErrorNumber);
-                    dialogFragment.setArguments(args);
-                    dialogFragment.show(getSupportFragmentManager(), "Connection failed");
-
-                    // Bring back the home menu view
-                    setContentView(R.layout.pre_connection);
-                    editText = (EditText) findViewById(R.id.edit_ip);
-                    editNumOfNeurons = (EditText) findViewById(R.id.edit_num_of_neurons);
-
-                } else {
-
-                    /**
-                     * If the async task server connect succeeded the simulation can be started
-                     */
-
-                    // Now that the GPU info are available display the proper application layout
-                    setContentView(R.layout.activity_main);
-
-                    // By default the network is made of regular spiking neurons, so the appropriate parameters
-                    // must be passed to the simulation and the default radio button must be selected
-                    regularSpikingRadioButton = (RadioButton) findViewById(R.id.radio_rs);
-
-                    assert regularSpikingRadioButton != null;
-
-                    regularSpikingRadioButton.setChecked(true);
-
-                    SimulationParameters.setParameters(0.02f, 0.2f, -65.0f, 8.0f, 0.0f);
-
-                    Resources res = getResources();
-
-                    /**
-                     * Show some info about the terminal running the simulation
-                     */
-
-                    TextView rendererView = new TextView(MainActivity.this);
-                    TextView vendorView = new TextView(MainActivity.this);
-
-                    String rendererString = String.format(res.getString(R.string.renderer), renderer);
-                    String vendorString = String.format(res.getString(R.string.venodr), vendor);
-
-                    rendererView.setText(rendererString);
-                    vendorView.setText(vendorString);
-
-                    ViewGroup mainActivityLayout = (ViewGroup) findViewById(R.id.activity_main);
-
-                    assert mainActivityLayout != null;
-
-                    mainActivityLayout.addView(rendererView);
-                    mainActivityLayout.addView(vendorView);
-
-                    /**
-                     * Display text info about selected stimulation
-                     */
-
-                    currentView = new TextView(MainActivity.this);
-                    String currentString = String.format(res.getString(R.string.current), 0.0f);
-                    currentView.setText(currentString);
-                    ViewGroup stimulusSelectionLayout = (ViewGroup) findViewById(R.id.stimulus_selection_layout);
-                    assert stimulusSelectionLayout != null;
-                    stimulusSelectionLayout.addView(currentView);
-
-                    startSimulation();
-
-                }
-
-                assert thisClient != null;
-
-            }
-        }.start();
+        timerToSimulation.start();
     }
 
     /**
@@ -319,10 +332,10 @@ public class MainActivity extends AppCompatActivity {
             case R.id.checkbox_num_of_neurons:
                 if (checked) {
                     editNumOfNeurons.setText(getResources().getString(R.string.num_of_neurons_text));
-                    numOfNeuronsDetermineByApp = true;
+                    numOfNeuronsDeterminedByApp = true;
                 } else {
                     editNumOfNeurons.setText("1");
-                    numOfNeuronsDetermineByApp = false;
+                    numOfNeuronsDeterminedByApp = false;
                 }
                 break;
         }
@@ -353,22 +366,70 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Handler for received Intents: called whenever an Intent  with action named
-     * "Error message" is broadcast.
+
+    /*
+    Action performed when user click on button in the establish_connection layout
      */
 
-    int errorNumber = 0;
+    public void backHomeMenu(View view) {
+
+        CountdownToConnectionService.shutdown = true;
+
+        MainActivity.numOfNeuronsDeterminedByApp = false;
+
+        setContentView(R.layout.pre_connection);
+        editText = (EditText) findViewById(R.id.edit_ip);
+        editNumOfNeurons = (EditText) findViewById(R.id.edit_num_of_neurons);
+    }
+
+    /*
+    Called when the cdToConnectionService attempts to establish a new connection
+     */
+
+    private BroadcastReceiver attemptConnectionReceiver = new BroadcastReceiver() {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            setContentView(R.layout.pre_connection);
+
+            Button button = (Button)findViewById(R.id.startSimulationButton);
+
+            button.performClick();
+            button.setPressed(true);
+            button.invalidate();
+            button.setPressed(false);
+            button.invalidate();
+
+        }
+
+    };
+
+    /*
+    Handler for received Intents: called whenever an Intent  with action named
+    "Error message" is broadcast.
+     */
+
+    int numfOfDisconnections = 0;
 
     private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
 
-            MainActivity.numOfNeuronsDetermineByApp = false;
+            numfOfDisconnections++;
 
-            // Get data included in the Intent
+            Intent connectionServiceIntent = new Intent(MainActivity.this, CountdownToConnectionService.class);
+
+            // Start the service that periodically attempts to connect with the server after a
+            // disconnection
+            MainActivity.this.startService(connectionServiceIntent);
+
+            int errorNumber = 0;
+
+            // Get data included in the Intent about the kind of error that has occurred
             errorNumber = intent.getIntExtra("ErrorNumber", errorNumber);
 
+            /*
             // Use the bundle to pass to the class that displays the error message its error code
             Bundle args = new Bundle();
 
@@ -381,10 +442,58 @@ public class MainActivity extends AppCompatActivity {
 
             // Display the error message and bring back the home layout
             dialogFragment.show(getSupportFragmentManager(), "Connection failed");
-            setContentView(R.layout.pre_connection);
-            editText = (EditText) findViewById(R.id.edit_ip);
-            editNumOfNeurons = (EditText) findViewById(R.id.edit_num_of_neurons);
+            */
+
+            setContentView(R.layout.establish_connection);
+
+            Resources res = getResources();
+
+            // The field which displays the details about the disconnection error
+            TextView errorTextView = new TextView(MainActivity.this);
+
+            // The field containing the diagnostics
+            TextView diagnosticsView = new TextView(MainActivity.this);
+
+            String errorString = "Undefined error with errornumber " + errorNumber;
+
+            switch (errorNumber) {
+                case 2:
+                    errorString = String.format(res.getString(R.string.error_text),
+                            res.getString(R.string.udp_socket_timeout_message));
+                    break;
+                case 3:
+                    errorString = String.format(res.getString(R.string.error_text),
+                            res.getString(R.string.stream_error_message));
+                    break;
+                case 6:
+                    errorString = String.format(res.getString(R.string.error_text),
+                            res.getString(R.string.opencl_failure_message));
+                    break;
+            }
+
+            String diagnosticsString = String.format(res.getString(R.string.diagnostics_info), numfOfDisconnections);
+
+            // Put the text about the error in the field
+            errorTextView.setText(errorString);
+
+            // Put the various info in the diagnostics view
+            diagnosticsView.setText(diagnosticsString);
+
+            ViewGroup errorTextLayout = (ViewGroup) findViewById(R.id.error_text);
+
+            ViewGroup diagnosticsTextLayout = (ViewGroup) findViewById(R.id.diagnostics_info);
+
+            assert errorTextLayout != null;
+            assert diagnosticsTextLayout != null;
+
+            // Add the view about the error to the layout
+            errorTextLayout.addView(errorTextView);
+
+            // Append the diagnostics info to the proper layout
+            diagnosticsTextLayout.addView(diagnosticsView);
+
         }
+
     };
 
     @Override
@@ -400,21 +509,29 @@ public class MainActivity extends AppCompatActivity {
         editText = (EditText) findViewById(R.id.edit_ip);
         editNumOfNeurons = (EditText) findViewById(R.id.edit_num_of_neurons);
 
-        /**
-         * Register an observer (mMessageReceiver) to receive Intents with actions named
-         * "ErrorMessage"
+        /*
+        Register an observer (mMessageReceiver) to receive Intents with actions named
+        "ErrorMessage"
          */
         LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
                 new IntentFilter("ErrorMessage"));
+        /*
+        Register an observer to listen for the signal to attempt a new connection
+         */
+        LocalBroadcastManager.getInstance(this).registerReceiver(attemptConnectionReceiver,
+                new IntentFilter("AttemptConnection"));
     }
 
     @Override
     public void onDestroy() {
 
-        // Unregister the receiver since the service is about to be closed
+        // Unregister the receivers since the services are about to be closed
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(attemptConnectionReceiver);
 
         SimulationService.shutDown();
+
+        CountdownToConnectionService.shutdown = true;
 
         super.onDestroy();
     }
@@ -426,12 +543,12 @@ public class MainActivity extends AppCompatActivity {
     String vendor;
 
     public void loadGLLibrary() {
+
         SharedPreferences prefs = getSharedPreferences("GPUinfo", Context.MODE_PRIVATE);
         vendor = prefs.getString("VENDOR", null);
         assert vendor != null;
         switch (vendor) {
-            case "ARM":
-                try {
+            case "ARM":try {
                     System.loadLibrary("ARM");
                 } catch (UnsatisfiedLinkError linkError) {
                     Log.e("Unsatisfied link", "libGLES_mali.so not found");
@@ -449,6 +566,7 @@ public class MainActivity extends AppCompatActivity {
                 broadcastError.putExtra("ErrorNumber", 4);
                 LocalBroadcastManager.getInstance(this).sendBroadcast(broadcastError);
         }
+
     }
 
     /**
@@ -481,19 +599,20 @@ public class MainActivity extends AppCompatActivity {
         String kernel;
 
         switch (renderer) {
+            case "Mali-T880":
             case "Mali-T720":
                 // The string used to hold the .cl kernel file
                 kernel = loadKernelFromAsset(getInputStream("kernel_vec4.cl"));
                 break;
             default:
-                kernel = loadKernelFromAsset(getInputStream("kernel_vec4.cl"));
+                kernel = loadKernelFromAsset(getInputStream("kernel.cl"));
                 break;
         }
 
         // Put the string holding the kernel in the simulation Intent
         simulationIntent.putExtra("Kernel", kernel);
 
-        SimulationService.shutdown = false;
+        //SimulationService.shutdown = false;
 
         // Start the service
         this.startService(simulationIntent);

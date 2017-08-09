@@ -2,76 +2,22 @@
 <items version="2" >
 
     <item
-        is-multidex="false"
-        jar="/home/rodolfo/Android/Sdk/extras/android/m2repository/com/android/support/support-annotations/23.4.0/support-annotations-23.4.0.jar"
-        jumboMode="false"
-        optimize="true"
-        revision="25.0.1"
-        sha1="ffbe55fdb2bb456b1485831706a9eac3300bb6b8">
-        <dex dex="/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/pre-dexed/debug/support-annotations-23.4.0_e57d5a37d973e26ee595c0949aaafc9f28b9a71f.jar" />
-    </item>
-    <item
-        is-multidex="false"
-        jar="/root/.android/build-cache/4dd18dcc5cd3cbb2d1fcd5ac3656b06fbcd63a4a/output/jars/classes.jar"
-        jumboMode="false"
-        optimize="true"
-        revision="25.0.1"
-        sha1="de4db3785756bfb0915a9f59a9b3f2fea7407be4">
-        <dex dex="/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/pre-dexed/debug/classes_0ff980beccd4a659878646a7ef3c6d33347f76c0.jar" />
-    </item>
-    <item
         is-multidex="true"
         jar="/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/incremental-classes/debug/instant-run-bootstrap.jar"
         jumboMode="true"
         optimize="true"
-        revision="25.0.1"
-        sha1="36d58a1048db60fd65d05276d456d53b234578eb">
+        revision="25.0.2"
+        sha1="ee894efbda7866f07c702504e88b7a55ca3caf0f">
         <dex dex="/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/transforms/dex/debug/folders/1000/10000/instant-run-bootstrap_79047e9498d96b3a8cd34785f8045a45b17090bf/classes.dex" />
-    </item>
-    <item
-        is-multidex="false"
-        jar="/root/.android/build-cache/089b5052b89ec37440c5c83b89e5967f613ce250/output/jars/classes.jar"
-        jumboMode="false"
-        optimize="true"
-        revision="25.0.1"
-        sha1="c2c594cace5d83a3227b2b6e658ecbfd586d3ed9">
-        <dex dex="/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/pre-dexed/debug/classes_aad9c922048a8f75c30b935800f7562e1384fae5.jar" />
-    </item>
-    <item
-        is-multidex="false"
-        jar="/root/.android/build-cache/e4fe442937243aeea6686d7a5cbc97ee4c45b927/output/jars/classes.jar"
-        jumboMode="false"
-        optimize="true"
-        revision="25.0.1"
-        sha1="67bd36ee9340ec7c254108936ad16b24bed160cc">
-        <dex dex="/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/pre-dexed/debug/classes_3317e1f9a9145d6a342689057467206c3e966f82.jar" />
-    </item>
-    <item
-        is-multidex="false"
-        jar="/root/.android/build-cache/e4fe442937243aeea6686d7a5cbc97ee4c45b927/output/jars/libs/internal_impl-23.4.0.jar"
-        jumboMode="false"
-        optimize="true"
-        revision="25.0.1"
-        sha1="ea3c07504d2c8f4b13aa17c45c1b68ed9c1c3674">
-        <dex dex="/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/pre-dexed/debug/internal_impl-23.4.0_1b5b75a398623e67f375ce968871b6fca97982e9.jar" />
     </item>
     <item
         is-multidex="true"
         jar="/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/incremental-runtime-classes/debug/instant-run.jar"
         jumboMode="true"
         optimize="true"
-        revision="25.0.1"
+        revision="25.0.2"
         sha1="510aa6efc159983dfbffa676a0dae37568c0a46f">
         <dex dex="/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/transforms/dex/debug/folders/1000/10000/instant-run_ce339fed15d51786f064257c1f389aa3c28840e9/classes.dex" />
-    </item>
-    <item
-        is-multidex="false"
-        jar="/root/.android/build-cache/6682865c3ca1d8e05129030d4579836b508e6d05/output/jars/classes.jar"
-        jumboMode="false"
-        optimize="true"
-        revision="25.0.1"
-        sha1="548f06de403a9409f00554b3ee12a9fdea0e236c">
-        <dex dex="/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/pre-dexed/debug/classes_0129354db14b31e49b2e9bb06d83fd46c398da88.jar" />
     </item>
 
 </items>

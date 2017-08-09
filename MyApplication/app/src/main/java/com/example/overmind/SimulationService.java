@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.os.Process;
 import android.provider.Telephony;
 import android.support.v4.content.LocalBroadcastManager;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
 
@@ -25,6 +26,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -43,13 +45,14 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.example.overmind.Constants.NUMBER_OF_NEURONS;
+import static com.example.overmind.Constants.SERVER_IP;
 
 public class SimulationService extends IntentService {
 
     // TODO TCP and UDP socket can live on the same port
-    private static final int SERVER_PORT_UDP = 4196;
     private static final int IPTOS_THROUGHPUT = 0x08;
     private boolean errorRaised = false;
+    private static int errornumber = 0;
 
     public SimulationService() {
         super("SimulationService");
@@ -59,6 +62,55 @@ public class SimulationService extends IntentService {
     static public void shutDown () {
 
         shutdown = true;
+
+    }
+
+    public static String getNetworkClass(Context context) {
+        TelephonyManager mTelephonyManager = (TelephonyManager)
+                context.getSystemService(Context.TELEPHONY_SERVICE);
+        int networkType = mTelephonyManager.getNetworkType();
+
+        String connectionClass;
+
+        switch (networkType) {
+            case TelephonyManager.NETWORK_TYPE_GPRS:
+            case TelephonyManager.NETWORK_TYPE_EDGE:
+            case TelephonyManager.NETWORK_TYPE_CDMA:
+            case TelephonyManager.NETWORK_TYPE_1xRTT:
+            case TelephonyManager.NETWORK_TYPE_IDEN:
+                connectionClass =  "2G";
+                break;
+            case TelephonyManager.NETWORK_TYPE_UMTS:
+            case TelephonyManager.NETWORK_TYPE_EVDO_0:
+            case TelephonyManager.NETWORK_TYPE_EVDO_A:
+            case TelephonyManager.NETWORK_TYPE_HSDPA:
+            case TelephonyManager.NETWORK_TYPE_HSUPA:
+            case TelephonyManager.NETWORK_TYPE_HSPA:
+            case TelephonyManager.NETWORK_TYPE_EVDO_B:
+            case TelephonyManager.NETWORK_TYPE_EHRPD:
+            case TelephonyManager.NETWORK_TYPE_HSPAP:
+                connectionClass = "3G";
+                break;
+            case TelephonyManager.NETWORK_TYPE_LTE:
+                connectionClass = "4G";
+                break;
+            default:
+                connectionClass = "Unknown";
+        }
+
+        boolean connectedToInternet;
+
+        try {
+            InetAddress ipAddr = InetAddress.getByName("google.com");
+            connectedToInternet =  !ipAddr.toString().equals("");
+        } catch (Exception e) {
+            connectedToInternet =  false;
+        }
+
+        if (connectedToInternet)
+            return connectionClass;
+        else
+            return "No internet connection";
 
     }
 
@@ -98,7 +150,7 @@ public class SimulationService extends IntentService {
 
             byte[] testData = new byte[1];
 
-            DatagramPacket testPacket = new DatagramPacket(testData, 1, serverAddr, SERVER_PORT_UDP);
+            DatagramPacket testPacket = new DatagramPacket(testData, 1, serverAddr, Constants.SERVER_PORT_UDP);
 
             datagramSocket.send(testPacket);
 
@@ -122,9 +174,7 @@ public class SimulationService extends IntentService {
             Log.e("SimulationService", stackTrace);
             shutDown();
             if (!errorRaised) {
-                Intent broadcastError = new Intent("ErrorMessage");
-                broadcastError.putExtra("ErrorNumber", 1);
-                LocalBroadcastManager.getInstance(this).sendBroadcast(broadcastError);
+                errornumber = 1;
                 errorRaised = true;
             }
         }
@@ -258,12 +308,12 @@ public class SimulationService extends IntentService {
             } catch (SocketTimeoutException e) {
                 String stackTrace = Log.getStackTraceString(e);
                 Log.e("TerminalUpdater", stackTrace);
-                shutDown();
-                if (!errorRaised) {
-                    Intent broadcastError = new Intent("ErrorMessage");
-                    broadcastError.putExtra("ErrorNumber", 2);
-                    LocalBroadcastManager.getInstance(this).sendBroadcast(broadcastError);
-                    errorRaised = true;
+                if (!getNetworkClass(this).equals("4G")) {
+                    shutDown();
+                    if (!errorRaised) {
+                        errornumber = 2;
+                        errorRaised = true;
+                    }
                 }
             } catch (IOException | RejectedExecutionException |
                     InterruptedException | ExecutionException | IllegalArgumentException e) {
@@ -333,7 +383,15 @@ public class SimulationService extends IntentService {
         }
 
         shutdown = false;
+        Log.d("SimulationService", "Closing SimulationService");
+
         stopSelf();
+
+        if (errorRaised) {
+            Intent broadcastError = new Intent("ErrorMessage");
+            broadcastError.putExtra("ErrorNumber", errornumber);
+            LocalBroadcastManager.getInstance(this).sendBroadcast(broadcastError);
+        }
 
     }
 
@@ -363,6 +421,8 @@ public class SimulationService extends IntentService {
 
                 Terminal thisTerminal = new Terminal();
 
+                Log.e("TerminalUpdater", "test0 " + updatedTerminal.remainingCapacity());
+
                 try {
                     Object obj = MainActivity.thisClient.objectInputStream.readObject();
                     if (obj instanceof Terminal)
@@ -378,12 +438,12 @@ public class SimulationService extends IntentService {
                     Log.e("TerminalUpdater", stackTrace);
                     shutDown();
                     if (!errorRaised) {
-                        Intent broadcastError = new Intent("ErrorMessage");
-                        broadcastError.putExtra("ErrorNumber", 3);
-                        LocalBroadcastManager.getInstance(context).sendBroadcast(broadcastError);
+                        errornumber = 3;
                         errorRaised = true;
                     }
                 }
+
+                Log.e("TerminalUpdater", "test " + updatedTerminal.remainingCapacity());
 
                 try {
                     updatedTerminal.put(thisTerminal);
@@ -392,6 +452,8 @@ public class SimulationService extends IntentService {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("TerminalUpdater", stackTrace);
                 }
+
+                Log.e("TerminalUpdater", "test1 " + updatedTerminal.remainingCapacity());
 
             }
 
@@ -453,9 +515,7 @@ public class SimulationService extends IntentService {
                 if (outputSpikes.length == 0) {
                     shutDown();
                     if (!errorRaised) {
-                        Intent broadcastError = new Intent("ErrorMessage");
-                        broadcastError.putExtra("ErrorNumber", 6);
-                        LocalBroadcastManager.getInstance(context).sendBroadcast(broadcastError);
+                        errornumber = 6;
                         errorRaised = true;
                     }
                 } else {
@@ -512,29 +572,43 @@ class DataSender implements Runnable {
             byte[] outputSpikes;
 
             try {
-                outputSpikes = kernelExcQueue.take();
+                clockSignals.poll(5, TimeUnit.SECONDS);
+                outputSpikes = kernelExcQueue.poll();
             } catch (InterruptedException e) {
                 String stackTrace = Log.getStackTraceString(e);
                 Log.e("DataSender", stackTrace);
                 return;
             }
 
-            try {
-                clockSignals.take();
-            } catch (InterruptedException e) {
-                String stackTrace = Log.getStackTraceString(e);
-                Log.e("DataSender", stackTrace);
-            }
+            if (outputSpikes != null) {
 
-            for (Terminal postsynapticTerminal : SimulationService.thisTerminal.postsynapticTerminals) {
+                for (Terminal postsynapticTerminal : SimulationService.thisTerminal.postsynapticTerminals) {
+
+                    try {
+
+                        InetAddress postsynapticTerminalAddr = InetAddress.getByName(postsynapticTerminal.ip);
+
+                        DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, data_bytes, postsynapticTerminalAddr, postsynapticTerminal.natPort);
+
+                        outputSocket.send(outputSpikesPacket);
+
+                    } catch (IOException e) {
+                        String stackTrace = Log.getStackTraceString(e);
+                        Log.e("DataSender", stackTrace);
+                    }
+
+                }
+                /* [End of for each loop] */
+
+            } else {
 
                 try {
 
-                    InetAddress postsynapticTerminalAddr = InetAddress.getByName(postsynapticTerminal.ip);
+                    InetAddress serverAddress = InetAddress.getByName(SERVER_IP);
 
-                    DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, data_bytes, postsynapticTerminalAddr, postsynapticTerminal.natPort);
+                    DatagramPacket pingPacket = new DatagramPacket(new byte[1], 1, serverAddress, 4194);
 
-                    outputSocket.send(outputSpikesPacket);
+                    outputSocket.send(pingPacket);
 
                 } catch (IOException e) {
                     String stackTrace = Log.getStackTraceString(e);
@@ -542,7 +616,6 @@ class DataSender implements Runnable {
                 }
 
             }
-            /* [End of for each loop] */
 
         }
         /* [End of the while loop] */

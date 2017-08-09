@@ -8,6 +8,7 @@ void simulate_dynamics(__global float* restrict coeff, __global float* restrict 
 
   ushort localId = get_local_id(0);
   ushort workId = get_group_id(0);
+  ushort localSize = get_local_size(0);
 
   char16 index = vload16(localId, input);
 
@@ -17,7 +18,7 @@ void simulate_dynamics(__global float* restrict coeff, __global float* restrict 
 			     coeff[index.s8] + coeff[index.s9] + coeff[index.sa] + coeff[index.sb],
 			     coeff[index.sc] + coeff[index.sd] + coeff[index.se] + coeff[index.sf]);
   // Synaptic weights 
-  float4 weightsVec = vload4(localId, weights + workId * 1024);
+  float4 weightsVec = vload4(localId, weights + workId * localSize * 4);
 
   float result = dot(coeffVec, weightsVec) * 32768.0f;
 

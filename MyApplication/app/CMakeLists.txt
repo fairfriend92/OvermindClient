@@ -11,26 +11,25 @@ cmake_minimum_required(VERSION 3.4.1)
 
 add_library( ARM
              SHARED
-             src/main/cpp/native_method.cpp
-             src/main/cpp/native_method.h
-             src/main/cpp/common.cpp
-             src/main/cpp/common.h )
+             src/main/jni/native_method.cpp
+             src/main/jni/native_method.h
+             src/main/jni/common.cpp
+             src/main/jni/common.h )
 include_directories( src/main/assets/ )
 
 #add_library( Qualcomm
 #             SHARED
-#             src/main/cpp/native_method.cpp
-#             src/main/cpp/native_method.h
-#             src/main/cpp/common.cpp
-#             src/main/cpp/common.h )
-#include_directories( src/main/assets/ )
+#             src/main/jni/native_method.cpp
+#             src/main/jni/native_method.h
+#             src/main/jni/common.cpp
+#             src/main/jni/common.h )
 
 add_library( GLES_mali
              SHARED
              IMPORTED )
 set_target_properties( GLES_mali
              PROPERTIES IMPORTED_LOCATION
-             ../../../../OpenCL/src/${ANDROID_ABI}/libGLES_mali.so )
+             ../../../../src/main/jniLibs/${ANDROID_ABI}/libGLES_mali.so )
 include_directories( OpenCL/include/ )
 
 #add_library( OpenCL_adreno
@@ -38,7 +37,7 @@ include_directories( OpenCL/include/ )
 #             IMPORTED )
 #set_target_properties( OpenCL_adreno
 #             PROPERTIES IMPORTED_LOCATION
-#             ../../../../OpenCL/src/${ANDROID_ABI}/libOpenCL.so )
+#             ../../../../src/main/jniLibs/libOpenCL.so )
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because system libraries are included in the search path by

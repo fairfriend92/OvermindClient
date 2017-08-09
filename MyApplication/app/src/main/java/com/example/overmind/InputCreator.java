@@ -64,6 +64,8 @@ class InputCreator implements Runnable {
             inputs.set(firstInput.presynTerminalIndex, firstInput);
             connectionsServed[firstInput.presynTerminalIndex] = true;
 
+            Log.e("InputCreator", " " + firstInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
+
             Iterator<Input> iterator = kernelInitQueue.iterator();
 
             // Iterate over the queue of Inputs to be served
@@ -76,7 +78,7 @@ class InputCreator implements Runnable {
 
                 // Proceed if the current input comes from a connection that has not been served
                 if (!connectionsServed[currentInput.presynTerminalIndex]) {
-                    //Log.e("InputCreator", " " + currentInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
+                    Log.e("InputCreator", " " + currentInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
                     inputs.set(currentInput.presynTerminalIndex, currentInput);
                     connectionsServed[currentInput.presynTerminalIndex] = true;
                     iterator.remove();
@@ -117,12 +119,12 @@ class InputCreator implements Runnable {
             if (!inputIsNull) {
                 try {
                     boolean inputSent = inputCreatorQueue.offer(totalSynapticInput, 8 * waitTime.get(), TimeUnit.NANOSECONDS);
-                    /*
+
                     if (inputSent)
                         Log.e("InputCreator", "input sent");
                     else
                         Log.e("InputCreator", "input NOT sent");
-                    */
+
 
                     // In cas the pressure on the buffer is such that the capacity goes under the
                     // threshold, to prevent the application from stalling the queue is cleared

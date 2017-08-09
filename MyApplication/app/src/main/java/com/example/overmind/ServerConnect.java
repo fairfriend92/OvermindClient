@@ -49,7 +49,7 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
         // If the checkbox has been selected the application look up the appropriate number of
         // neurons for the device
         short numOfNeurons = 1;
-        if (MainActivity.numOfNeuronsDetermineByApp) {
+        if (MainActivity.numOfNeuronsDeterminedByApp) {
             switch (MainActivity.renderer) {
                 case "Mali-T720":
                     numOfNeurons = 56;

@@ -7,15 +7,13 @@
     <string name="connection_failed_title">Connection failed</string>
     <string name="back">Back</string>
     <string name="connection_failed_message">Connection with the Overmind server failed. Check that the
-    IP is correct.</string>
+    IP is correct and that the terminal is connected to the Internet.</string>
     <string name="connection_lost_title">Connection lost</string>
-    <string name="connection_lost_message">Connection with the Overmind server lost. Please check back at a later time.</string>
+    <string name="connection_lost_message">Connection with the Overmind server lost.</string>
     <string name="stream_error_title">Data stream interrupted</string>
-    <string name="stream_error_message">Unexpected interruption of the TCP data stream.
-    Please check back at a later time.</string>
+    <string name="stream_error_message">Unexpected interruption of the TCP data stream.</string>
     <string name="udp_socket_timeout_title">UDP socket timeout</string>
-    <string name="udp_socket_timeout_message">The UDP socket did not receive any packet before the timeout. Please check your connection and
-    try again at a later time.</string>
+    <string name="udp_socket_timeout_message">The UDP socket did not receive any packet before the timeout. </string>
     <string name="gpu_id_error_title">"GPU unknown"</string>
     <string name="gpu_id_error_message">"Could not identify the graphics chipset of this device. Cannot launch the simulation."</string>
     <string name="edit_num_of_neurons">Enter the # of neurons for the local network</string>
@@ -36,5 +34,12 @@
     <string name="stimulus_selection">Stimulus selection</string>
     <string name="opencl_failure_title">"OpenCL failure"</string>
     <string name="opencl_failure_message">"An error has occurred during the simulation."</string>
+    <string name="establishing_connection">"A new connection with the network is about to be established…"</string>
+    <string name="error_title">"An error has occurred"</string>
+    <string name="error_text">"%1$s"</string>
+    <string name="back_home">"Back to the main menu"</string>
+    <string name="diagnostics">"Diagnostics"</string>
+    <string name="diagnostics_info">"# of disconnections: %1$d"</string>
+
 
 </resources>
