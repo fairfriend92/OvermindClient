@@ -307,7 +307,7 @@ public class SimulationService extends IntentService {
 
             } catch (SocketTimeoutException e) {
                 String stackTrace = Log.getStackTraceString(e);
-                Log.e("TerminalUpdater", stackTrace);
+                Log.e("SimulationService", stackTrace);
                 if (!getNetworkClass(this).equals("4G")) {
                     shutDown();
                     if (!errorRaised) {
@@ -421,15 +421,17 @@ public class SimulationService extends IntentService {
 
                 Terminal thisTerminal = new Terminal();
 
-                Log.e("TerminalUpdater", "test0 " + updatedTerminal.remainingCapacity());
-
                 try {
                     Object obj = MainActivity.thisClient.objectInputStream.readObject();
-                    if (obj instanceof Terminal)
-                        thisTerminal = ((Terminal)obj);
-                    else {
-                        Log.e("TerminalUpdater", "Object is in wrong format");
-                        throw new IOException();
+                    if (obj instanceof Terminal) {
+                        thisTerminal = ((Terminal) obj);
+                        try {
+                            updatedTerminal.put(thisTerminal);
+                            newWeights.put(thisTerminal);
+                        } catch (InterruptedException e) {
+                            String stackTrace = Log.getStackTraceString(e);
+                            Log.e("TerminalUpdater", stackTrace);
+                        }
                     }
                 } catch (IOException | ClassNotFoundException e) {
                     Log.e("TerminalUpdater", "Socket is closed: " + MainActivity.thisClient.socket.isClosed());
@@ -441,19 +443,8 @@ public class SimulationService extends IntentService {
                         errornumber = 3;
                         errorRaised = true;
                     }
+
                 }
-
-                Log.e("TerminalUpdater", "test " + updatedTerminal.remainingCapacity());
-
-                try {
-                    updatedTerminal.put(thisTerminal);
-                    newWeights.put(thisTerminal);
-                } catch (InterruptedException e) {
-                    String stackTrace = Log.getStackTraceString(e);
-                    Log.e("TerminalUpdater", stackTrace);
-                }
-
-                Log.e("TerminalUpdater", "test1 " + updatedTerminal.remainingCapacity());
 
             }
 
