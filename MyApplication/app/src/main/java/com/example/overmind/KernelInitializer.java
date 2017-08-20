@@ -14,8 +14,9 @@ class KernelInitializer implements Runnable {
     // Queue that stores the inputs to be sent to the KernelExecutor thread
     private BlockingQueue<Input> kernelInitQueue;
 
-    // IP of the presynaptic terminal whose output must be processed
+    // IP and nat port of the presynaptic terminal whose output must be processed
     private String presynTerminalIP;
+    private int presynTerminalNatPort;
 
     // Local collection of the presynaptic terminals
     private static volatile List<Terminal> presynapticTerminals = Collections.synchronizedList(new ArrayList<Terminal>());
@@ -50,9 +51,10 @@ class KernelInitializer implements Runnable {
     // input of a certain terminal
     private static volatile char[][] synapticInputCollection;
 
-    KernelInitializer(BlockingQueue<Input> b, String s, byte[] b1, Terminal t) {
+    KernelInitializer(BlockingQueue<Input> b, String s, int i, byte[] b1, Terminal t) {
         this.kernelInitQueue = b;
         this.presynTerminalIP = s;
+        this.presynTerminalNatPort = i;
         this.inputSpikesBuffer = b1;
         this.thisTerminal = t;
     }
@@ -104,10 +106,14 @@ class KernelInitializer implements Runnable {
         // packet
         Terminal presynTerminal = new Terminal();
         presynTerminal.ip = presynTerminalIP;
+        presynTerminal.natPort = presynTerminalNatPort;
         int presynTerminalIndex = presynapticTerminals.indexOf(presynTerminal);
 
         // If it was not possible to identify the presynaptic terminal drop the packet and return
         if (presynTerminalIndex == -1) {
+            for (Terminal presynapticTerminal : presynapticTerminals){
+                Log.e("TerminalUpdater", " " + presynapticTerminal.ip);
+            }
             Log.e("KernelInitializer", "Cannot find presynTerminal with ip " + presynTerminalIP);
             return;
         }

@@ -301,7 +301,8 @@ public class SimulationService extends IntentService {
                 }
 
                 // Put the workload in the queue
-                Future<?> future = kernelInitExecutor.submit(new KernelInitializer(kernelInitQueue, presynapticTerminalAddr.toString().substring(1), inputSpikesBuffer, thisTerminal));
+                Future<?> future = kernelInitExecutor.submit(new KernelInitializer(kernelInitQueue, presynapticTerminalAddr.toString().substring(1),
+                        inputSpikesPacket.getPort(), inputSpikesBuffer, thisTerminal));
 
                 kernelInitFutures.add(future);
 
@@ -419,7 +420,7 @@ public class SimulationService extends IntentService {
 
             while (!shutdown) {
 
-                Terminal thisTerminal = new Terminal();
+                Terminal thisTerminal;
 
                 try {
                     Object obj = MainActivity.thisClient.objectInputStream.readObject();
@@ -427,6 +428,9 @@ public class SimulationService extends IntentService {
                         thisTerminal = ((Terminal) obj);
                         try {
                             updatedTerminal.put(thisTerminal);
+                            for (Terminal presynapticTerminal : thisTerminal.presynapticTerminals){
+                                Log.e("TerminalUpdater", " " + presynapticTerminal.ip);
+                            }
                             newWeights.put(thisTerminal);
                         } catch (InterruptedException e) {
                             String stackTrace = Log.getStackTraceString(e);

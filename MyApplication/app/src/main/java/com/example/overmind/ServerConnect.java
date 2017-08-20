@@ -84,6 +84,7 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
         thisTerminal.numOfDendrites = 1024;
         thisTerminal.numOfSynapses = getNumOfSynapses();
         thisTerminal.natPort = 0;
+        thisTerminal.serverIP = SERVER_IP;
         thisTerminal.presynapticTerminals = new ArrayList<>();
         thisTerminal.postsynapticTerminals = new ArrayList<>();
 
