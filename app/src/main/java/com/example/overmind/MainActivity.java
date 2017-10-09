@@ -36,6 +36,13 @@ import javax.microedition.khronos.opengles.GL10;
 
 public class MainActivity extends AppCompatActivity {
 
+    private void RestoreDefaultSettings () {
+        MainActivity.numOfNeuronsDeterminedByApp = false;
+        ServerConnectFailed = false;
+        Constants.SYN_WEIGHTS_ZEORED = false;
+        Constants.FILTER_TYPE = Constants.EXPONENTIAL_FILTER;
+    }
+
     /**
      * Class which provides GPU info
      */
@@ -186,8 +193,7 @@ public class MainActivity extends AppCompatActivity {
             if (ServerConnectFailed) {
 
                 // When going back to the home menu the default settings must be restored
-                MainActivity.numOfNeuronsDeterminedByApp = false;
-                ServerConnectFailed = false;
+                RestoreDefaultSettings();
 
                 // Show the appropriate error message
                 android.support.v4.app.DialogFragment dialogFragment = new ErrorDialogFragment();
@@ -338,6 +344,8 @@ public class MainActivity extends AppCompatActivity {
                     numOfNeuronsDeterminedByApp = false;
                 }
                 break;
+            case R.id.zero_weights:
+                Constants.SYN_WEIGHTS_ZEORED = checked;
         }
     }
 
@@ -363,9 +371,15 @@ public class MainActivity extends AppCompatActivity {
                 if (checked)
                     SimulationParameters.setParameters(0.02f, 0.2f, -50.0f, 2.0f, current);
                     break;
+            case R.id.radio_exponential:
+                if (checked)
+                    Constants.FILTER_TYPE = Constants.EXPONENTIAL_FILTER;
+                break;
+            case R.id.radio_constant:
+                if (checked)
+                    Constants.FILTER_TYPE = Constants.CONSTANT_FILTER;
         }
     }
-
 
     /*
     Action performed when user click on button in the establish_connection layout
@@ -375,7 +389,7 @@ public class MainActivity extends AppCompatActivity {
 
         CountdownToConnectionService.shutdown = true;
 
-        MainActivity.numOfNeuronsDeterminedByApp = false;
+        RestoreDefaultSettings();
 
         setContentView(R.layout.pre_connection);
         editText = (EditText) findViewById(R.id.edit_ip);

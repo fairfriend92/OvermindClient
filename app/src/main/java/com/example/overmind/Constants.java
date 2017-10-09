@@ -13,6 +13,9 @@ final class Constants {
     static String SERVER_IP = MainActivity.serverIP;
     static final int SERVER_PORT_UDP = 4196;
 
-
+    static boolean SYN_WEIGHTS_ZEORED = false;
+    static int FILTER_TYPE = 0;
+    static final int EXPONENTIAL_FILTER = 0;
+    static final int CONSTANT_FILTER = 1;
 
 }

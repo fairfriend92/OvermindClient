@@ -14,6 +14,8 @@
 #define NUMBER_OF_EXC_SYNAPSES 512
 #define NUMBER_OF_INH_SYNAPSES 512
 #define ABSOLUTE_REFRACTORY_PERIOD 2
+#define EXPONENTIAL_FILTER 0
+#define CONSTANT_FILTER 1
 
 #include <android/log.h>
 #include <jni.h>

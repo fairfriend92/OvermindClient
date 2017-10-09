@@ -50,7 +50,7 @@ extern "C" jshort Java_com_example_overmind_ServerConnect_getNumOfSynapses (
 }
 
 extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
-        JNIEnv *env, jobject thiz, jstring jKernel, jshort jNumOfNeurons) {
+        JNIEnv *env, jobject thiz, jstring jKernel, jshort jNumOfNeurons, jboolean weightsZeroed, jint filterType) {
 
     size_t synapseWeightsBufferSize = (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * jNumOfNeurons * sizeof(cl_float);
     size_t currentBufferSize = jNumOfNeurons * sizeof(cl_int);
@@ -174,17 +174,33 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     // Initialize the coefficients array by sampling the exponential kernel of the synapse filter
     float tExc = (float) (SAMPLING_RATE / EXC_SYNAPSE_TIME_SCALE);
     float tInh = (float) (SAMPLING_RATE / INH_SYNAPSE_TIME_SCALE);
-    // Extend the loop beyond the synapse filter order to account for possible overflows of the filter input
-    for (int index = 0; index < SYNAPSE_FILTER_ORDER * 2; index++)
-    {
-        obj->synapseCoeff[index] = index%2 == 0 ? (cl_float )index * tExc * expf( - index * tExc) : (cl_float)(-index * tInh * expf( - index * tInh));
-        //LOGD("The synapse coefficients are: \tcoefficient %d \tvalue %f", index, (float) (obj->synapseCoeff[index]));
+    switch (filterType) {
+        case EXPONENTIAL_FILTER:
+            for (int index = 0; index < SYNAPSE_FILTER_ORDER * 2; index++)
+            {
+                obj->synapseCoeff[index] = index%2 == 0 ? (cl_float )index * tExc * expf( - index * tExc) : (cl_float)(-index * tInh * expf( - index * tInh));
+                //LOGD("The synapse coefficients are: \tcoefficient %d \tvalue %f", index, (float) (obj->synapseCoeff[index]));
+            }
+            break;
+        case CONSTANT_FILTER:
+            for (int index = 0; index < SYNAPSE_FILTER_ORDER * 2; index++)
+            {
+                obj->synapseCoeff[index] = 1.0f;
+            }
     }
 
-    // For testing purposes we initialize the synapses weights here
-    for (int index = 0; index < (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * jNumOfNeurons; index++)
-    {
-        obj->synapseWeights[index] = index%2 == 0 ? 100.0f : 33.0f;
+
+    // Synaptic weights initialization
+    if (weightsZeroed) {
+        for (int index = 0; index < (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * jNumOfNeurons; index++)
+        {
+            obj->synapseWeights[index] = 0.0f;
+        }
+    }  else {
+        for (int index = 0;
+             index < (NUMBER_OF_EXC_SYNAPSES + NUMBER_OF_INH_SYNAPSES) * jNumOfNeurons; index++) {
+            obj->synapseWeights[index] = index % 2 == 0 ? 100.0f : 33.0f;
+        }
     }
 
     // The following could be local kernel variables as well, but that would call for a costly thread

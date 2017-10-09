@@ -40,6 +40,8 @@
     <string name="back_home">"Back to the main menu"</string>
     <string name="diagnostics">"Diagnostics"</string>
     <string name="diagnostics_info">"# of disconnections: %1$d"</string>
-
-
+    <string name="zero_weights">"Initialize to 0 the synaptic weights"</string>
+    <string name="synaptic_filter">"Synaptic filter"</string>
+    <string name="exponential_filter">"Exponential filter"</string>
+    <string name="constant_filter">"Constant filter"</string>
 </resources>

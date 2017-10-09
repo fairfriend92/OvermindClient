@@ -184,7 +184,7 @@ public class SimulationService extends IntentService {
          */
 
         String kernel = workIntent.getStringExtra("Kernel");
-        long openCLObject = initializeOpenCL(kernel, NUMBER_OF_NEURONS);
+        long openCLObject = initializeOpenCL(kernel, NUMBER_OF_NEURONS, Constants.SYN_WEIGHTS_ZEORED, Constants.FILTER_TYPE);
 
         /*
         Queues and Thread executors used to parallelize the computation.
@@ -532,7 +532,7 @@ public class SimulationService extends IntentService {
 
     }
 
-    public native long initializeOpenCL(String synapseKernel, short numOfNeurons);
+    public native long initializeOpenCL(String synapseKernel, short numOfNeurons, boolean weightsZeroed, int filterType);
     public native byte[] simulateDynamics(char[] synapseInput, long openCLObject, short numOfNeurons,
                                           float[] simulationParameters, float[] weights, int[] weightsIndexes, int numOfWeights);
     public native void closeOpenCL(long openCLObject);
