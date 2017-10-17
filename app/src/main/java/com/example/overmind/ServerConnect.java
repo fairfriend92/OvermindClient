@@ -23,8 +23,6 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
     private Terminal thisTerminal = new Terminal();
     private Socket clientSocket = null;
 
-    private static final int SERVER_PORT_TCP = 4195;
-    private static final int IPTOS_RELIABILITY = 0x04;
 
     protected SocketInfo doInBackground(Context ... contexts) {
 
@@ -63,26 +61,14 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
             // Else the number of neurons is chosen by the user and as such must be
             // retrieved from the text box
 
-            try {
-                numOfNeurons = (short)Integer.parseInt(MainActivity.numOfNeurons);
-            } catch(NumberFormatException e) {
-                String stackTrace = Log.getStackTraceString(e);
-                Log.e("ServerConnect", stackTrace);
-                MainActivity.ServerConnectErrorNumber = 5;
-                MainActivity.ServerConnectFailed = true;
-            }
-        }
-
-        // Check whether the number of neurons selected is within range
-        if ((numOfNeurons > 1024) || (numOfNeurons < 1)) {
-            MainActivity.ServerConnectErrorNumber = 5;
-            MainActivity.ServerConnectFailed = true;
+            numOfNeurons = Constants.NUMBER_OF_NEURONS;
         }
 
         thisTerminal.numOfNeurons = numOfNeurons;
         Constants.NUMBER_OF_NEURONS = numOfNeurons;
-        thisTerminal.numOfDendrites = 1024;
-        thisTerminal.numOfSynapses = getNumOfSynapses();
+        short numOfSynapses = getNumOfSynapses(Constants.MAX_NUM_SYNAPSES);
+        thisTerminal.numOfDendrites = numOfSynapses;
+        thisTerminal.numOfSynapses = numOfSynapses;
         thisTerminal.natPort = 0;
         thisTerminal.serverIP = SERVER_IP;
         thisTerminal.presynapticTerminals = new ArrayList<>();
@@ -92,18 +78,18 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
          * Establish connection with the Overmind and send terminal info
          */
 
-        if (!MainActivity.ServerConnectFailed) {
+        if (!MainActivity.serverConnectFailed) {
 
             try {
-                clientSocket = new Socket(SERVER_IP, SERVER_PORT_TCP);
-                clientSocket.setTrafficClass(IPTOS_RELIABILITY);
+                clientSocket = new Socket(SERVER_IP, Constants.SERVER_PORT_TCP);
+                clientSocket.setTrafficClass(Constants.IPTOS_RELIABILITY);
                 clientSocket.setKeepAlive(true);
                 //clientSocket.setTcpNoDelay(true);
             } catch (IOException e) {
                 String stackTrace = Log.getStackTraceString(e);
                 Log.e("ServerConnect", stackTrace);
-                MainActivity.ServerConnectFailed = true;
-                MainActivity.ServerConnectErrorNumber = 0;
+                MainActivity.serverConnectFailed = true;
+                MainActivity.serverConnectErrorNumber = 0;
             }
 
         }
@@ -114,7 +100,7 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
 
         ObjectOutputStream output = null;
 
-        if (clientSocket != null && !MainActivity.ServerConnectFailed) {
+        if (clientSocket != null && !MainActivity.serverConnectFailed) {
             try {
                 output = new ObjectOutputStream(clientSocket.getOutputStream());
                 output.writeObject(thisTerminal);
@@ -140,6 +126,6 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
         }
     }
 
-    public native short getNumOfSynapses();
+    public native short getNumOfSynapses(short maxNumSynapses);
 
 }

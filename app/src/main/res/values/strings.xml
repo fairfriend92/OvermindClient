@@ -16,7 +16,7 @@
     <string name="udp_socket_timeout_message">The UDP socket did not receive any packet before the timeout. </string>
     <string name="gpu_id_error_title">"GPU unknown"</string>
     <string name="gpu_id_error_message">"Could not identify the graphics chipset of this device. Cannot launch the simulation."</string>
-    <string name="edit_num_of_neurons">Enter the # of neurons for the local network</string>
+    <string name="edit_num_of_neurons">Enter # of neurons for the local network</string>
     <string name="checkbox_num_of_neurons">Let the application determine the appropriate number</string>
     <string name="num_of_neurons_text">"Determined by the application"</string>
     <string name="num_of_neurons_error_title">"Wrong format for number of neurons"</string>
@@ -40,8 +40,6 @@
     <string name="back_home">"Back to the main menu"</string>
     <string name="diagnostics">"Diagnostics"</string>
     <string name="diagnostics_info">"# of disconnections: %1$d"</string>
-    <string name="zero_weights">"Initialize to 0 the synaptic weights"</string>
-    <string name="synaptic_filter">"Synaptic filter"</string>
-    <string name="exponential_filter">"Exponential filter"</string>
-    <string name="constant_filter">"Constant filter"</string>
+    <string name="edit_num_of_synapses">"Enter # of synapses per neuron"</string>
+
 </resources>

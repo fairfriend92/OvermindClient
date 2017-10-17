@@ -8,17 +8,13 @@ package com.example.overmind;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Process;
-import android.provider.Telephony;
 import android.support.v4.content.LocalBroadcastManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -26,7 +22,6 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -42,7 +37,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static com.example.overmind.Constants.NUMBER_OF_NEURONS;
 import static com.example.overmind.Constants.SERVER_IP;
@@ -184,7 +178,7 @@ public class SimulationService extends IntentService {
          */
 
         String kernel = workIntent.getStringExtra("Kernel");
-        long openCLObject = initializeOpenCL(kernel, NUMBER_OF_NEURONS, Constants.SYN_WEIGHTS_ZEORED, Constants.FILTER_TYPE);
+        long openCLObject = initializeOpenCL(kernel, NUMBER_OF_NEURONS, Constants.SYNAPSE_FILTER_ORDER);
 
         /*
         Queues and Thread executors used to parallelize the computation.
@@ -532,7 +526,7 @@ public class SimulationService extends IntentService {
 
     }
 
-    public native long initializeOpenCL(String synapseKernel, short numOfNeurons, boolean weightsZeroed, int filterType);
+    public native long initializeOpenCL(String synapseKernel, short numOfNeurons, int filterOrder);
     public native byte[] simulateDynamics(char[] synapseInput, long openCLObject, short numOfNeurons,
                                           float[] simulationParameters, float[] weights, int[] weightsIndexes, int numOfWeights);
     public native void closeOpenCL(long openCLObject);

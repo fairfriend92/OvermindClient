@@ -36,11 +36,46 @@ import javax.microedition.khronos.opengles.GL10;
 
 public class MainActivity extends AppCompatActivity {
 
-    private void RestoreDefaultSettings () {
+    // Flag that signals eventual errors occurred while connecting to the server, including
+    // out of range errors for the number of neurons and synapses
+    static boolean serverConnectFailed = false;
+    static short serverConnectErrorNumber; // Type of error occurred
+
+    // GUI elements
+    private EditText editServerIP = null;
+    private EditText editNumOfNeurons = null;
+    private EditText editNumOfSynapses = null;
+    private TextView currentView = null; // Field displaying the value of the current injected by the user
+
+    private float current = 0.0f; // Current injected by the user
+    private String vendor; // Holds the name of the GPU vendor
+
+    private static SharedPreferences prefs; // Used to store GPU info by the renderer class
+    static SocketInfo thisClient; // Socket used for TCP communications with the Overmind server
+    static Terminal server = new Terminal(); // Terminal object holding info about the server
+    static String serverIP;
+    static boolean numOfNeuronsDeterminedByApp = false; // Flag that is set if the user allows the app to determine the appropriate number of neurons
+    static String renderer; // Name of the GPU model
+
+    // Countdown timer used to delay the moment when the connection with the server is attempted
+    // since it takes some time to retrieve the necessaryi info regarding the GPU model
+    private CountdownToSimulation timerToSimulation = new CountdownToSimulation(1000, 500);
+
+    /*
+    Method called whenever the pre_connection layout is brought back and all the fields need to be
+    restored to the default values
+     */
+
+    private void RestoreHomeMenu() {
+        // Reset the flags
         MainActivity.numOfNeuronsDeterminedByApp = false;
-        ServerConnectFailed = false;
-        Constants.SYN_WEIGHTS_ZEORED = false;
-        Constants.FILTER_TYPE = Constants.EXPONENTIAL_FILTER;
+        serverConnectFailed = false;
+
+        // Bring back the home menu view
+        setContentView(R.layout.pre_connection);
+        editServerIP = (EditText) findViewById(R.id.edit_ip);
+        editNumOfNeurons = (EditText) findViewById(R.id.edit_num_of_neurons);
+        editNumOfSynapses = (EditText) findViewById(R.id.edit_num_of_synapses);
     }
 
     /**
@@ -80,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * OpenGL surface view called at app startup to retrieve GPU info
+     * OpenGL surface view called to retrieve GPU info
      */
 
     class MyGLSurfaceView extends GLSurfaceView {
@@ -98,22 +133,6 @@ public class MainActivity extends AppCompatActivity {
             setRenderer(mRenderer);
         }
     }
-
-    // Used to store GPU info by the renderer class
-    private static SharedPreferences prefs;
-
-    // Socket used for TCP communications with the Overmind server
-    public static SocketInfo thisClient;
-
-    static String serverIP;
-    static Terminal server = new Terminal();
-    static String numOfNeurons;
-    static boolean numOfNeuronsDeterminedByApp = false;
-    static String renderer;
-
-    EditText editText = null;
-    EditText editNumOfNeurons = null;
-    RadioButton regularSpikingRadioButton = null;
 
     /**
      * Called to lookup the Overmind server IP on the Overmind webpage
@@ -139,19 +158,9 @@ public class MainActivity extends AppCompatActivity {
         assert ip != null;
 
         // Pass the IP to the text box
-        editText.setText(ip);
+        editServerIP.setText(ip);
 
     }
-
-    public static boolean ServerConnectFailed = false;
-    public static short ServerConnectErrorNumber;
-    private float current = 0.0f;
-
-    /**
-     * Called when the start simulation button is pressed
-     */
-
-    TextView currentView = null;
 
     private class CountdownToSimulation extends CountDownTimer {
 
@@ -190,26 +199,19 @@ public class MainActivity extends AppCompatActivity {
 
             // Display error message and bring back the home layout if the connection with the
             // Overmind server fails
-            if (ServerConnectFailed) {
-
-                // When going back to the home menu the default settings must be restored
-                RestoreDefaultSettings();
-
+            if (serverConnectFailed) {
                 // Show the appropriate error message
                 android.support.v4.app.DialogFragment dialogFragment = new ErrorDialogFragment();
                 Bundle args = new Bundle();
-                args.putInt("ErrorNumber", ServerConnectErrorNumber);
+                args.putInt("ErrorNumber", serverConnectErrorNumber);
                 dialogFragment.setArguments(args);
                 dialogFragment.show(getSupportFragmentManager(), "Connection failed");
 
-                // Bring back the home menu view
-                setContentView(R.layout.pre_connection);
-                editText = (EditText) findViewById(R.id.edit_ip);
-                editNumOfNeurons = (EditText) findViewById(R.id.edit_num_of_neurons);
-
+                // When going back to the home menu the default settings must be restored
+                RestoreHomeMenu();
             } else {
 
-                /**
+                /*
                  * If the async task server connect succeeded the simulation can be started
                  */
 
@@ -218,7 +220,7 @@ public class MainActivity extends AppCompatActivity {
 
                 // By default the network is made of regular spiking neurons, so the appropriate parameters
                 // must be passed to the simulation and the default radio button must be selected
-                regularSpikingRadioButton = (RadioButton) findViewById(R.id.radio_rs);
+                RadioButton regularSpikingRadioButton = (RadioButton) findViewById(R.id.radio_rs);
 
                 assert regularSpikingRadioButton != null;
 
@@ -228,7 +230,7 @@ public class MainActivity extends AppCompatActivity {
 
                 Resources res = getResources();
 
-                /**
+                /*
                  * Show some info about the terminal running the simulation
                  */
 
@@ -248,7 +250,7 @@ public class MainActivity extends AppCompatActivity {
                 mainActivityLayout.addView(rendererView);
                 mainActivityLayout.addView(vendorView);
 
-                /**
+                /*
                  * Display text info about selected stimulation
                  */
 
@@ -269,19 +271,45 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    CountdownToSimulation timerToSimulation = new CountdownToSimulation(1000, 500);
+    /*
+    Called when the start simulation button is pressed. Retrieve the settings defined by the user
+    (server ip, number of neurons and of synapses) and create the openGL surface, which is necessary
+    to retrieve the info about the GPU. Since it takes some time to initialize the openGL context,
+    before actually querying for the GPU model, wait a little bit. To this purpose start a
+    countdown timer and when it's finished retrieve the info and try to connect with the server.
+     */
 
     public void startSimulation(View view) {
-
-        assert editText != null;
+        assert editServerIP != null;
 
         // Get the server ip from the text box
-        serverIP = editText.getText().toString();
-
+        serverIP = editServerIP.getText().toString();
         server.ip = serverIP;
 
-        // Get the number of neurons ot the local netwowrk from the text box
-        numOfNeurons = editNumOfNeurons.getText().toString();
+        try {
+            // Get the number of neurons for the local netwowrk from the text box
+            if (!MainActivity.numOfNeuronsDeterminedByApp) // The field must be read only if the number of neurons is chosen by the user
+                Constants.NUMBER_OF_NEURONS = (short) Integer.parseInt(editNumOfNeurons.getText().toString());
+
+            // If the number of neurons is out of range, and if and only if the number must be defined
+            // by the user, set the error flag and write down the appropriate error number.
+            if ((Constants.NUMBER_OF_NEURONS < 1 | Constants.NUMBER_OF_NEURONS > 65535) &&
+                    !MainActivity.numOfNeuronsDeterminedByApp) {
+                serverConnectFailed = true;
+                serverConnectErrorNumber = 5;
+            }
+
+            // Get the number of synapses per neuron.
+            Constants.MAX_NUM_SYNAPSES = (short) Integer.parseInt(editNumOfSynapses.getText().toString());
+            // As before, if the number is out of range set the error flag
+            if (Constants.MAX_NUM_SYNAPSES < 1 | Constants.MAX_NUM_SYNAPSES > 65535) {
+                serverConnectFailed = true;
+                serverConnectErrorNumber = 5; // TODO: make additional error message.
+            }
+        } catch (NumberFormatException e) { // Catch eventual errors caused by blank field that must bet filled by the user
+            serverConnectFailed = true;
+            serverConnectErrorNumber = 5; // TODO: make additional error message.
+        }
 
         // OpenGL surface view
         MyGLSurfaceView mGlSurfaceView = new MyGLSurfaceView(this);
@@ -344,8 +372,6 @@ public class MainActivity extends AppCompatActivity {
                     numOfNeuronsDeterminedByApp = false;
                 }
                 break;
-            case R.id.zero_weights:
-                Constants.SYN_WEIGHTS_ZEORED = checked;
         }
     }
 
@@ -371,13 +397,6 @@ public class MainActivity extends AppCompatActivity {
                 if (checked)
                     SimulationParameters.setParameters(0.02f, 0.2f, -50.0f, 2.0f, current);
                     break;
-            case R.id.radio_exponential:
-                if (checked)
-                    Constants.FILTER_TYPE = Constants.EXPONENTIAL_FILTER;
-                break;
-            case R.id.radio_constant:
-                if (checked)
-                    Constants.FILTER_TYPE = Constants.CONSTANT_FILTER;
         }
     }
 
@@ -389,11 +408,7 @@ public class MainActivity extends AppCompatActivity {
 
         CountdownToConnectionService.shutdown = true;
 
-        RestoreDefaultSettings();
-
-        setContentView(R.layout.pre_connection);
-        editText = (EditText) findViewById(R.id.edit_ip);
-        editNumOfNeurons = (EditText) findViewById(R.id.edit_num_of_neurons);
+        RestoreHomeMenu();
     }
 
     /*
@@ -520,8 +535,10 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.pre_connection);
 
-        editText = (EditText) findViewById(R.id.edit_ip);
+        // Create the editable fields
+        editServerIP = (EditText) findViewById(R.id.edit_ip);
         editNumOfNeurons = (EditText) findViewById(R.id.edit_num_of_neurons);
+        editNumOfSynapses = (EditText) findViewById(R.id.edit_num_of_synapses);
 
         /*
         Register an observer (mMessageReceiver) to receive Intents with actions named
@@ -554,7 +571,6 @@ public class MainActivity extends AppCompatActivity {
      * Load the proper OpenGL library based on GPU vendor info provided by the OpenGL renderer
      */
 
-    String vendor;
 
     public void loadGLLibrary() {
 
