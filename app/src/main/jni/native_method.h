@@ -14,8 +14,8 @@
 #define ABSOLUTE_REFRACTORY_PERIOD 2
 
 // Abbreviations
-#define potentialVar obj->neuronalDynVar[workId * 3]
-#define recoveryVar obj->neuronalDynVar[workId * 3 + 1]
+#define potentialVar obj->neuronalDynVar[workId * 2]
+#define recoveryVar obj->neuronalDynVar[workId * 2 + 1]
 #define aPar simulationParameters[0]
 #define bPar simulationParameters[1]
 #define cPar simulationParameters[2]

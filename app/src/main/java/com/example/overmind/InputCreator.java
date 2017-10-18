@@ -89,7 +89,7 @@ class InputCreator implements Runnable {
             int offset = 0;
             boolean finished = false, inputIsNull = true;
 
-            // Iterate over the collection of inputs take from the kernelInitialzer queue
+            // Iterate over the collection of inputs taken from the kernelInitialzer queue
             for (int i = 0; i < numOfConnections && !finished; i++) {
 
                 // If the input is null then the respective connection has not fired yet
@@ -99,7 +99,6 @@ class InputCreator implements Runnable {
 
                     // If all the inputs are empty, then there's no need to pass them to
                     // KernelExecutor. The flag signals whether they should be passed or not
-                    // TODO: flag unnecessary
                     inputIsNull &= currentInput.inputIsEmpty;
 
                     int arrayLength = currentInput.synapticInput.length;
@@ -107,7 +106,7 @@ class InputCreator implements Runnable {
                     // If the complete input we're building is made of inputs sampled at different
                     // times, there's a possibility that not all of them may fit. Therefore, we must
                     // check for the remaining space.
-                    if ((4096 - offset) >= arrayLength) {
+                    if ((Constants.MAX_NUM_SYNAPSES * Constants.MAX_MULTIPLICATIONS - offset) >= arrayLength) {
                         System.arraycopy(currentInput.synapticInput, 0, totalSynapticInput, offset, arrayLength);
                         offset += arrayLength;
                         inputs.set(i, new Input(new char[arrayLength], arrayLength, true, numOfConnections));

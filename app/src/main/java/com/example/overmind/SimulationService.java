@@ -245,6 +245,9 @@ public class SimulationService extends IntentService {
         receive the packets from the known connected terminals.
          */
 
+        // Number of bytes necessary to hold the longest input among those of the presynaptic terminals
+        short maxDataBytes = 1;
+
         while (!shutdown) {
 
             Terminal thisTerminal;
@@ -264,11 +267,19 @@ public class SimulationService extends IntentService {
                             kernelInitExecutor.getPoolSize();
                     kernelInitExecutor.setCorePoolSize(poolSize);
                     kernelInitExecutor.setMaximumPoolSize(poolSize);
+
+                    // Update the value of maxDataBytes based on the new inputs
+                    maxDataBytes = 1; // First reset the value, in case the previous biggest input is no longer present
+                    for (Terminal presynapticTerminal : thisTerminal.presynapticTerminals) {
+                        short dataBytes = (presynapticTerminal.numOfNeurons % 8) == 0 ?
+                                (short) (presynapticTerminal.numOfNeurons / 8) : (short)(presynapticTerminal.numOfNeurons / 8 + 1);
+                        maxDataBytes = dataBytes > maxDataBytes ? dataBytes : maxDataBytes;
+                    }
                 }
 
-                byte[] inputSpikesBuffer = new byte[128];
+                byte[] inputSpikesBuffer = new byte[maxDataBytes];
 
-                DatagramPacket inputSpikesPacket = new DatagramPacket(inputSpikesBuffer, 128);
+                DatagramPacket inputSpikesPacket = new DatagramPacket(inputSpikesBuffer, maxDataBytes);
 
                 datagramSocket.receive(inputSpikesPacket);
 
@@ -541,7 +552,7 @@ public class SimulationService extends IntentService {
 class DataSender implements Runnable {
 
     private BlockingQueue<byte[]> kernelExcQueue;
-    private short data_bytes = (NUMBER_OF_NEURONS % 8) == 0 ?
+    private short dataBytes = (NUMBER_OF_NEURONS % 8) == 0 ?
             (short) (NUMBER_OF_NEURONS / 8) : (short)(NUMBER_OF_NEURONS / 8 + 1);
     private DatagramSocket outputSocket;
 
@@ -577,7 +588,7 @@ class DataSender implements Runnable {
 
                         InetAddress postsynapticTerminalAddr = InetAddress.getByName(postsynapticTerminal.ip);
 
-                        DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, data_bytes, postsynapticTerminalAddr, postsynapticTerminal.natPort);
+                        DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, dataBytes, postsynapticTerminalAddr, postsynapticTerminal.natPort);
 
                         outputSocket.send(outputSpikesPacket);
 

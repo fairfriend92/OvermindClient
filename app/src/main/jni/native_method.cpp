@@ -159,7 +159,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     obj->numberOfMemoryObjects= 4;
 
     // Allocate memory from the host
-    float *neuronalDynVar = new float[3 * jNumOfNeurons];
+    float *neuronalDynVar = new float[2 * jNumOfNeurons];
     obj->neuronalDynVar = neuronalDynVar;
 
     // Ask the OpenCL implementation to allocate buffers to pass data to and from the kernels
@@ -213,14 +213,12 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
         obj->synapseWeights[index] = index % 2 == 0 ? 100.0f : 33.0f;
     }
 
-    // The following could be local kernel variables as well, but that would call for a costly thread
-    // syncrhonization. Instead we initialize them outside the kernel as global variables, since additional
-    // memory access times are negligible due to the embedded nature of the device
+    // Initialization of dynamic variables and of the buffer which will hold the total synaptic
+    // current for each neuron
     for (int index = 0; index < jNumOfNeurons; index++)
     {
-        obj->neuronalDynVar[3 * index] = -65.0f;
-        obj->neuronalDynVar[3 * index + 1] = -13.0f;
-        obj->neuronalDynVar[3 * index + 2] = 0.0f;
+        obj->neuronalDynVar[2 * index] = -65.0f;
+        obj->neuronalDynVar[2 * index + 1] = -13.0f;
         obj->current[index] = (cl_int)0;
     }
 

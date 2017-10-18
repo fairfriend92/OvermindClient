@@ -79,7 +79,7 @@ class KernelInitializer implements Runnable {
 
                 // Create the array storing the kernel input derived from the spikes produced
                 // by each presynaptic Terminal
-                synapticInputCollection = new char[numOfConnections][4096];
+                synapticInputCollection = new char[numOfConnections][0];
 
                 threadIsFree = new ArrayList<>(numOfConnections);
 
@@ -176,8 +176,8 @@ class KernelInitializer implements Runnable {
 
         // The runnable initializes the kernel at lastTime n using the input at lastTime n - 1, which
         // must be first retrieved from synapticInputCollection
-        char[] oldInput = synapticInputCollection[presynTerminalIndex];
-        System.arraycopy(oldInput, 0, synapticInput, 0, synapticInput.length);
+        if (synapticInputCollection[presynTerminalIndex].length != 0)
+            System.arraycopy(synapticInputCollection[presynTerminalIndex], 0, synapticInput, 0, synapticInput.length);
 
         /*
         For each synapse of the presynTerminal compute the appropriate input
