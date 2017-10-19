@@ -13,7 +13,7 @@ size_t synapseWeightsBufferSize;
 size_t currentBufferSize;
 
 // How many bytes are needed to represent every neuron's spike?
-char dataBytes;
+short dataBytes;
 
 extern "C" jshort Java_com_example_overmind_ServerConnect_getNumOfSynapses (
         JNIEnv *env, jobject  thiz, jshort jMaxNumSynapses) {
@@ -84,7 +84,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     currentBufferSize = jNumOfNeurons * sizeof(cl_int);
 
     // Compute the number of bytes needed to hold all the spikes
-    dataBytes = (jNumOfNeurons % 8) == 0 ? (char)(jNumOfNeurons / 8) : (char)(jNumOfNeurons / 8 + 1);
+    dataBytes = (jNumOfNeurons % 8) == 0 ? (short)(jNumOfNeurons / 8) : (short)(jNumOfNeurons / 8 + 1);
 
     const char *kernelString = env->GetStringUTFChars(jKernel, JNI_FALSE);
 

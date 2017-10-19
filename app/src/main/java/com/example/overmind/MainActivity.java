@@ -70,6 +70,8 @@ public class MainActivity extends AppCompatActivity {
         // Reset the flags
         MainActivity.numOfNeuronsDeterminedByApp = false;
         serverConnectFailed = false;
+        Constants.NUMBER_OF_NEURONS = 1;
+        Constants.MAX_NUM_SYNAPSES = 1024;
 
         // Bring back the home menu view
         setContentView(R.layout.pre_connection);

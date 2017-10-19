@@ -6,8 +6,8 @@ void simulate_dynamics(__global float* restrict coeff, __global float* restrict 
 		       __global char* restrict input, volatile __global int* restrict current)
 {
 
-  ushort localId = get_local_id(0);
-  ushort workId = get_group_id(0);
+  ushort localId = get_local_id(0); // Synapse ID
+  ushort workId = get_group_id(0); // Neuron ID
   ushort localSize = get_local_size(0);
 
   char16 index = vload16(localId, input);

@@ -26,8 +26,8 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
 
     protected SocketInfo doInBackground(Context ... contexts) {
 
-        /**
-         * Retrieve the global IP of this device
+        /*
+         * Retrieve the global IP of this device.
          */
 
         context = contexts[0];
@@ -40,12 +40,12 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
         }
         thisTerminal.ip = ip;
 
-        /**
-         * Choose the number of neurons of the local network
+        /*
+         * Choose the number of neurons of the local network.
          */
 
         // If the checkbox has been selected the application look up the appropriate number of
-        // neurons for the device
+        // neurons for the device.
         short numOfNeurons = 1;
         if (MainActivity.numOfNeuronsDeterminedByApp) {
             switch (MainActivity.renderer) {
@@ -59,23 +59,30 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
         } else {
 
             // Else the number of neurons is chosen by the user and as such must be
-            // retrieved from the text box
+            // retrieved from the text box.
 
             numOfNeurons = Constants.NUMBER_OF_NEURONS;
         }
 
         thisTerminal.numOfNeurons = numOfNeurons;
         Constants.NUMBER_OF_NEURONS = numOfNeurons;
-        short numOfSynapses = getNumOfSynapses(Constants.MAX_NUM_SYNAPSES);
-        thisTerminal.numOfDendrites = numOfSynapses;
-        thisTerminal.numOfSynapses = numOfSynapses;
+
+        /* The number of synapses chosen by the user may be above the maximum size supported by
+        the render, which is equivalent to the maximum work group size for the openCL kernel.
+        Therefore the call to the native method is necessary to determine whether the chosen
+        number exceeds this limit or not.
+         */
+        Constants.MAX_NUM_SYNAPSES = getNumOfSynapses(Constants.MAX_NUM_SYNAPSES);
+
+        thisTerminal.numOfDendrites = Constants.MAX_NUM_SYNAPSES;
+        thisTerminal.numOfSynapses = Constants.MAX_NUM_SYNAPSES;
         thisTerminal.natPort = 0;
         thisTerminal.serverIP = SERVER_IP;
         thisTerminal.presynapticTerminals = new ArrayList<>();
         thisTerminal.postsynapticTerminals = new ArrayList<>();
 
-        /**
-         * Establish connection with the Overmind and send terminal info
+        /*
+         * Establish connection with the Overmind and send terminal info.
          */
 
         if (!MainActivity.serverConnectFailed) {
@@ -94,8 +101,8 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
 
         }
 
-        /**
-         * If no error has occurred the info about the terminal are sent to the server
+        /*
+         * If no error has occurred the info about the terminal are sent to the server.
          */
 
         ObjectOutputStream output = null;
