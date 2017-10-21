@@ -259,6 +259,8 @@ public class SimulationService extends IntentService {
                 // If the terminal info have been updated
                 if (thisTerminal != null) {
 
+                    Log.d("KernelInitializer", " " + thisTerminal.presynapticTerminals.size());
+
                     // Update the varaible holding the terminal info
                     SimulationService.thisTerminal = thisTerminal;
 
@@ -388,7 +390,17 @@ public class SimulationService extends IntentService {
             Log.e("SimulationService", stackTrace);
         }
 
+        /* Reset some static variables for further use */
+
         shutdown = false;
+        thisTerminal = null;
+
+        // The field needs to be reset since the next time the terminal connects with the server
+        // some settings, like num of synapses, may have changed. Since it take some time for the
+        // Terminal object with the new info to arrive from the server, in the meanwhile all
+        // incoming udp packets must be discarded to prevent errors.
+        KernelInitializer.numOfConnections = 0;
+
         Log.d("SimulationService", "Closing SimulationService");
 
         stopSelf();

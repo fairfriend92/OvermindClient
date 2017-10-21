@@ -445,6 +445,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
         LOGE("Failed to map buffer");
     }
 
+    // Array holding the spikes fired by the neurons. Each bit represents a spike if it is set.
     char actionPotentials[dataBytes];
 
     // Simulate the neuronal dynamics using the current computed by the OpenCL implementation

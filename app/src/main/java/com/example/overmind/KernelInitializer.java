@@ -20,7 +20,7 @@ class KernelInitializer implements Runnable {
 
     // Local collection of the presynaptic terminals
     private static volatile List<Terminal> presynapticTerminals = Collections.synchronizedList(new ArrayList<Terminal>());
-    private static int numOfConnections = 0;
+    static int numOfConnections = 0;
 
     // Local variable storing information about the terminal in use
     private Terminal thisTerminal;
@@ -68,6 +68,8 @@ class KernelInitializer implements Runnable {
 
         if (thisTerminal != null) {
 
+            Log.d("KernelInitializer", "test");
+
             // If the information of the terminal have been updated...
             synchronized (lock) {
 
@@ -96,6 +98,8 @@ class KernelInitializer implements Runnable {
             }
 
         }
+
+        Log.d("KernelInitializer", "numOfConnections " + numOfConnections + "terminal is null " + (thisTerminal == null));
 
         if (numOfConnections == 0) {
             Log.e("KernelInitializer", "No presynaptic connection has been established: exiting KernelInitializer");
@@ -168,6 +172,8 @@ class KernelInitializer implements Runnable {
 
         int dataBytes = (presynTerminal.numOfNeurons % 8) == 0 ?
                 (short) (presynTerminal.numOfNeurons / 8) : (short)(presynTerminal.numOfNeurons / 8 + 1);
+
+        Log.d("KernelInitializer", presynTerminal.numOfNeurons + " " + Constants.MAX_NUM_SYNAPSES + " " + inputSpikesBuffer.length);
 
         byte[] inputSpikes = new byte[dataBytes];
         System.arraycopy(inputSpikesBuffer, 0, inputSpikes, 0, dataBytes);
