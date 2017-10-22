@@ -21,9 +21,6 @@ extern "C" jshort Java_com_example_overmind_ServerConnect_getNumOfSynapses (
     struct OpenCLObject *obj;
     obj = (struct OpenCLObject *)malloc(sizeof(struct OpenCLObject));
 
-    // Store the maximum number of synapses, as defined by the user
-    MAX_NUM_SYNAPSES = jMaxNumSynapses;
-
     if (!createContext(&obj->context))
     {
         cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
@@ -51,9 +48,13 @@ extern "C" jshort Java_com_example_overmind_ServerConnect_getNumOfSynapses (
     LOGD("Device info: Maximum work group size: %d ", (int)maxWorkGroupSize);
 
     // If possible confirm the user selection, otherwise lower the number of synapses
-    obj->maxWorkGroupSize = maxWorkGroupSize < (MAX_NUM_SYNAPSES / obj->floatVectorWidth) ? maxWorkGroupSize : (MAX_NUM_SYNAPSES / obj->floatVectorWidth);
+    obj->maxWorkGroupSize = maxWorkGroupSize < (jMaxNumSynapses / obj->floatVectorWidth) ?
+                            maxWorkGroupSize : (jMaxNumSynapses / obj->floatVectorWidth);
 
-    // Store here the value to be returned since the openCL object must be elminated
+    // Store the maximum number of synapses
+    MAX_NUM_SYNAPSES = (short)(obj->maxWorkGroupSize * obj->floatVectorWidth);
+
+    // Store here the value to be returned since the openCL object must be eliminated
     short numOfSynapses = (short) (obj->floatVectorWidth * obj->maxWorkGroupSize);
 
     /* Now that the number of synapses has been computed, the openCL context and the object holding
@@ -353,6 +354,10 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     // Get the maximum number of work items allowed based on scheduled kernel
     size_t kernelWorkGroupSize;
     clGetKernelWorkGroupInfo(obj->kernel, obj->device, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &kernelWorkGroupSize, NULL);
+
+    // If the max supported number is bigger than the one needed for the synapses of the network,
+    // then save the appropriate smaller number instead
+    kernelWorkGroupSize = kernelWorkGroupSize < obj->maxWorkGroupSize ? kernelWorkGroupSize : obj->maxWorkGroupSize;
 
     /*
     LOGD("Kernel info: maximum work group size: %d", kernelWorkGroupSize);
