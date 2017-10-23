@@ -38,8 +38,8 @@ struct OpenCLObject {
     cl_device_id device = 0;
     cl_kernel kernel = 0;
     cl_int errorNumber = 0;
-    int numberOfMemoryObjects = 4;
-    cl_mem memoryObjects[4] = {0, 0, 0, 0};
+    int numberOfMemoryObjects = 5;
+    cl_mem memoryObjects[5] = {0, 0, 0, 0, 0};
     cl_uint floatVectorWidth;
     size_t maxWorkGroupSize;
 
@@ -48,6 +48,7 @@ struct OpenCLObject {
     cl_float *synapseWeights;
     cl_char *synapseInput;
     cl_int *current;
+    cl_int *localSize;
     float *neuronalDynVar;
 };
 

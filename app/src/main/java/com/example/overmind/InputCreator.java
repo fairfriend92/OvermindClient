@@ -37,7 +37,7 @@ class InputCreator implements Runnable {
         while (!SimulationService.shutdown) {
 
             // Array holding the complete input to be passed to KernelExecutor
-            char[] totalSynapticInput = new char[Constants.MAX_NUM_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
+            char[] totalSynapticInput = new char[Constants.NUMBER_OF_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
 
             // Object holding the first input in the kernelInitialzer queue
             Input firstInput;
@@ -59,7 +59,7 @@ class InputCreator implements Runnable {
             // accordingly
             resizeArrays(firstInput.numOfConnections);
 
-            // The retrieved Input si put in the list of inputs waiting to be put together, and the
+            // The retrieved Input is put in the list of inputs waiting to be put together, and the
             // respective flag is set
             inputs.set(firstInput.presynTerminalIndex, firstInput);
             connectionsServed[firstInput.presynTerminalIndex] = true;
@@ -106,7 +106,7 @@ class InputCreator implements Runnable {
                     // If the complete input we're building is made of inputs sampled at different
                     // times, there's a possibility that not all of them may fit. Therefore, we must
                     // check for the remaining space.
-                    if ((Constants.MAX_NUM_SYNAPSES * Constants.MAX_MULTIPLICATIONS - offset) >= arrayLength) {
+                    if ((Constants.NUMBER_OF_SYNAPSES * Constants.MAX_MULTIPLICATIONS - offset) >= arrayLength) {
                         System.arraycopy(currentInput.synapticInput, 0, totalSynapticInput, offset, arrayLength);
                         offset += arrayLength;
                         inputs.set(i, new Input(new char[arrayLength], arrayLength, true, numOfConnections));
@@ -115,9 +115,13 @@ class InputCreator implements Runnable {
                     finished = true;
             }
 
+            // Resize totalSynapticInput
+            char[] resizedSynapticInput = new char[offset];
+            System.arraycopy(totalSynapticInput, 0, resizedSynapticInput, 0, offset);
+
             if (!inputIsNull) {
                 try {
-                    boolean inputSent = inputCreatorQueue.offer(totalSynapticInput, 8 * waitTime.get(), TimeUnit.NANOSECONDS);
+                    boolean inputSent = inputCreatorQueue.offer(resizedSynapticInput, 8 * waitTime.get(), TimeUnit.NANOSECONDS);
 
                     if (inputSent)
                         Log.e("InputCreator", "input sent");

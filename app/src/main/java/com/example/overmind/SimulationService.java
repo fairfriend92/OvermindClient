@@ -48,6 +48,59 @@ public class SimulationService extends IntentService {
     private boolean errorRaised = false;
     private static int errornumber = 0;
 
+    // Object used to hold all the relevant info pertaining this terminal
+    static volatile Terminal thisTerminal = new Terminal();
+
+    // List of Futures related to the instances of kernelInitExecutor, used to check if the
+    // relative thread has finished its computation
+    List<Future<?>> kernelInitFutures = new ArrayList<Future<?>>();
+
+    /*
+    Queues and Thread executors used to parallelize the computation.
+    */
+
+    // Buffer that stores the workitems which are going to be executed by KernelInitializer
+    BlockingQueue<Runnable> kernelInitWorkerThreadsQueue = new ArrayBlockingQueue<>(128);
+
+    // Buffer that contains the Input elaborated by KernelInitializer
+    BlockingQueue<Input> kernelInitQueue = new LinkedBlockingQueue<>(128);
+
+    // Buffer that contains the total input put together by InputCreator
+    BlockingQueue<char[]> inputCreatorQueue = new ArrayBlockingQueue<>(128);
+
+    // Policy for KernelInitializer that creates an exception whenever a packet is dropped due
+    // to the buffers' being full
+    ThreadPoolExecutor.AbortPolicy rejectedExecutionHandler = new ThreadPoolExecutor.AbortPolicy();
+
+    // Custom executor for KernelInitializer which allows to change the number of threads in the
+    // pools dynamically. Moreover, it allows to specify the time to wait if the workitems
+    // buffer is full before creating an exception
+    ThreadPoolExecutor kernelInitExecutor = new ThreadPoolExecutor(2, 2, 3, TimeUnit.MILLISECONDS, kernelInitWorkerThreadsQueue, rejectedExecutionHandler);
+
+    // Buffer where to put the array of spikes produced by the local network
+    BlockingQueue<byte[]> kernelExcQueue = new ArrayBlockingQueue<>(128);
+
+    // Executor for the thread that calls the OpenCL method
+    ExecutorService kernelExcExecutor = Executors.newSingleThreadExecutor();
+
+    // Future object which holds the pointer to the OpenCL structure defined in native_method.h
+    Future<Long> newOpenCLObject;
+
+    // Executor for the thread that put together the total input made of the inputs of the
+    // single connections
+    ExecutorService inputCreatorExecutor = Executors.newSingleThreadExecutor();
+
+    // Executor for the thread that sends the spikes produced by the local network to the
+    // postsynaptic devices
+    ExecutorService dataSenderExecutor = Executors.newSingleThreadExecutor();
+
+    // Executor for the thread that updates the information about the local network
+    ExecutorService terminalUpdaterExecutor = Executors.newSingleThreadExecutor();
+
+    // Buffers containing the last updated info about the local network
+    BlockingQueue<Terminal> updatedTerminal = new ArrayBlockingQueue<>(4);
+    BlockingQueue<Terminal> newWeights = new ArrayBlockingQueue<>(4);
+
     public SimulationService() {
         super("SimulationService");
     }
@@ -108,9 +161,6 @@ public class SimulationService extends IntentService {
 
     }
 
-    // Object used to hold all the relevant info pertaining this terminal
-    static volatile Terminal thisTerminal = new Terminal();
-
     @Override
     protected void onHandleIntent (Intent workIntent) {
 
@@ -139,15 +189,10 @@ public class SimulationService extends IntentService {
          */
 
         try {
-
             InetAddress serverAddr = InetAddress.getByName(MainActivity.serverIP);
-
             byte[] testData = new byte[1];
-
             DatagramPacket testPacket = new DatagramPacket(testData, 1, serverAddr, Constants.SERVER_PORT_UDP);
-
             datagramSocket.send(testPacket);
-
         } catch (IOException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("SimulationService", stackTrace);
@@ -158,11 +203,9 @@ public class SimulationService extends IntentService {
          */
 
         try {
-
             if (MainActivity.thisClient.objectInputStream == null) {
                 MainActivity.thisClient.objectInputStream  = new ObjectInputStream(clientSocket.getInputStream());
             }
-
         } catch (IOException | NullPointerException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("SimulationService", stackTrace);
@@ -178,67 +221,13 @@ public class SimulationService extends IntentService {
          */
 
         String kernel = workIntent.getStringExtra("Kernel");
-        long openCLObject = initializeOpenCL(kernel, NUMBER_OF_NEURONS, Constants.SYNAPSE_FILTER_ORDER);
-
-        /*
-        Queues and Thread executors used to parallelize the computation.
-         */
-
-        // TODO Fine tune the queues' capacities, using perhaps SoC info...
-
-        // Buffer that stores the workitems which are going to be executed by KernelInitializer
-        BlockingQueue<Runnable> kernelInitWorkerThreadsQueue = new ArrayBlockingQueue<>(128);
-
-        // TODO capacity of the queue dynamic?
-
-        // Buffer that contains the Input elaborated by KernelInitializer
-        BlockingQueue<Input> kernelInitQueue = new LinkedBlockingQueue<>(128);
-
-        // Buffer that contains the total input put together by InputCreator
-        BlockingQueue<char[]> inputCreatorQueue = new ArrayBlockingQueue<>(128);
-
-        // Policy for KernelInitializer that creates an exception whenever a packet is dropped due
-        // to the buffers' being full
-        ThreadPoolExecutor.AbortPolicy rejectedExecutionHandler = new ThreadPoolExecutor.AbortPolicy();
-
-        // Custom executor for KernelInitializer which allows to change the number of threads in the
-        // pools dynamically. Moreover, it allows to specify the time to wait if the workitems
-        // buffer is full before creating an exception
-        ThreadPoolExecutor kernelInitExecutor = new ThreadPoolExecutor(2, 2, 3, TimeUnit.MILLISECONDS, kernelInitWorkerThreadsQueue, rejectedExecutionHandler);
-
-        // Buffer where to put the array of spikes produced by the local network
-        BlockingQueue<byte[]> kernelExcQueue = new ArrayBlockingQueue<>(128);
-
-        // Executor for the thread that calls the OpenCL method
-        ExecutorService kernelExcExecutor = Executors.newSingleThreadExecutor();
-
-        // Future object which holds the pointer to the OpenCL structure defined in native_method.h
-        Future<Long> newOpenCLObject;
-
-        // Executor for the thread that put together the total input made of the inputs of the
-        // single connections
-        ExecutorService inputCreatorExecutor = Executors.newSingleThreadExecutor();
-
-        // Executor for the thread that sends the spikes produced by the local network to the
-        // postsynaptic devices
-        ExecutorService dataSenderExecutor = Executors.newSingleThreadExecutor();
-
-        // Executor for the thread that updates the information about the local network
-        ExecutorService terminalUpdaterExecutor = Executors.newSingleThreadExecutor();
-
-        // Buffers containing the last updated info about the local network
-        BlockingQueue<Terminal> updatedTerminal = new ArrayBlockingQueue<>(4);
-        BlockingQueue<Terminal> newWeights = new ArrayBlockingQueue<>(4);
+        long openCLObject = initializeOpenCL(kernel, NUMBER_OF_NEURONS, Constants.SYNAPSE_FILTER_ORDER, Constants.NUMBER_OF_SYNAPSES);
 
         // Launch those threads that are persistent
         inputCreatorExecutor.execute(new InputCreator(kernelInitQueue, inputCreatorQueue));
-        newOpenCLObject = kernelExcExecutor.submit(new KernelExecutor(inputCreatorQueue, kernelExcQueue, openCLObject, this, newWeights));
+        newOpenCLObject = kernelExcExecutor.submit(new KernelExecutor(inputCreatorQueue, kernelExcQueue, openCLObject, newWeights));
         dataSenderExecutor.execute(new DataSender(kernelExcQueue, datagramSocket));
-        terminalUpdaterExecutor.execute(new TerminalUpdater(updatedTerminal, this, newWeights));
-
-        // List of Futures related to the instances of kernelInitExecutor, used to check if the
-        // relative thread has finished its computation
-        List<Future<?>> kernelInitFutures = new ArrayList<Future<?>>();
+        terminalUpdaterExecutor.execute(new TerminalUpdater(updatedTerminal, newWeights));
 
         /*
         Get the updated info about the connected terminals stored in the Terminal class. Then
@@ -258,9 +247,6 @@ public class SimulationService extends IntentService {
 
                 // If the terminal info have been updated
                 if (thisTerminal != null) {
-
-                    Log.d("KernelInitializer", " " + thisTerminal.presynapticTerminals.size());
-
                     // Update the varaible holding the terminal info
                     SimulationService.thisTerminal = thisTerminal;
 
@@ -279,20 +265,16 @@ public class SimulationService extends IntentService {
                     }
                 }
 
+                // Receive the latest packet containing the spikes and store its address
                 byte[] inputSpikesBuffer = new byte[maxDataBytes];
-
                 DatagramPacket inputSpikesPacket = new DatagramPacket(inputSpikesBuffer, maxDataBytes);
-
                 datagramSocket.receive(inputSpikesPacket);
-
                 inputSpikesBuffer = inputSpikesPacket.getData();
-
                 InetAddress presynapticTerminalAddr = inputSpikesPacket.getAddress();
-
-                Iterator iterator = kernelInitFutures.iterator();
 
                 // Iterate over the list of futures to remove those that signal that the respective
                 // threads are done
+                Iterator iterator = kernelInitFutures.iterator();
                 while (iterator.hasNext()) {
                     Future<?> future = (Future<?>) iterator.next();
                     if (future.isDone())
@@ -419,24 +401,19 @@ public class SimulationService extends IntentService {
      */
 
     private class TerminalUpdater implements Runnable {
-
         private BlockingQueue<Terminal> updatedTerminal;
         private BlockingQueue<Terminal> newWeights;
-        private Context context;
 
-        TerminalUpdater(BlockingQueue<Terminal> b, Context c, BlockingQueue<Terminal> b1) {
+        TerminalUpdater(BlockingQueue<Terminal> b, BlockingQueue<Terminal> b1) {
 
             updatedTerminal = b;
-            context = c;
             newWeights = b1;
 
         }
 
         @Override
         public void run(){
-
             while (!shutdown) {
-
                 Terminal thisTerminal;
 
                 try {
@@ -464,13 +441,9 @@ public class SimulationService extends IntentService {
                         errornumber = 3;
                         errorRaised = true;
                     }
-
                 }
-
             }
-
         }
-
     }
 
     /*
@@ -478,34 +451,29 @@ public class SimulationService extends IntentService {
      */
 
     private class KernelExecutor implements Callable<Long> {
-
-        private BlockingQueue<char[]> kernelInitQueue;
+        private BlockingQueue<char[]> inputCreatorQueue;
         private long openCLObject;
-        private char[] synapseInput = new char[Constants.MAX_NUM_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
+        private char[] synapseInput = new char[Constants.NUMBER_OF_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
         private short data_bytes = (NUMBER_OF_NEURONS % 8) == 0 ?
                 (short) (NUMBER_OF_NEURONS / 8) : (short)(NUMBER_OF_NEURONS / 8 + 1);
         private byte[] outputSpikes = new byte[data_bytes];
         private BlockingQueue<byte[]> kernelExcQueue;
         private BlockingQueue<Terminal> newTerminalQueue;
-        private Context context;
 
-        KernelExecutor(BlockingQueue<char[]> b, BlockingQueue<byte[]> b1, long l1, Context c, BlockingQueue<Terminal> b2) {
-            kernelInitQueue = b;
+        KernelExecutor(BlockingQueue<char[]> b, BlockingQueue<byte[]> b1, long l1, BlockingQueue<Terminal> b2) {
+            inputCreatorQueue = b;
             kernelExcQueue = b1;
             openCLObject = l1;
-            context = c;
             newTerminalQueue = b2;
         }
 
         @Override
         public Long call () {
-
             while (!shutdown) {
-
                 Terminal newTerminal = null;
 
                 try {
-                    synapseInput = kernelInitQueue.take();
+                    synapseInput = inputCreatorQueue.take();
                     newTerminal = newTerminalQueue.poll();
                 } catch (InterruptedException e) {
                     String stackTrace = Log.getStackTraceString(e);
@@ -521,7 +489,7 @@ public class SimulationService extends IntentService {
                 }
 
                 outputSpikes = simulateDynamics(synapseInput, openCLObject, NUMBER_OF_NEURONS,
-                        SimulationParameters.getParameters(), weights, weightsIndexes, weights.length);
+                        SimulationParameters.getParameters(), weights, weightsIndexes, weights.length, synapseInput.length);
 
                 // A return object on length zero means an error has occurred
                 if (outputSpikes.length == 0) {
@@ -532,26 +500,33 @@ public class SimulationService extends IntentService {
                     }
                 } else {
 
+                    // If lateral connections have been enabled, send the output just computed back
+                    // to the terminal input
+
+                    if (Constants.LATERAL_CONNECTIONS) {
+                        Future<?> future = kernelInitExecutor.submit(new KernelInitializer(kernelInitQueue, thisTerminal.ip,
+                                thisTerminal.natPort, outputSpikes, thisTerminal));
+                        kernelInitFutures.add(future);
+                    }
+
+                    Log.d("KernelExecutor", " " + outputSpikes[0] + " " + thisTerminal.ip);
+
                     try {
                         kernelExcQueue.put(outputSpikes);
                     } catch (InterruptedException e) {
                         String stackTrace = Log.getStackTraceString(e);
                         Log.e("KernelExecutor", stackTrace);
                     }
-
                 }
-
             }
-
             return openCLObject;
-
         }
-
     }
 
-    public native long initializeOpenCL(String synapseKernel, short numOfNeurons, int filterOrder);
+    public native long initializeOpenCL(String synapseKernel, short numOfNeurons, int filterOrder, short numOfSynapses);
     public native byte[] simulateDynamics(char[] synapseInput, long openCLObject, short numOfNeurons,
-                                          float[] simulationParameters, float[] weights, int[] weightsIndexes, int numOfWeights);
+                                          float[] simulationParameters, float[] weights, int[] weightsIndexes,
+                                          int numOfWeights, int synapseInputLength);
     public native void closeOpenCL(long openCLObject);
 
 }

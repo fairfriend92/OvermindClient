@@ -33,7 +33,7 @@ class KernelInitializer implements Runnable {
     private static final Object lock = new Object();
 
     // Array of Objects used to lock the single connections
-    private static final Object[] threadsLocks = new Object[Constants.MAX_NUM_SYNAPSES];
+    private static final Object[] threadsLocks = new Object[Constants.NUMBER_OF_SYNAPSES];
 
     // List of buffers, one for each connections
     private static volatile List<ArrayBlockingQueue<byte[]>> presynTerminalQueue;
@@ -98,8 +98,6 @@ class KernelInitializer implements Runnable {
             }
 
         }
-
-        Log.d("KernelInitializer", "numOfConnections " + numOfConnections + "terminal is null " + (thisTerminal == null));
 
         if (numOfConnections == 0) {
             Log.e("KernelInitializer", "No presynaptic connection has been established: exiting KernelInitializer");
@@ -173,8 +171,6 @@ class KernelInitializer implements Runnable {
         int dataBytes = (presynTerminal.numOfNeurons % 8) == 0 ?
                 (short) (presynTerminal.numOfNeurons / 8) : (short)(presynTerminal.numOfNeurons / 8 + 1);
 
-        Log.d("KernelInitializer", presynTerminal.numOfNeurons + " " + Constants.MAX_NUM_SYNAPSES + " " + inputSpikesBuffer.length);
-
         byte[] inputSpikes = new byte[dataBytes];
         System.arraycopy(inputSpikesBuffer, 0, inputSpikes, 0, dataBytes);
 
@@ -240,6 +236,7 @@ class KernelInitializer implements Runnable {
 
             }
 
+            Log.d("KernelInitializer", " " + presynTerminal.ip);
             kernelInitQueue.put(new Input(synapticInput, presynTerminalIndex, false, numOfConnections));
 
         } catch (InterruptedException e) {

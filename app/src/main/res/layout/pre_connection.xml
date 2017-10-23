@@ -40,6 +40,11 @@
         android:layout_width="wrap_content"
         android:layout_height="0dp"
         android:hint="@string/edit_num_of_synapses"/>
+    <CheckBox android:id="@+id/checkbox_lateral_connections"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/checkbox_lateral_connections"
+        android:onClick="onCheckboxClicked"/>
     <Button
         android:id="@+id/startSimulationButton"
         android:layout_weight="1"

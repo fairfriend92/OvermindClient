@@ -56,6 +56,7 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
                     // TODO default means could not identify GPU, exit app.
                     numOfNeurons = 1;
             }
+            Constants.NUMBER_OF_NEURONS = numOfNeurons;
         } else {
 
             // Else the number of neurons is chosen by the user and as such must be
@@ -65,21 +66,28 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
         }
 
         thisTerminal.numOfNeurons = numOfNeurons;
-        Constants.NUMBER_OF_NEURONS = numOfNeurons;
 
-        /* The number of synapses chosen by the user may be above the maximum size supported by
-        the render, which is equivalent to the maximum work group size for the openCL kernel.
-        Therefore the call to the native method is necessary to determine whether the chosen
-        number exceeds this limit or not.
-         */
-        Constants.MAX_NUM_SYNAPSES = getNumOfSynapses(Constants.MAX_NUM_SYNAPSES);
+        // If lateral connections have been enabled, the number of synapses must be modified
+        // appropriately
+        if (Constants.LATERAL_CONNECTIONS) {
+            thisTerminal.numOfDendrites = (short) (Constants.NUMBER_OF_SYNAPSES - Constants.NUMBER_OF_NEURONS);
+            thisTerminal.numOfSynapses = (short) (Constants.NUMBER_OF_SYNAPSES - Constants.NUMBER_OF_NEURONS);
+        } else {
+            thisTerminal.numOfDendrites = Constants.NUMBER_OF_SYNAPSES;
+            thisTerminal.numOfSynapses = Constants.NUMBER_OF_SYNAPSES;
+        }
 
-        thisTerminal.numOfDendrites = Constants.MAX_NUM_SYNAPSES;
-        thisTerminal.numOfSynapses = Constants.MAX_NUM_SYNAPSES;
         thisTerminal.natPort = 0;
         thisTerminal.serverIP = SERVER_IP;
         thisTerminal.presynapticTerminals = new ArrayList<>();
         thisTerminal.postsynapticTerminals = new ArrayList<>();
+
+        // If lateral connections have been enabled, the terminal must add itself to its own
+        // presynaptic and postsynaptic connections
+        if (Constants.LATERAL_CONNECTIONS) {
+            thisTerminal.presynapticTerminals.add(thisTerminal);
+            thisTerminal.postsynapticTerminals.add(thisTerminal);
+        }
 
         /*
          * Establish connection with the Overmind and send terminal info.
@@ -132,7 +140,4 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
                 Toast.makeText(context, text, duration).show();
         }
     }
-
-    public native short getNumOfSynapses(short maxNumSynapses);
-
 }

@@ -67,11 +67,12 @@ public class MainActivity extends AppCompatActivity {
      */
 
     private void RestoreHomeMenu() {
-        // Reset the flags
+        // Reset the flags and the settings
         MainActivity.numOfNeuronsDeterminedByApp = false;
         serverConnectFailed = false;
         Constants.NUMBER_OF_NEURONS = 1;
-        Constants.MAX_NUM_SYNAPSES = 1024;
+        Constants.NUMBER_OF_SYNAPSES = 1024;
+        Constants.LATERAL_CONNECTIONS = false;
 
         // Bring back the home menu view
         setContentView(R.layout.pre_connection);
@@ -302,9 +303,16 @@ public class MainActivity extends AppCompatActivity {
             }
 
             // Get the number of synapses per neuron.
-            Constants.MAX_NUM_SYNAPSES = (short) Integer.parseInt(editNumOfSynapses.getText().toString());
+            Constants.NUMBER_OF_SYNAPSES = (short) Integer.parseInt(editNumOfSynapses.getText().toString());
             // As before, if the number is out of range set the error flag
-            if (Constants.MAX_NUM_SYNAPSES < 1 | Constants.MAX_NUM_SYNAPSES > 65535) {
+            if (Constants.NUMBER_OF_SYNAPSES < 1 | Constants.NUMBER_OF_SYNAPSES > 65535) {
+                serverConnectFailed = true;
+                serverConnectErrorNumber = 5; // TODO: make additional error message.
+            }
+
+            // If lateral connections have been enabled, the number of synapses must be at least
+            // greater than that of neurons
+            if (Constants.LATERAL_CONNECTIONS & Constants.NUMBER_OF_NEURONS > Constants.NUMBER_OF_SYNAPSES) {
                 serverConnectFailed = true;
                 serverConnectErrorNumber = 5; // TODO: make additional error message.
             }
@@ -373,6 +381,9 @@ public class MainActivity extends AppCompatActivity {
                     editNumOfNeurons.setText("1");
                     numOfNeuronsDeterminedByApp = false;
                 }
+                break;
+            case R.id.checkbox_lateral_connections:
+                Constants.LATERAL_CONNECTIONS = checked;
                 break;
         }
     }

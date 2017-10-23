@@ -3,7 +3,9 @@ package com.example.overmind;
 final class Constants {
 
     static short NUMBER_OF_NEURONS = 1;
-    static short MAX_NUM_SYNAPSES = 1024;
+    static short NUMBER_OF_SYNAPSES = 1024;
+    static boolean LATERAL_CONNECTIONS = false;
+
     private final static float ABSOLUTE_REFRACTORY_PERIOD = (float)2.0;
     static int SYNAPSE_FILTER_ORDER = 16;
     private final static float SAMPLING_RATE = (float) 0.5;

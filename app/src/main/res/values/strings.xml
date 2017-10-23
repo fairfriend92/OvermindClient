@@ -41,5 +41,6 @@
     <string name="diagnostics">"Diagnostics"</string>
     <string name="diagnostics_info">"# of disconnections: %1$d"</string>
     <string name="edit_num_of_synapses">"Enter # of synapses per neuron"</string>
+    <string name="checkbox_lateral_connections">"Lateral connections"</string>
 
 </resources>
