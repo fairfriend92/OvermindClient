@@ -64,7 +64,7 @@ class InputCreator implements Runnable {
             inputs.set(firstInput.presynTerminalIndex, firstInput);
             connectionsServed[firstInput.presynTerminalIndex] = true;
 
-            Log.e("InputCreator", " " + firstInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
+            Log.e("InputCreator", "firstInput " + firstInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
 
             Iterator<Input> iterator = kernelInitQueue.iterator();
 
@@ -78,7 +78,7 @@ class InputCreator implements Runnable {
 
                 // Proceed if the current input comes from a connection that has not been served
                 if (!connectionsServed[currentInput.presynTerminalIndex]) {
-                    Log.e("InputCreator", " " + currentInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
+                    Log.e("InputCreator", "currentInput " + currentInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
                     inputs.set(currentInput.presynTerminalIndex, currentInput);
                     connectionsServed[currentInput.presynTerminalIndex] = true;
                     iterator.remove();
@@ -89,11 +89,15 @@ class InputCreator implements Runnable {
             int offset = 0;
             boolean finished = false, inputIsNull = true;
 
+            Log.d("InputCreator", "numOfConnections " + numOfConnections);
+
             // Iterate over the collection of inputs taken from the kernelInitialzer queue
             for (int i = 0; i < numOfConnections && !finished; i++) {
 
                 // If the input is null then the respective connection has not fired yet
                 if (inputs.get(i) != null) {
+
+                    Log.d("InputCreator", "input " + i + " is not null");
 
                     Input currentInput = inputs.get(i);
 

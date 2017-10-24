@@ -14,6 +14,9 @@ class KernelInitializer implements Runnable {
     // Queue that stores the inputs to be sent to the KernelExecutor thread
     private BlockingQueue<Input> kernelInitQueue;
 
+    // Queue that stores the signals that clock the dataSender thread
+    private BlockingQueue<Object> clockSignalsQueue;
+
     // IP and nat port of the presynaptic terminal whose output must be processed
     private String presynTerminalIP;
     private int presynTerminalNatPort;
@@ -51,12 +54,14 @@ class KernelInitializer implements Runnable {
     // input of a certain terminal
     private static volatile char[][] synapticInputCollection;
 
-    KernelInitializer(BlockingQueue<Input> b, String s, int i, byte[] b1, Terminal t) {
+    KernelInitializer(BlockingQueue<Input> b, String s, int i, byte[] b1, Terminal t,
+                      BlockingQueue<Object> b2) {
         this.kernelInitQueue = b;
         this.presynTerminalIP = s;
         this.presynTerminalNatPort = i;
         this.inputSpikesBuffer = b1;
         this.thisTerminal = t;
+        this.clockSignalsQueue = b2;
     }
 
     @Override
@@ -227,7 +232,7 @@ class KernelInitializer implements Runnable {
                     (connectedToServer && presynTerminalIP.equals(MainActivity.serverIP))) {
 
                 // Put in the queue an object which unblocks the waiting DataSender
-                DataSender.clockSignals.put(new Object());
+                clockSignalsQueue.put(new Object());
 
                 // Update the refresh rate
                 InputCreator.waitTime.set(System.nanoTime() - lastTime.get());

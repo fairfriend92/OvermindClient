@@ -68,6 +68,13 @@ public class SimulationService extends IntentService {
     // Buffer that contains the total input put together by InputCreator
     BlockingQueue<char[]> inputCreatorQueue = new ArrayBlockingQueue<>(128);
 
+    // Buffer that contains the spikes of the lateral connections.
+    BlockingQueue<byte[]> lateralConnSpikesQueue = new ArrayBlockingQueue<>(128);
+
+    // Buffer holding the clock signals created by kernelInitializer which signals when dataSender
+    // should proceed to send the spikes.
+    BlockingQueue<Object> clockSignalsQueue = new ArrayBlockingQueue<>(32);
+
     // Policy for KernelInitializer that creates an exception whenever a packet is dropped due
     // to the buffers' being full
     ThreadPoolExecutor.AbortPolicy rejectedExecutionHandler = new ThreadPoolExecutor.AbortPolicy();
@@ -226,7 +233,7 @@ public class SimulationService extends IntentService {
         // Launch those threads that are persistent
         inputCreatorExecutor.execute(new InputCreator(kernelInitQueue, inputCreatorQueue));
         newOpenCLObject = kernelExcExecutor.submit(new KernelExecutor(inputCreatorQueue, kernelExcQueue, openCLObject, newWeights));
-        dataSenderExecutor.execute(new DataSender(kernelExcQueue, datagramSocket));
+        dataSenderExecutor.execute(new DataSender(kernelExcQueue, datagramSocket, clockSignalsQueue));
         terminalUpdaterExecutor.execute(new TerminalUpdater(updatedTerminal, newWeights));
 
         /*
@@ -238,7 +245,6 @@ public class SimulationService extends IntentService {
         short maxDataBytes = 1;
 
         while (!shutdown) {
-
             Terminal thisTerminal;
 
             try {
@@ -262,6 +268,18 @@ public class SimulationService extends IntentService {
                         short dataBytes = (presynapticTerminal.numOfNeurons % 8) == 0 ?
                                 (short) (presynapticTerminal.numOfNeurons / 8) : (short)(presynapticTerminal.numOfNeurons / 8 + 1);
                         maxDataBytes = dataBytes > maxDataBytes ? dataBytes : maxDataBytes;
+                    }
+
+                    // If lateral connections have been enabled, since the local network won't fire until it's
+                    // received an input from all the presynaptic terminals, including itself, put a dummy input in
+                    // the queue.
+                    if (Constants.LATERAL_CONNECTIONS) {
+                        short dataBytes = (NUMBER_OF_NEURONS % 8) == 0 ?
+                                (short) (NUMBER_OF_NEURONS / 8) : (short) (NUMBER_OF_NEURONS / 8 + 1);
+                        byte[] dummyInput = new byte[dataBytes];
+                        Future<?> future = kernelInitExecutor.submit(new KernelInitializer(kernelInitQueue, thisTerminal.ip,
+                                thisTerminal.natPort, dummyInput, thisTerminal, clockSignalsQueue));
+                        kernelInitFutures.add(future);
                     }
                 }
 
@@ -289,9 +307,19 @@ public class SimulationService extends IntentService {
                     kernelInitFutures = new ArrayList<>();
                 }
 
+                // If lateral connections are enabled, the spikes produced by the local network must
+                // be sent by this thread to the kernelInitializer, since the future produced by the
+                // kernelExecutor runnable cannot be put in kernelInitFutures by any other thread
+                byte[] outputSpikes = lateralConnSpikesQueue.poll();
+                if (Constants.LATERAL_CONNECTIONS & outputSpikes != null) {
+                    Future<?> future = kernelInitExecutor.submit(new KernelInitializer(kernelInitQueue, SimulationService.thisTerminal.ip,
+                            SimulationService.thisTerminal.natPort, outputSpikes, thisTerminal, clockSignalsQueue));
+                    kernelInitFutures.add(future);
+                }
+
                 // Put the workload in the queue
                 Future<?> future = kernelInitExecutor.submit(new KernelInitializer(kernelInitQueue, presynapticTerminalAddr.toString().substring(1),
-                        inputSpikesPacket.getPort(), inputSpikesBuffer, thisTerminal));
+                        inputSpikesPacket.getPort(), inputSpikesBuffer, thisTerminal, clockSignalsQueue));
 
                 kernelInitFutures.add(future);
 
@@ -310,7 +338,6 @@ public class SimulationService extends IntentService {
                 String stackTrace = Log.getStackTraceString(e);
                 Log.e("SimulationService", stackTrace);
             }
-
         }
 
         /*
@@ -499,16 +526,6 @@ public class SimulationService extends IntentService {
                         errorRaised = true;
                     }
                 } else {
-
-                    // If lateral connections have been enabled, send the output just computed back
-                    // to the terminal input
-
-                    if (Constants.LATERAL_CONNECTIONS) {
-                        Future<?> future = kernelInitExecutor.submit(new KernelInitializer(kernelInitQueue, thisTerminal.ip,
-                                thisTerminal.natPort, outputSpikes, thisTerminal));
-                        kernelInitFutures.add(future);
-                    }
-
                     Log.d("KernelExecutor", " " + outputSpikes[0] + " " + thisTerminal.ip);
 
                     try {
@@ -523,94 +540,83 @@ public class SimulationService extends IntentService {
         }
     }
 
+    /*
+    Runnable class which sends the spikes produced by the local network to the postsynaptic terminals,
+    including the server itself
+    */
+
+    private class DataSender implements Runnable {
+
+        private BlockingQueue<byte[]> kernelExcQueue;
+        private short dataBytes = (NUMBER_OF_NEURONS % 8) == 0 ?
+                (short) (NUMBER_OF_NEURONS / 8) : (short)(NUMBER_OF_NEURONS / 8 + 1);
+        private DatagramSocket outputSocket;
+        private BlockingQueue<Object> clockSignals;
+
+        DataSender(BlockingQueue<byte[]> b, DatagramSocket d, BlockingQueue<Object> b1) {
+            kernelExcQueue = b;
+            outputSocket = d;
+            clockSignals = b1;
+        }
+
+        @Override
+        public void run () {
+            while (!SimulationService.shutdown) {
+                byte[] outputSpikes;
+
+                try {
+                    clockSignals.poll(5, TimeUnit.SECONDS);
+                    outputSpikes = kernelExcQueue.poll();
+                } catch (InterruptedException e) {
+                    String stackTrace = Log.getStackTraceString(e);
+                    Log.e("DataSender", stackTrace);
+                    return;
+                }
+
+                if (outputSpikes != null) {
+
+                    // If lateral connections have been enabled, put the output just computed in a
+                    // queue whence it can be retrieved by the main thread
+                    if (Constants.LATERAL_CONNECTIONS) {
+                        lateralConnSpikesQueue.offer(outputSpikes);
+                    }
+
+                    for (Terminal postsynapticTerminal : thisTerminal.postsynapticTerminals) {
+                        if (!postsynapticTerminal.ip.equals(thisTerminal.ip)) { // Since lateral connections spikes are produced internally they don't need to be sent through internet
+                            try {
+                                InetAddress postsynapticTerminalAddr = InetAddress.getByName(postsynapticTerminal.ip);
+                                DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, dataBytes, postsynapticTerminalAddr, postsynapticTerminal.natPort);
+                                outputSocket.send(outputSpikesPacket);
+                            } catch (IOException e) {
+                                String stackTrace = Log.getStackTraceString(e);
+                                Log.e("DataSender", stackTrace);
+                            }
+                        }
+                    }
+                     /* [End of for each loop] */
+
+                } else {
+                    try {
+                        InetAddress serverAddress = InetAddress.getByName(SERVER_IP);
+                        DatagramPacket pingPacket = new DatagramPacket(new byte[1], 1, serverAddress, 4194);
+                        outputSocket.send(pingPacket);
+                    } catch (IOException e) {
+                        String stackTrace = Log.getStackTraceString(e);
+                        Log.e("DataSender", stackTrace);
+                    }
+                }
+            }
+             /* [End of the while loop] */
+            // TODO Close the datagram outputsocket
+        }
+        /* [End of the run loop] */
+    }
+    /* [End of the DataSender class] */
+
     public native long initializeOpenCL(String synapseKernel, short numOfNeurons, int filterOrder, short numOfSynapses);
     public native byte[] simulateDynamics(char[] synapseInput, long openCLObject, short numOfNeurons,
                                           float[] simulationParameters, float[] weights, int[] weightsIndexes,
                                           int numOfWeights, int synapseInputLength);
     public native void closeOpenCL(long openCLObject);
-
 }
 
- /*
- Runnable class which sends the spikes produced by the local network to the postsynaptic terminals,
- including the server itself
- */
-
-class DataSender implements Runnable {
-
-    private BlockingQueue<byte[]> kernelExcQueue;
-    private short dataBytes = (NUMBER_OF_NEURONS % 8) == 0 ?
-            (short) (NUMBER_OF_NEURONS / 8) : (short)(NUMBER_OF_NEURONS / 8 + 1);
-    private DatagramSocket outputSocket;
-
-    static volatile BlockingQueue<Object> clockSignals = new ArrayBlockingQueue<>(32);
-
-    DataSender(BlockingQueue<byte[]> b, DatagramSocket d) {
-
-        kernelExcQueue = b;
-        outputSocket = d;
-    }
-
-    @Override
-    public void run () {
-
-        while (!SimulationService.shutdown) {
-
-            byte[] outputSpikes;
-
-            try {
-                clockSignals.poll(5, TimeUnit.SECONDS);
-                outputSpikes = kernelExcQueue.poll();
-            } catch (InterruptedException e) {
-                String stackTrace = Log.getStackTraceString(e);
-                Log.e("DataSender", stackTrace);
-                return;
-            }
-
-            if (outputSpikes != null) {
-
-                for (Terminal postsynapticTerminal : SimulationService.thisTerminal.postsynapticTerminals) {
-
-                    try {
-
-                        InetAddress postsynapticTerminalAddr = InetAddress.getByName(postsynapticTerminal.ip);
-
-                        DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, dataBytes, postsynapticTerminalAddr, postsynapticTerminal.natPort);
-
-                        outputSocket.send(outputSpikesPacket);
-
-                    } catch (IOException e) {
-                        String stackTrace = Log.getStackTraceString(e);
-                        Log.e("DataSender", stackTrace);
-                    }
-
-                }
-                /* [End of for each loop] */
-
-            } else {
-
-                try {
-
-                    InetAddress serverAddress = InetAddress.getByName(SERVER_IP);
-
-                    DatagramPacket pingPacket = new DatagramPacket(new byte[1], 1, serverAddress, 4194);
-
-                    outputSocket.send(pingPacket);
-
-                } catch (IOException e) {
-                    String stackTrace = Log.getStackTraceString(e);
-                    Log.e("DataSender", stackTrace);
-                }
-
-            }
-
-        }
-        /* [End of the while loop] */
-
-        // TODO Close the datagram outputsocket
-
-    }
-    /* [End of the run loop] */
-
-}
-/* [End of the DataSender class] */
