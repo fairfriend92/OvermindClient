@@ -229,7 +229,7 @@ class KernelInitializer implements Runnable {
             // is not and the first connection has fired again, then DataSender can send the latest
             // array of spikes produced by KernelExecutor
             if ((!connectedToServer && presynTerminalIndex == 0) ||
-                    (connectedToServer && presynTerminalIP.equals(MainActivity.serverIP))) {
+                    (connectedToServer && presynTerminalIP.equals(Constants.SERVER_IP))) {
 
                 // Put in the queue an object which unblocks the waiting DataSender
                 clockSignalsQueue.put(new Object());

@@ -14,5 +14,5 @@ final class Constants {
     static final int SERVER_PORT_TCP = 4195;
     static final int SERVER_PORT_UDP = 4196;
     static final int IPTOS_RELIABILITY = 0x04;
-    static String SERVER_IP = MainActivity.serverIP;
+    static String SERVER_IP;
 }

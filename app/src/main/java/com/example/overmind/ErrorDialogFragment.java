@@ -58,8 +58,8 @@ public class ErrorDialogFragment extends android.support.v4.app.DialogFragment {
                         });
                 break;
             case 5:
-                builder.setMessage(R.string.num_of_neurons_error_message)
-                        .setTitle(R.string.num_of_neurons_error_title)
+                builder.setMessage(R.string.wrong_input_error_message)
+                        .setTitle(R.string.wrong_input_error_title)
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
                                 dismiss();
@@ -69,6 +69,33 @@ public class ErrorDialogFragment extends android.support.v4.app.DialogFragment {
             case 6:
                 builder.setMessage(R.string.opencl_failure_message)
                         .setTitle(R.string.opencl_failure_title)
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                dismiss();
+                            }
+                        });
+                break;
+            case 7:
+                builder.setMessage(R.string.wrong_synapses_failure_message)
+                        .setTitle(R.string.wrong_synapses_failure_title)
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                dismiss();
+                            }
+                        });
+                break;
+            case 8:
+                builder.setMessage(R.string.wrong_neurons_failure_message)
+                        .setTitle(R.string.wrong_neurons_failure_title)
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                dismiss();
+                            }
+                        });
+                break;
+            case 9:
+                builder.setMessage(R.string.lateral_connections_failure_message)
+                        .setTitle(R.string.lateral_connections_failure_title)
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
                                 dismiss();

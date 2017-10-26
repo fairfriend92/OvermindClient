@@ -16,9 +16,6 @@ import java.net.Socket;
 import java.util.ArrayList;
 
 class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
-
-    private String SERVER_IP = MainActivity.serverIP;
-
     private Context context;
     private Terminal thisTerminal = new Terminal();
     private Socket clientSocket = null;
@@ -78,7 +75,7 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
         }
 
         thisTerminal.natPort = 0;
-        thisTerminal.serverIP = SERVER_IP;
+        thisTerminal.serverIP = Constants.SERVER_IP;
         thisTerminal.presynapticTerminals = new ArrayList<>();
         thisTerminal.postsynapticTerminals = new ArrayList<>();
 
@@ -96,7 +93,7 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
         if (!MainActivity.serverConnectFailed) {
 
             try {
-                clientSocket = new Socket(SERVER_IP, Constants.SERVER_PORT_TCP);
+                clientSocket = new Socket(Constants.SERVER_IP, Constants.SERVER_PORT_TCP);
                 clientSocket.setTrafficClass(Constants.IPTOS_RELIABILITY);
                 clientSocket.setKeepAlive(true);
                 //clientSocket.setTcpNoDelay(true);

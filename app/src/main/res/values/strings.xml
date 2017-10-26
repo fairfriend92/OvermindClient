@@ -19,8 +19,8 @@
     <string name="edit_num_of_neurons">Enter # of neurons for the local network</string>
     <string name="checkbox_num_of_neurons">Let the application determine the appropriate number</string>
     <string name="num_of_neurons_text">"Determined by the application"</string>
-    <string name="num_of_neurons_error_title">"Wrong format for number of neurons"</string>
-    <string name="num_of_neurons_error_message">"Please specify a number between 1 and 1024."</string>
+    <string name="wrong_input_error_title">"Wrong format for neural network settings"</string>
+    <string name="wrong_input_error_message">"Please specify a number between 1 and 65535. If lateral connections are enabled, neurons must be less than synapses"</string>
     <string name="connection_settings_title">"Connection settings"</string>
     <string name="neural_network_settings_title">"Neural network settings"</string>
     <string name="rs">"Regular spiking neuron"</string>
@@ -42,5 +42,11 @@
     <string name="diagnostics_info">"# of disconnections: %1$d"</string>
     <string name="edit_num_of_synapses">"Enter # of synapses per neuron"</string>
     <string name="checkbox_lateral_connections">"Lateral connections"</string>
+    <string name="wrong_synapses_failure_message">"The number of synapses must be greater than or equal to 1 and less than 65535."</string>
+    <string name="wrong_synapses_failure_title">"Wrong number of synapses"</string>
+    <string name="wrong_neurons_failure_message">"The number of neurons must be greater than or equal to 1 and less than 65535."</string>
+    <string name="wrong_neurons_failure_title">"Wrong number of neurons"</string>
+    <string name="lateral_connections_failure_message">"When lateral connections are enabled, the number of neurons must be less than the number of synapses."</string>
+    <string name="lateral_connections_failure_title">"Wrong number of neurons"</string>
 
 </resources>

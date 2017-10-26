@@ -196,7 +196,7 @@ public class SimulationService extends IntentService {
          */
 
         try {
-            InetAddress serverAddr = InetAddress.getByName(MainActivity.serverIP);
+            InetAddress serverAddr = InetAddress.getByName(SERVER_IP);
             byte[] testData = new byte[1];
             DatagramPacket testPacket = new DatagramPacket(testData, 1, serverAddr, Constants.SERVER_PORT_UDP);
             datagramSocket.send(testPacket);
@@ -269,6 +269,9 @@ public class SimulationService extends IntentService {
                                 (short) (presynapticTerminal.numOfNeurons / 8) : (short)(presynapticTerminal.numOfNeurons / 8 + 1);
                         maxDataBytes = dataBytes > maxDataBytes ? dataBytes : maxDataBytes;
                     }
+
+                    // Determine if the lateral connections option has been changed by the server
+                    Constants.LATERAL_CONNECTIONS = thisTerminal.presynapticTerminals.contains(thisTerminal);
 
                     // If lateral connections have been enabled, since the local network won't fire until it's
                     // received an input from all the presynaptic terminals, including itself, put a dummy input in
@@ -575,6 +578,8 @@ public class SimulationService extends IntentService {
 
                 if (outputSpikes != null) {
 
+                    Log.d("DataSender", "test1");
+
                     // If lateral connections have been enabled, put the output just computed in a
                     // queue whence it can be retrieved by the main thread
                     if (Constants.LATERAL_CONNECTIONS) {
@@ -596,6 +601,9 @@ public class SimulationService extends IntentService {
                      /* [End of for each loop] */
 
                 } else {
+
+                    Log.d("DataSender", "test");
+
                     try {
                         InetAddress serverAddress = InetAddress.getByName(SERVER_IP);
                         DatagramPacket pingPacket = new DatagramPacket(new byte[1], 1, serverAddress, 4194);

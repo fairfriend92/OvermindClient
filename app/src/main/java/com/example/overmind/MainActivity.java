@@ -53,7 +53,6 @@ public class MainActivity extends AppCompatActivity {
     private static SharedPreferences prefs; // Used to store GPU info by the renderer class
     static SocketInfo thisClient; // Socket used for TCP communications with the Overmind server
     static Terminal server = new Terminal(); // Terminal object holding info about the server
-    static String serverIP;
     static boolean numOfNeuronsDeterminedByApp = false; // Flag that is set if the user allows the app to determine the appropriate number of neurons
     static String renderer; // Name of the GPU model
 
@@ -286,8 +285,8 @@ public class MainActivity extends AppCompatActivity {
         assert editServerIP != null;
 
         // Get the server ip from the text box
-        serverIP = editServerIP.getText().toString();
-        server.ip = serverIP;
+        Constants.SERVER_IP = editServerIP.getText().toString();
+        server.ip = Constants.SERVER_IP;
 
         try {
             // Get the number of neurons for the local netwowrk from the text box
@@ -299,7 +298,7 @@ public class MainActivity extends AppCompatActivity {
             if ((Constants.NUMBER_OF_NEURONS < 1 | Constants.NUMBER_OF_NEURONS > 65535) &&
                     !MainActivity.numOfNeuronsDeterminedByApp) {
                 serverConnectFailed = true;
-                serverConnectErrorNumber = 5;
+                serverConnectErrorNumber = 8;
             }
 
             // Get the number of synapses per neuron.
@@ -307,18 +306,18 @@ public class MainActivity extends AppCompatActivity {
             // As before, if the number is out of range set the error flag
             if (Constants.NUMBER_OF_SYNAPSES < 1 | Constants.NUMBER_OF_SYNAPSES > 65535) {
                 serverConnectFailed = true;
-                serverConnectErrorNumber = 5; // TODO: make additional error message.
+                serverConnectErrorNumber = 7;
             }
 
             // If lateral connections have been enabled, the number of synapses must be at least
             // greater than that of neurons
             if (Constants.LATERAL_CONNECTIONS & Constants.NUMBER_OF_NEURONS > Constants.NUMBER_OF_SYNAPSES) {
                 serverConnectFailed = true;
-                serverConnectErrorNumber = 5; // TODO: make additional error message.
+                serverConnectErrorNumber = 9;
             }
         } catch (NumberFormatException e) { // Catch eventual errors caused by blank field that must bet filled by the user
             serverConnectFailed = true;
-            serverConnectErrorNumber = 5; // TODO: make additional error message.
+            serverConnectErrorNumber = 5;
         }
 
         // OpenGL surface view
