@@ -15,61 +15,6 @@ size_t currentBufferSize;
 // How many bytes are needed to represent every neuron's spike?
 short dataBytes;
 
-extern "C" jshort Java_com_example_overmind_ServerConnect_getNumOfSynapses (
-        JNIEnv *env, jobject  thiz, jshort jMaxNumSynapses) {
-    // Create an openCL object to retrieve the info needed to compute the number of synapses
-    struct OpenCLObject *obj;
-    obj = (struct OpenCLObject *)malloc(sizeof(struct OpenCLObject));
-
-    if (!createContext(&obj->context))
-    {
-        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-        LOGE("Failed to create an OpenCL context");
-    }
-
-    if (!createCommandQueue(obj->context, &obj->commandQueue, &obj->device))
-    {
-        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-        LOGE("Failed to create an OpenCL command queue");
-    }
-
-    size_t maxWorkGroupSize;
-
-    /* Retrieve the width of the floating point alu and the maximum work group size, from which the
-     * maximum number of synapses can be derived. The work group size is only an approximation,
-     * since the real value can only be determined once the kernel has been submitted. Hence
-     * the number of synapses that are served may actually be smaller than that reported to the
-     * OverMind server */
-
-    clGetDeviceInfo(obj->device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT, sizeof(cl_uint), &obj->floatVectorWidth, NULL);
-    LOGD("Device info: Preferred vector width for floats: %d ", obj->floatVectorWidth);
-
-    clGetDeviceInfo(obj->device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &maxWorkGroupSize, NULL);
-    LOGD("Device info: Maximum work group size: %d ", (int)maxWorkGroupSize);
-
-    // If possible confirm the user selection, otherwise lower the number of synapses
-    obj->maxWorkGroupSize = maxWorkGroupSize < (jMaxNumSynapses / obj->floatVectorWidth) ?
-                            maxWorkGroupSize : (jMaxNumSynapses / obj->floatVectorWidth);
-
-    // Store the maximum number of synapses
-    NUM_SYNAPSES = (short)(obj->maxWorkGroupSize * obj->floatVectorWidth);
-
-    // Store here the value to be returned since the openCL object must be eliminated
-    short numOfSynapses = (short) (obj->floatVectorWidth * obj->maxWorkGroupSize);
-
-    /* Now that the number of synapses has been computed, the openCL context and the object holding
-     * the relative info can be destroyed */
-
-    if (!cleanUpOpenCL(obj->context, obj->commandQueue, 0, 0, 0, 0))
-    {
-        LOGE("Failed to clean-up OpenCL");
-    };
-
-    free(obj);
-
-    return numOfSynapses;
-}
-
 extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
         JNIEnv *env, jobject thiz, jstring jKernel, jshort jNumOfNeurons, jint jFilterOrder, jshort jNumOfSynapses) {
     // Create a new openCL object since the one created in the getNumOfSynapses function could not be returned
@@ -209,13 +154,15 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     float tInh = (float) (SAMPLING_RATE / INH_SYNAPSE_TIME_SCALE);
     for (int index = 0; index < SYNAPSE_FILTER_ORDER * 2; index++)
     {
-        obj->synapseCoeff[index] = index%2 == 0 ? (cl_float )index * tExc * expf( - index * tExc) : (cl_float)(-index * tInh * expf( - index * tInh));
+        obj->synapseCoeff[index] = index < SYNAPSE_FILTER_ORDER ?
+                                   (cl_float)(100.0f * index * tExc * expf( - index * tExc)) :
+                                   (cl_float)(100.0f * index * tInh * expf( - index * tInh));
         //LOGD("The synapse coefficients are: \tcoefficient %d \tvalue %f", index, (float) (obj->synapseCoeff[index]));
     }
 
     // Synaptic weights initialization
     for (int index = 0; index < NUM_SYNAPSES * jNumOfNeurons; index++) {
-        obj->synapseWeights[index] = index % 2 == 0 ? 100.0f : 33.0f;
+        obj->synapseWeights[index] = index % 2 == 0 ? 1.0f : - 0.33f;
     }
 
     // Initialization of dynamic variables and of the buffer which will hold the total synaptic
