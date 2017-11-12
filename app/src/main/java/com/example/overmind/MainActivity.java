@@ -28,6 +28,7 @@ import android.widget.TextView;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
 
@@ -653,8 +654,6 @@ public class MainActivity extends AppCompatActivity {
 
         // Put the string holding the kernel in the simulation Intent
         simulationIntent.putExtra("Kernel", kernel);
-
-        //SimulationService.shutdown = false;
 
         // Start the service
         this.startService(simulationIntent);

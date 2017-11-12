@@ -26,7 +26,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     NUM_SYNAPSES = jNumOfSynapses;
     maxNumberMultiplications = (int) (SYNAPSE_FILTER_ORDER * SAMPLING_RATE / ABSOLUTE_REFRACTORY_PERIOD);
     synapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * 2 * sizeof(cl_float);
-    synapseInputBufferSize =  maxNumberMultiplications * NUM_SYNAPSES * sizeof(cl_char);
+    synapseInputBufferSize =  maxNumberMultiplications * NUM_SYNAPSES * sizeof(cl_uchar);
     synapseWeightsBufferSize = NUM_SYNAPSES * jNumOfNeurons * sizeof(cl_float);
     currentBufferSize = jNumOfNeurons * sizeof(cl_int);
 
@@ -163,6 +163,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     // Synaptic weights initialization
     for (int index = 0; index < NUM_SYNAPSES * jNumOfNeurons; index++) {
         obj->synapseWeights[index] = index % 2 == 0 ? 1.0f : - 0.33f;
+        //obj->synapseWeights[index] = 0.0f;
     }
 
     // Initialization of dynamic variables and of the buffer which will hold the total synaptic
@@ -197,12 +198,12 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
 }
 
 extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynamics(
-        JNIEnv *env, jobject thiz, jcharArray jSynapseInput, jlong jOpenCLObject, jshort jNumOfNeurons, jfloatArray jSimulationParameters,
+        JNIEnv *env, jobject thiz, jbyteArray jSynapseInput, jlong jOpenCLObject, jshort jNumOfNeurons, jfloatArray jSimulationParameters,
         jfloatArray jWeights, jintArray jWeightsIndexes, jint jNumOfWeights, jint jSynapseInputLength) {
     struct OpenCLObject *obj;
     obj = (struct OpenCLObject *)jOpenCLObject;
 
-    jchar *synapseInput = env->GetCharArrayElements(jSynapseInput, JNI_FALSE);
+    jbyte *synapseInput = env->GetByteArrayElements(jSynapseInput, JNI_FALSE);
     jfloat *simulationParameters = env->GetFloatArrayElements(jSimulationParameters, JNI_FALSE);
     jfloat *weights = env->GetFloatArrayElements(jWeights, JNI_FALSE);
     jint *weightsIndexes = env->GetIntArrayElements(jWeightsIndexes, JNI_FALSE);
@@ -217,7 +218,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     bool mapMemoryObjectsSuccess = true;
 
     // Map the buffer
-    obj->synapseInput = (cl_char*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[2], CL_TRUE, CL_MAP_WRITE, 0, synapseInputBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    obj->synapseInput = (cl_uchar *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[2], CL_TRUE, CL_MAP_WRITE, 0, synapseInputBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     // Catch eventual errors
@@ -230,7 +231,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     // Initialize the buffer on the CPU side with the data received from Java Native Interface
     for (int index = 0; index < jSynapseInputLength; index++)
     {
-        obj->synapseInput[index] = (cl_char)synapseInput[index];
+        obj->synapseInput[index] = (cl_uchar)synapseInput[index];
     }
 
     // Un-map the buffer
@@ -241,7 +242,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     }
 
     // Release the java array since the data has been passed to the memory buffer
-    env->ReleaseCharArrayElements(jSynapseInput, synapseInput, 0);
+    env->ReleaseByteArrayElements(jSynapseInput, synapseInput, 0);
 
     /*
      * If the weights have changed, initialize them too

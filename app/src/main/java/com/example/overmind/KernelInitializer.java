@@ -52,7 +52,7 @@ class KernelInitializer implements Runnable {
 
     // Double array with one dimension representing the presynaptic terminals and the other the
     // input of a certain terminal
-    private static volatile char[][] synapticInputCollection;
+    private static volatile byte[][] synapticInputCollection;
 
     KernelInitializer(BlockingQueue<Input> b, String s, int i, byte[] b1, Terminal t,
                       BlockingQueue<Object> b2) {
@@ -86,7 +86,7 @@ class KernelInitializer implements Runnable {
 
                 // Create the array storing the kernel input derived from the spikes produced
                 // by each presynaptic Terminal
-                synapticInputCollection = new char[numOfConnections][0];
+                synapticInputCollection = new byte[numOfConnections][0];
 
                 threadIsFree = new ArrayList<>(numOfConnections);
 
@@ -112,6 +112,7 @@ class KernelInitializer implements Runnable {
         // Identify the presynaptic terminal using the IP contained in the header of the datagram
         // packet
         Terminal presynTerminal = new Terminal();
+        presynTerminal.serverIP = MainActivity.server.ip;
         presynTerminal.ip = presynTerminalIP;
         presynTerminal.natPort = presynTerminalNatPort;
         int presynTerminalIndex = presynapticTerminals.indexOf(presynTerminal);
@@ -119,9 +120,9 @@ class KernelInitializer implements Runnable {
         // If it was not possible to identify the presynaptic terminal drop the packet and return
         if (presynTerminalIndex == -1) {
             for (Terminal presynapticTerminal : presynapticTerminals){
-                Log.e("TerminalUpdater", " " + presynapticTerminal.ip);
+                Log.e("KernelInitializer", " " + presynapticTerminal.ip + " " + presynapticTerminal.natPort);
             }
-            Log.e("KernelInitializer", "Cannot find presynTerminal with ip " + presynTerminalIP);
+            Log.e("KernelInitializer", "Cannot find presynTerminal with ip " + presynTerminalIP + " " + presynTerminalNatPort);
             return;
         }
 
@@ -179,7 +180,7 @@ class KernelInitializer implements Runnable {
         byte[] inputSpikes = new byte[dataBytes];
         System.arraycopy(inputSpikesBuffer, 0, inputSpikes, 0, dataBytes);
 
-        char[] synapticInput = new char[presynTerminal.numOfNeurons * Constants.MAX_MULTIPLICATIONS];
+        byte[] synapticInput = new byte[presynTerminal.numOfNeurons * Constants.MAX_MULTIPLICATIONS];
 
         // The runnable initializes the kernel at lastTime n using the input at lastTime n - 1, which
         // must be first retrieved from synapticInputCollection
@@ -204,7 +205,7 @@ class KernelInitializer implements Runnable {
                 // Increment the input only if different from zero to begin with. Advance it if the synapse carries an action potential (bitValue = 1)
                 synapticInput[indexJ + indexI * Constants.MAX_MULTIPLICATIONS] =
                         (synapticInput[indexJ + indexI * Constants.MAX_MULTIPLICATIONS - bitValue] != 0) && (synapticInput[indexJ + indexI * Constants.MAX_MULTIPLICATIONS - bitValue] < Constants.SYNAPSE_FILTER_ORDER) ?
-                                (char) (synapticInput[indexJ + indexI * Constants.MAX_MULTIPLICATIONS - bitValue] + 1) : 0;
+                                (byte) (synapticInput[indexJ + indexI * Constants.MAX_MULTIPLICATIONS - bitValue] + 1) : 0;
 
             }
 
@@ -216,7 +217,7 @@ class KernelInitializer implements Runnable {
                 default:
                     synapticInput[indexI * Constants.MAX_MULTIPLICATIONS] =
                             (synapticInput[indexI * Constants.MAX_MULTIPLICATIONS] != 0) && (synapticInput[indexI * Constants.MAX_MULTIPLICATIONS] < Constants.SYNAPSE_FILTER_ORDER) ?
-                                    (char)(synapticInput[indexI * Constants.MAX_MULTIPLICATIONS] + 1) : 0;
+                                    (byte)(synapticInput[indexI * Constants.MAX_MULTIPLICATIONS] + 1) : 0;
                     break;
             }
 

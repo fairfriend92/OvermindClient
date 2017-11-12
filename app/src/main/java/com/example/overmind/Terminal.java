@@ -5,8 +5,8 @@ import java.util.ArrayList;
 
 public class Terminal implements Serializable {
     public short numOfNeurons, numOfDendrites, numOfSynapses;
-    public String ip;
     public String serverIP;
+    public String ip;
     public int natPort;
     public ArrayList<Terminal> presynapticTerminals;
     public ArrayList<Terminal> postsynapticTerminals;
@@ -22,7 +22,10 @@ public class Terminal implements Serializable {
     public boolean equals(Object obj) {
         if (obj == null || obj.getClass() != this.getClass()) { return false; }
         Terminal compare = (Terminal) obj;
-        return compare.ip.equals(this.ip);
+        if (compare.ip.equals(this.serverIP) || this.ip.equals(this.serverIP))
+            return (compare.ip.equals(this.ip));
+        else
+            return (compare.ip.equals(this.ip) & compare.natPort == this.natPort);
     }
 
     public synchronized Terminal get() {

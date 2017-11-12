@@ -66,7 +66,7 @@ public class SimulationService extends IntentService {
     BlockingQueue<Input> kernelInitQueue = new LinkedBlockingQueue<>(128);
 
     // Buffer that contains the total input put together by InputCreator
-    BlockingQueue<char[]> inputCreatorQueue = new ArrayBlockingQueue<>(128);
+    BlockingQueue<byte[]> inputCreatorQueue = new ArrayBlockingQueue<>(128);
 
     // Buffer that contains the spikes of the lateral connections.
     BlockingQueue<byte[]> lateralConnSpikesQueue = new ArrayBlockingQueue<>(128);
@@ -253,6 +253,7 @@ public class SimulationService extends IntentService {
 
                 // If the terminal info have been updated
                 if (thisTerminal != null) {
+
                     // Update the varaible holding the terminal info
                     SimulationService.thisTerminal = thisTerminal;
 
@@ -481,16 +482,16 @@ public class SimulationService extends IntentService {
      */
 
     private class KernelExecutor implements Callable<Long> {
-        private BlockingQueue<char[]> inputCreatorQueue;
+        private BlockingQueue<byte[]> inputCreatorQueue;
         private long openCLObject;
-        private char[] synapseInput = new char[Constants.NUMBER_OF_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
+        private byte[] synapseInput = new byte[Constants.NUMBER_OF_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
         private short data_bytes = (NUMBER_OF_NEURONS % 8) == 0 ?
                 (short) (NUMBER_OF_NEURONS / 8) : (short)(NUMBER_OF_NEURONS / 8 + 1);
         private byte[] outputSpikes = new byte[data_bytes];
         private BlockingQueue<byte[]> kernelExcQueue;
         private BlockingQueue<Terminal> newTerminalQueue;
 
-        KernelExecutor(BlockingQueue<char[]> b, BlockingQueue<byte[]> b1, long l1, BlockingQueue<Terminal> b2) {
+        KernelExecutor(BlockingQueue<byte[]> b, BlockingQueue<byte[]> b1, long l1, BlockingQueue<Terminal> b2) {
             inputCreatorQueue = b;
             kernelExcQueue = b1;
             openCLObject = l1;
@@ -578,8 +579,6 @@ public class SimulationService extends IntentService {
 
                 if (outputSpikes != null) {
 
-                    Log.d("DataSender", "test1");
-
                     // If lateral connections have been enabled, put the output just computed in a
                     // queue whence it can be retrieved by the main thread
                     if (Constants.LATERAL_CONNECTIONS) {
@@ -602,11 +601,9 @@ public class SimulationService extends IntentService {
 
                 } else {
 
-                    Log.d("DataSender", "test");
-
                     try {
                         InetAddress serverAddress = InetAddress.getByName(SERVER_IP);
-                        DatagramPacket pingPacket = new DatagramPacket(new byte[1], 1, serverAddress, 4194);
+                        DatagramPacket pingPacket = new DatagramPacket(new byte[1], 1, serverAddress, Constants.UDP_PORT);
                         outputSocket.send(pingPacket);
                     } catch (IOException e) {
                         String stackTrace = Log.getStackTraceString(e);
@@ -622,7 +619,7 @@ public class SimulationService extends IntentService {
     /* [End of the DataSender class] */
 
     public native long initializeOpenCL(String synapseKernel, short numOfNeurons, int filterOrder, short numOfSynapses);
-    public native byte[] simulateDynamics(char[] synapseInput, long openCLObject, short numOfNeurons,
+    public native byte[] simulateDynamics(byte[] synapseInput, long openCLObject, short numOfNeurons,
                                           float[] simulationParameters, float[] weights, int[] weightsIndexes,
                                           int numOfWeights, int synapseInputLength);
     public native void closeOpenCL(long openCLObject);

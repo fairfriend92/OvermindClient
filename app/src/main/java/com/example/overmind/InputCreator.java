@@ -17,13 +17,13 @@ them to KernelExecutor
 class InputCreator implements Runnable {
 
     private BlockingQueue<Input> kernelInitQueue;
-    private BlockingQueue<char[]> inputCreatorQueue;
+    private BlockingQueue<byte[]> inputCreatorQueue;
     static AtomicLong waitTime = new AtomicLong(0);
     private int numOfConnections = 0;
     private boolean[] connectionsServed;
     private List<Input> inputs = new ArrayList<>();
 
-    InputCreator(BlockingQueue<Input> l, BlockingQueue<char[]> b) {
+    InputCreator(BlockingQueue<Input> l, BlockingQueue<byte[]> b) {
 
         kernelInitQueue = l;
         inputCreatorQueue = b;
@@ -37,7 +37,7 @@ class InputCreator implements Runnable {
         while (!SimulationService.shutdown) {
 
             // Array holding the complete input to be passed to KernelExecutor
-            char[] totalSynapticInput = new char[Constants.NUMBER_OF_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
+            byte[] totalSynapticInput = new byte[Constants.NUMBER_OF_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
 
             // Object holding the first input in the kernelInitialzer queue
             Input firstInput;
@@ -113,14 +113,14 @@ class InputCreator implements Runnable {
                     if ((Constants.NUMBER_OF_SYNAPSES * Constants.MAX_MULTIPLICATIONS - offset) >= arrayLength) {
                         System.arraycopy(currentInput.synapticInput, 0, totalSynapticInput, offset, arrayLength);
                         offset += arrayLength;
-                        inputs.set(i, new Input(new char[arrayLength], arrayLength, true, numOfConnections));
+                        inputs.set(i, new Input(new byte[arrayLength], arrayLength, true, numOfConnections));
                     }
                 } else
                     finished = true;
             }
 
             // Resize totalSynapticInput
-            char[] resizedSynapticInput = new char[offset];
+            byte[] resizedSynapticInput = new byte[offset];
             System.arraycopy(totalSynapticInput, 0, resizedSynapticInput, 0, offset);
 
             if (!inputIsNull) {
@@ -173,12 +173,12 @@ class InputCreator implements Runnable {
 
 class Input {
 
-    char[] synapticInput;
+    byte[] synapticInput;
     int presynTerminalIndex;
     boolean inputIsEmpty;
     int numOfConnections;
 
-    Input(char[] c, int i, boolean b, int i1) {
+    Input(byte[] c, int i, boolean b, int i1) {
 
         synapticInput = c;
         presynTerminalIndex = i;
