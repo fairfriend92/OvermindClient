@@ -511,7 +511,7 @@ public class SimulationService extends IntentService {
                     Log.e("KernelExecutor", stackTrace);
                 }
 
-                float[] weights = new float[0];
+                byte[] weights = new byte[0];
                 int[] weightsIndexes = new int[0];
 
                 if (newTerminal != null) {
@@ -620,7 +620,7 @@ public class SimulationService extends IntentService {
 
     public native long initializeOpenCL(String synapseKernel, short numOfNeurons, int filterOrder, short numOfSynapses);
     public native byte[] simulateDynamics(byte[] synapseInput, long openCLObject, short numOfNeurons,
-                                          float[] simulationParameters, float[] weights, int[] weightsIndexes,
+                                          float[] simulationParameters, byte[] weights, int[] weightsIndexes,
                                           int numOfWeights, int synapseInputLength);
     public native void closeOpenCL(long openCLObject);
 }
