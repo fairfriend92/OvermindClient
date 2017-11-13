@@ -2,6 +2,7 @@
 
 int SYNAPSE_FILTER_ORDER = 16;
 short NUM_SYNAPSES = 1024;
+short NUM_NEURONS = 1024;
 
 // Maximum number of multiplications needed to compute the current response of a synapse
  int maxNumberMultiplications = 0;
@@ -24,6 +25,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     // Compute the size of the GPU buffers
     SYNAPSE_FILTER_ORDER = jFilterOrder;
     NUM_SYNAPSES = jNumOfSynapses;
+    NUM_NEURONS = jNumOfNeurons;
     maxNumberMultiplications = (int) (SYNAPSE_FILTER_ORDER * SAMPLING_RATE / ABSOLUTE_REFRACTORY_PERIOD);
     synapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * 2 * sizeof(cl_float);
     synapseInputBufferSize =  maxNumberMultiplications * NUM_SYNAPSES * sizeof(cl_uchar);
@@ -201,7 +203,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
 }
 
 extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynamics(
-        JNIEnv *env, jobject thiz, jbyteArray jSynapseInput, jlong jOpenCLObject, jshort jNumOfNeurons, jfloatArray jSimulationParameters,
+        JNIEnv *env, jobject thiz, jbyteArray jSynapseInput, jlong jOpenCLObject, jfloatArray jSimulationParameters,
         jbyteArray jWeights, jintArray jWeightsIndexes, jint jNumOfWeights, jint jSynapseInputLength) {
     struct OpenCLObject *obj;
     obj = (struct OpenCLObject *)jOpenCLObject;
@@ -213,9 +215,9 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
     /* [Input initialization] */
 
-    /**
+    /*
      * Map the memory buffer that holds the input of the synapses, initialize it with the data received
-     * through the Java Native Interface and then un-map it
+     * through the Java Native Interface and then un-map it.
      */
 
     bool mapMemoryObjectsSuccess = true;
@@ -249,10 +251,10 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     env->ReleaseByteArrayElements(jSynapseInput, synapseInput, 0);
 
     /*
-     * If the weights have changed, initialize them too
+     * If the weights have changed, initialize them.
      */
 
-    // Proceed only if some weights have been changed
+    // Proceed only if some weights have been changed.
     if (jNumOfWeights != 0) {
 
         obj->synapseWeights = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
@@ -264,13 +266,13 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
             LOGE("Failed to map buffer");
         }
 
-        for (int i = 0; i < jNumOfWeights; i++)
-        {
-
-            obj->synapseWeights[weightsIndexes[i]] = (cl_float) (MIN_WEIGHT * weights[i]);
-            LOGD("%f ", obj->synapseWeights[weightsIndexes[i]]);
-
-        }
+        // Enter the block if the weights array is sparse.
+        if (jNumOfWeights != NUM_SYNAPSES * NUM_NEURONS)
+            for (int i = 0; i < jNumOfWeights; i++)
+                obj->synapseWeights[weightsIndexes[i]] = (cl_float) (MIN_WEIGHT * weights[i]);
+        else
+            for (int i = 0; i < NUM_SYNAPSES * NUM_NEURONS; i++)
+                obj->synapseWeights[i] = (cl_float) (MIN_WEIGHT * weights[i]);
 
         if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[1], obj->synapseWeights, 0, NULL, NULL)))
         {
@@ -292,6 +294,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     /* [Input initialization] */
 
     /* [Set Kernel Arguments] */
+
     // Tell the kernels which data to use before they are scheduled
     bool setKernelArgumentSuccess = true;
     setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 0, sizeof(cl_mem), &obj->memoryObjects[0]));
@@ -306,6 +309,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
         cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
         LOGE("Failed to set OpenCL kernel arguments");
     }
+
     /* [Set Kernel Arguments] */
 
     /* [Kernel execution] */
@@ -329,8 +333,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
     // Number of kernel instances. If the work group size allowed is smaller than that anticipated
     // some synapses won't be served at all.
-    //size_t localWorksize[1] = {kernelWorkGroupSize};
-    size_t globalWorksize[1] = {(size_t )localSize * jNumOfNeurons};
+    size_t globalWorksize[1] = {(size_t )localSize * NUM_NEURONS}; // TODO: num of neurons can be made constant.
 
     bool openCLFailed = false;
 
@@ -412,7 +415,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     char actionPotentials[dataBytes];
 
     // Simulate the neuronal dynamics using the current computed by the OpenCL implementation
-    for (short workId = 0; workId < jNumOfNeurons; workId++)
+    for (short workId = 0; workId < NUM_NEURONS; workId++)
     {
         // Convert back from int to float
         float unsignedCurrentFloat = (float)(obj->current[workId]) / 32768000.0f;
