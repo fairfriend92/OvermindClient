@@ -204,7 +204,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
 
 extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynamics(
         JNIEnv *env, jobject thiz, jbyteArray jSynapseInput, jlong jOpenCLObject, jfloatArray jSimulationParameters,
-        jbyteArray jWeights, jintArray jWeightsIndexes, jint jNumOfWeights, jint jSynapseInputLength) {
+        jbyteArray jWeights, jintArray jWeightsIndexes) {
     struct OpenCLObject *obj;
     obj = (struct OpenCLObject *)jOpenCLObject;
 
@@ -212,6 +212,9 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     jfloat *simulationParameters = env->GetFloatArrayElements(jSimulationParameters, JNI_FALSE);
     jbyte *weights = env->GetByteArrayElements(jWeights, JNI_FALSE);
     jint *weightsIndexes = env->GetIntArrayElements(jWeightsIndexes, JNI_FALSE);
+
+    int numOfWeights = env->GetArrayLength(jWeights);
+    int synapseInputLength = env->GetArrayLength(jSynapseInput);
 
     /* [Input initialization] */
 
@@ -221,7 +224,6 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
      */
 
     bool mapMemoryObjectsSuccess = true;
-
 
     // Map the buffer
     obj->synapseInput = (cl_uchar *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[2], CL_TRUE, CL_MAP_WRITE, 0, synapseInputBufferSize, 0, NULL, NULL, &obj->errorNumber);
@@ -235,7 +237,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     }
 
     // Initialize the buffer on the CPU side with the data received from Java Native Interface
-    for (int index = 0; index < jSynapseInputLength; index++)
+    for (int index = 0; index < synapseInputLength; index++)
     {
         obj->synapseInput[index] = (cl_uchar)synapseInput[index];
     }
@@ -255,7 +257,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
      */
 
     // Proceed only if some weights have been changed.
-    if (jNumOfWeights != 0) {
+    if (numOfWeights != 0) {
 
         obj->synapseWeights = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
         mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
@@ -267,8 +269,8 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
         }
 
         // Enter the block if the weights array is sparse.
-        if (jNumOfWeights != NUM_SYNAPSES * NUM_NEURONS)
-            for (int i = 0; i < jNumOfWeights; i++)
+        if (numOfWeights != NUM_SYNAPSES * NUM_NEURONS)
+            for (int i = 0; i < numOfWeights; i++)
                 obj->synapseWeights[weightsIndexes[i]] = (cl_float) (MIN_WEIGHT * weights[i]);
         else
             for (int i = 0; i < NUM_SYNAPSES * NUM_NEURONS; i++)
@@ -287,8 +289,8 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
     // How many elements of synapseInput[] does a single kernel compute?
     int inputsPerKernel = obj->floatVectorWidth * maxNumberMultiplications; //TODO: At the moment only floatVectorWidth = 4 & maxMultiplications = 4 are supported, therefore check this condition
-    int localSize = jSynapseInputLength % inputsPerKernel == 0 ?
-                    jSynapseInputLength / inputsPerKernel : jSynapseInputLength / inputsPerKernel + 1;
+    int localSize = synapseInputLength % inputsPerKernel == 0 ?
+                    synapseInputLength / inputsPerKernel : synapseInputLength / inputsPerKernel + 1;
     obj->localSize[0] = localSize;
 
     /* [Input initialization] */

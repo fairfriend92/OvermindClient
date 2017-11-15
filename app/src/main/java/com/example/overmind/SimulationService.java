@@ -519,8 +519,8 @@ public class SimulationService extends IntentService {
                     weightsIndexes = newTerminal.newWeightsIndexes;
                 }
 
-                outputSpikes = simulateDynamics(synapseInput, openCLObject, NUMBER_OF_NEURONS,
-                        SimulationParameters.getParameters(), weights, weightsIndexes, weights.length, synapseInput.length);
+                outputSpikes = simulateDynamics(synapseInput, openCLObject,
+                        SimulationParameters.getParameters(), weights, weightsIndexes);
 
                 // A return object on length zero means an error has occurred
                 if (outputSpikes.length == 0) {
@@ -540,6 +540,7 @@ public class SimulationService extends IntentService {
                     }
                 }
             }
+
             return openCLObject;
         }
     }
@@ -619,9 +620,7 @@ public class SimulationService extends IntentService {
     /* [End of the DataSender class] */
 
     public native long initializeOpenCL(String synapseKernel, short numOfNeurons, int filterOrder, short numOfSynapses);
-    public native byte[] simulateDynamics(byte[] synapseInput, long openCLObject, short numOfNeurons,
-                                          float[] simulationParameters, byte[] weights, int[] weightsIndexes,
-                                          int numOfWeights, int synapseInputLength);
+    public native byte[] simulateDynamics(byte[] synapseInput, long openCLObject, float[] simulationParameters, byte[] weights, int[] weightsIndexes);
     public native void closeOpenCL(long openCLObject);
 }
 
