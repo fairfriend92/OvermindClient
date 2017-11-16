@@ -6,7 +6,7 @@
 
 __kernel __attribute__((vec_type_hint(float4)))
 void simulate_dynamics(__constant float* restrict coeff, __global float* restrict weights,
-		       __global char* restrict input, volatile __global int* restrict current,
+		       __global char* restrict input,  __global int* restrict current,
 		       __constant int* restrict localSize) 
 {
   ushort workId = get_global_id(0) / localSize[0];

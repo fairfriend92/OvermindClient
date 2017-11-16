@@ -111,9 +111,6 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     float *neuronalDynVar = new float[2 * jNumOfNeurons];
     obj->neuronalDynVar = neuronalDynVar;
 
-    cl_int *localSize = new cl_int[1];
-    obj->localSize = localSize;
-
     // Ask the OpenCL implementation to allocate buffers to pass data to and from the kernels
     obj->memoryObjects[0] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY| CL_MEM_ALLOC_HOST_PTR, synapseCoeffBufferSize, NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
@@ -127,7 +124,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     obj->memoryObjects[3] = clCreateBuffer(obj->context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, currentBufferSize, NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-    obj->memoryObjects[4] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, sizeof(cl_int), obj->localSize, &obj->errorNumber);
+    obj->memoryObjects[4] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(cl_int), NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     if (!createMemoryObjectsSuccess)
@@ -291,7 +288,19 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     int inputsPerKernel = obj->floatVectorWidth * maxNumberMultiplications; //TODO: At the moment only floatVectorWidth = 4 & maxMultiplications = 4 are supported, therefore check this condition
     int localSize = synapseInputLength % inputsPerKernel == 0 ?
                     synapseInputLength / inputsPerKernel : synapseInputLength / inputsPerKernel + 1;
-    obj->localSize[0] = localSize;
+
+    // Map the local size value to the gpu memory buffer
+    obj->localSize = (cl_int *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[4], CL_TRUE, CL_MAP_WRITE, 0,
+                                                  sizeof(cl_int), 0, NULL, NULL, &obj->errorNumber);
+    mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
+    obj->localSize[0] = (cl_int)localSize;
+
+    if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[4], obj->localSize, 0, NULL, NULL)))
+    {
+        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+        LOGE("Unmap memory objects failed");
+    }
 
     /* [Input initialization] */
 
@@ -472,7 +481,6 @@ extern "C" void Java_com_example_overmind_SimulationService_closeOpenCL(
 
     // Delete the memory allocated by the host
     delete obj->neuronalDynVar;
-    delete obj->localSize;
 
     free(obj);
 }

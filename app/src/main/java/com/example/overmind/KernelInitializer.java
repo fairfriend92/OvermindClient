@@ -54,6 +54,10 @@ class KernelInitializer implements Runnable {
     // input of a certain terminal
     private static volatile byte[][] synapticInputCollection;
 
+    // Double array where, as before, the first dimension represents a presynaptic terminal and the
+    // one the firing rates of the neurons belonging to said terminal
+    private static volatile float[][] firingRatesCollection;
+
     KernelInitializer(BlockingQueue<Input> b, String s, int i, byte[] b1, Terminal t,
                       BlockingQueue<Object> b2) {
         this.kernelInitQueue = b;
@@ -86,7 +90,9 @@ class KernelInitializer implements Runnable {
 
                 // Create the array storing the kernel input derived from the spikes produced
                 // by each presynaptic Terminal
-                synapticInputCollection = new byte[numOfConnections][0];
+                synapticInputCollection = new byte[numOfConnections][];
+
+                firingRatesCollection = new float[numOfConnections][];
 
                 threadIsFree = new ArrayList<>(numOfConnections);
 
@@ -180,12 +186,15 @@ class KernelInitializer implements Runnable {
         byte[] inputSpikes = new byte[dataBytes];
         System.arraycopy(inputSpikesBuffer, 0, inputSpikes, 0, dataBytes);
 
-        byte[] synapticInput = new byte[presynTerminal.numOfNeurons * Constants.MAX_MULTIPLICATIONS];
-
         // The runnable initializes the kernel at lastTime n using the input at lastTime n - 1, which
         // must be first retrieved from synapticInputCollection
-        if (synapticInputCollection[presynTerminalIndex].length != 0)
-            System.arraycopy(synapticInputCollection[presynTerminalIndex], 0, synapticInput, 0, synapticInput.length);
+        byte[] synapticInput = synapticInputCollection[presynTerminalIndex] == null ?
+                new byte[presynTerminal.numOfNeurons * Constants.MAX_MULTIPLICATIONS] : synapticInputCollection[presynTerminalIndex];
+
+        // Like before, if this terminal info have been updated, create a new array. Otherwise retrieve
+        // the old firing rates.
+        float[] firingRates = firingRatesCollection[presynTerminalIndex] == null ?
+                new float[presynTerminal.numOfNeurons] : firingRatesCollection[presynTerminalIndex];
 
         /*
         For each synapse of the presynTerminal compute the appropriate input
@@ -209,12 +218,14 @@ class KernelInitializer implements Runnable {
 
             }
 
-            // Make room for the new input in case bitValue = 1
+            // Make room for the new input in case bitValue = 1. Update the firing rates too
             switch (bitValue) {
                 case 1:
+                    firingRates[indexI] += Constants.MEAN_RATE_INCREMENT * (1 - firingRates[indexI]); // Moving mean firing rate
                     synapticInput[indexI * Constants.MAX_MULTIPLICATIONS] = 1;
                     break;
                 default:
+                    firingRates[indexI] -= Constants.MEAN_RATE_INCREMENT * firingRates[indexI];
                     synapticInput[indexI * Constants.MAX_MULTIPLICATIONS] =
                             (synapticInput[indexI * Constants.MAX_MULTIPLICATIONS] != 0) && (synapticInput[indexI * Constants.MAX_MULTIPLICATIONS] < Constants.SYNAPSE_FILTER_ORDER) ?
                                     (byte)(synapticInput[indexI * Constants.MAX_MULTIPLICATIONS] + 1) : 0;
@@ -223,7 +234,8 @@ class KernelInitializer implements Runnable {
 
         }
 
-        synapticInputCollection[presynTerminalIndex] = synapticInput;
+        synapticInputCollection[presynTerminalIndex] = synapticInput; // Make sense only in the case synapticInputCollection[presynTerminalIndex] was originally null
+        firingRatesCollection[presynTerminalIndex] = firingRates;
 
         try {
             // If the terminal is clocked and it's just received a packet from the server, or if it
@@ -243,7 +255,7 @@ class KernelInitializer implements Runnable {
             }
 
             Log.d("KernelInitializer", " " + presynTerminal.ip);
-            kernelInitQueue.put(new Input(synapticInput, presynTerminalIndex, false, numOfConnections));
+            kernelInitQueue.put(new Input(synapticInput, presynTerminalIndex, false, numOfConnections, firingRates));
 
         } catch (InterruptedException e) {
             String stackTrace = Log.getStackTraceString(e);

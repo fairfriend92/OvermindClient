@@ -14,7 +14,7 @@ final class Constants {
     static int SYNAPSE_FILTER_ORDER = 16;
     private final static float SAMPLING_RATE = (float) 0.5;
     static final char MAX_MULTIPLICATIONS = (char) (SYNAPSE_FILTER_ORDER * SAMPLING_RATE / ABSOLUTE_REFRACTORY_PERIOD);
-    static int RATE_AVERAGE_SAMPLES = 10;
+    static float MEAN_RATE_INCREMENT = 0.1f; // This is the inverse of the number of samples used to compute the mean firing rate
 
     /* Connection constants */
 

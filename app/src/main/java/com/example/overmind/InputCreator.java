@@ -39,6 +39,9 @@ class InputCreator implements Runnable {
             // Array holding the complete input to be passed to KernelExecutor
             byte[] totalSynapticInput = new byte[Constants.NUMBER_OF_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
 
+            // Array holding the firing rates of the neurons of all the presynaptic terminals
+            float[] totalFiringRates = new float[Constants.NUMBER_OF_SYNAPSES];
+
             // Object holding the first input in the kernelInitialzer queue
             Input firstInput;
 
@@ -86,7 +89,7 @@ class InputCreator implements Runnable {
 
             }
 
-            int offset = 0;
+            int offset = 0, firingRateOffset = 0;
             boolean finished = false, inputIsNull = true;
 
             Log.d("InputCreator", "numOfConnections " + numOfConnections);
@@ -106,14 +109,16 @@ class InputCreator implements Runnable {
                     inputIsNull &= currentInput.inputIsEmpty;
 
                     int arrayLength = currentInput.synapticInput.length;
+                    int firingRateArrayLength = currentInput.firingRates.length;
 
                     // If the complete input we're building is made of inputs sampled at different
                     // times, there's a possibility that not all of them may fit. Therefore, we must
                     // check for the remaining space.
                     if ((Constants.NUMBER_OF_SYNAPSES * Constants.MAX_MULTIPLICATIONS - offset) >= arrayLength) {
                         System.arraycopy(currentInput.synapticInput, 0, totalSynapticInput, offset, arrayLength);
+                        System.arraycopy(currentInput.firingRates, 0, totalFiringRates, firingRateOffset, firingRateArrayLength);
                         offset += arrayLength;
-                        inputs.set(i, new Input(new byte[arrayLength], arrayLength, true, numOfConnections));
+                        inputs.set(i, new Input(new byte[arrayLength], arrayLength, true, numOfConnections, new float[firingRateArrayLength])); // TODO: This should be useless
                     }
                 } else
                     finished = true;
@@ -122,6 +127,10 @@ class InputCreator implements Runnable {
             // Resize totalSynapticInput
             byte[] resizedSynapticInput = new byte[offset];
             System.arraycopy(totalSynapticInput, 0, resizedSynapticInput, 0, offset);
+
+            // Resize totalFiringRates
+            float[] resizedFiringRates = new float[firingRateOffset];
+            System.arraycopy(totalFiringRates, 0, resizedFiringRates, 0, firingRateOffset);
 
             if (!inputIsNull) {
                 try {
@@ -177,13 +186,15 @@ class Input {
     int presynTerminalIndex;
     boolean inputIsEmpty;
     int numOfConnections;
+    float firingRates[];
 
-    Input(byte[] c, int i, boolean b, int i1) {
+    Input(byte[] c, int i, boolean b, int i1, float[] f) {
 
         synapticInput = c;
         presynTerminalIndex = i;
         inputIsEmpty = b;
         numOfConnections = i1;
+        firingRates = f;
 
     }
 
