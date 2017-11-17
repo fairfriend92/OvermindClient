@@ -66,7 +66,7 @@ public class SimulationService extends IntentService {
     BlockingQueue<Input> kernelInitQueue = new LinkedBlockingQueue<>(128);
 
     // Buffer that contains the total input put together by InputCreator
-    BlockingQueue<byte[]> inputCreatorQueue = new ArrayBlockingQueue<>(128);
+    BlockingQueue<InputCreatorOutput> inputCreatorQueue = new ArrayBlockingQueue<>(128);
 
     // Buffer that contains the spikes of the lateral connections.
     BlockingQueue<byte[]> lateralConnSpikesQueue = new ArrayBlockingQueue<>(128);
@@ -482,16 +482,16 @@ public class SimulationService extends IntentService {
      */
 
     private class KernelExecutor implements Callable<Long> {
-        private BlockingQueue<byte[]> inputCreatorQueue;
+        private BlockingQueue<InputCreatorOutput> inputCreatorQueue;
         private long openCLObject;
-        private byte[] synapseInput = new byte[Constants.NUMBER_OF_SYNAPSES * Constants.MAX_MULTIPLICATIONS];
+        private InputCreatorOutput inputCreatorOutput;
         private short data_bytes = (NUMBER_OF_NEURONS % 8) == 0 ?
                 (short) (NUMBER_OF_NEURONS / 8) : (short)(NUMBER_OF_NEURONS / 8 + 1);
         private byte[] outputSpikes = new byte[data_bytes];
         private BlockingQueue<byte[]> kernelExcQueue;
         private BlockingQueue<Terminal> newTerminalQueue;
 
-        KernelExecutor(BlockingQueue<byte[]> b, BlockingQueue<byte[]> b1, long l1, BlockingQueue<Terminal> b2) {
+        KernelExecutor(BlockingQueue<InputCreatorOutput> b, BlockingQueue<byte[]> b1, long l1, BlockingQueue<Terminal> b2) {
             inputCreatorQueue = b;
             kernelExcQueue = b1;
             openCLObject = l1;
@@ -504,7 +504,7 @@ public class SimulationService extends IntentService {
                 Terminal newTerminal = null;
 
                 try {
-                    synapseInput = inputCreatorQueue.take();
+                    inputCreatorOutput = inputCreatorQueue.take();
                     newTerminal = newTerminalQueue.poll();
                 } catch (InterruptedException e) {
                     String stackTrace = Log.getStackTraceString(e);
@@ -519,8 +519,8 @@ public class SimulationService extends IntentService {
                     weightsIndexes = newTerminal.newWeightsIndexes;
                 }
 
-                outputSpikes = simulateDynamics(synapseInput, openCLObject,
-                        SimulationParameters.getParameters(), weights, weightsIndexes);
+                outputSpikes = simulateDynamics(inputCreatorOutput.resizedSynapticInput, openCLObject,
+                        SimulationParameters.getParameters(), weights, weightsIndexes, inputCreatorOutput.resizedFiringRates);
 
                 // A return object on length zero means an error has occurred
                 if (outputSpikes.length == 0) {
@@ -620,7 +620,8 @@ public class SimulationService extends IntentService {
     /* [End of the DataSender class] */
 
     public native long initializeOpenCL(String synapseKernel, short numOfNeurons, int filterOrder, short numOfSynapses);
-    public native byte[] simulateDynamics(byte[] synapseInput, long openCLObject, float[] simulationParameters, byte[] weights, int[] weightsIndexes);
+    public native byte[] simulateDynamics(byte[] synapseInput, long openCLObject, float[] simulationParameters,
+                                          byte[] weights, int[] weightsIndexes, float[] presynFiringRates);
     public native void closeOpenCL(long openCLObject);
 }
 

@@ -77,8 +77,6 @@ class KernelInitializer implements Runnable {
 
         if (thisTerminal != null) {
 
-            Log.d("KernelInitializer", "test");
-
             // If the information of the terminal have been updated...
             synchronized (lock) {
 

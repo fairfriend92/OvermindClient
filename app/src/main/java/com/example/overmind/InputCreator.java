@@ -17,13 +17,13 @@ them to KernelExecutor
 class InputCreator implements Runnable {
 
     private BlockingQueue<Input> kernelInitQueue;
-    private BlockingQueue<byte[]> inputCreatorQueue;
+    private BlockingQueue<InputCreatorOutput> inputCreatorQueue;
     static AtomicLong waitTime = new AtomicLong(0);
     private int numOfConnections = 0;
     private boolean[] connectionsServed;
     private List<Input> inputs = new ArrayList<>();
 
-    InputCreator(BlockingQueue<Input> l, BlockingQueue<byte[]> b) {
+    InputCreator(BlockingQueue<Input> l, BlockingQueue<InputCreatorOutput> b) {
 
         kernelInitQueue = l;
         inputCreatorQueue = b;
@@ -118,6 +118,7 @@ class InputCreator implements Runnable {
                         System.arraycopy(currentInput.synapticInput, 0, totalSynapticInput, offset, arrayLength);
                         System.arraycopy(currentInput.firingRates, 0, totalFiringRates, firingRateOffset, firingRateArrayLength);
                         offset += arrayLength;
+                        firingRateOffset += firingRateArrayLength;
                         inputs.set(i, new Input(new byte[arrayLength], arrayLength, true, numOfConnections, new float[firingRateArrayLength])); // TODO: This should be useless
                     }
                 } else
@@ -134,7 +135,7 @@ class InputCreator implements Runnable {
 
             if (!inputIsNull) {
                 try {
-                    boolean inputSent = inputCreatorQueue.offer(resizedSynapticInput, 8 * waitTime.get(), TimeUnit.NANOSECONDS);
+                    boolean inputSent = inputCreatorQueue.offer(new InputCreatorOutput(resizedSynapticInput, resizedFiringRates), 8 * waitTime.get(), TimeUnit.NANOSECONDS);
 
                     if (inputSent)
                         Log.e("InputCreator", "input sent");
@@ -196,6 +197,17 @@ class Input {
         numOfConnections = i1;
         firingRates = f;
 
+    }
+
+}
+
+class InputCreatorOutput {
+    byte[] resizedSynapticInput;
+    float[] resizedFiringRates;
+
+    InputCreatorOutput(byte[] resizedSynapticInput, float[] resizedFiringRates) {
+        this.resizedSynapticInput = resizedSynapticInput;
+        this.resizedFiringRates = resizedFiringRates;
     }
 
 }

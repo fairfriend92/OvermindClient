@@ -12,7 +12,8 @@
 #define EXC_SYNAPSE_TIME_SCALE 1
 #define INH_SYNAPSE_TIME_SCALE 3
 #define ABSOLUTE_REFRACTORY_PERIOD 2
-#define MIN_WEIGHT 0.0078
+#define MIN_WEIGHT 0.0078f
+#define MEAN_RATE_INCREMENT 0.1f
 
 // Abbreviations
 #define potentialVar obj->neuronalDynVar[workId * 2]
@@ -39,8 +40,8 @@ struct OpenCLObject {
     cl_device_id device = 0;
     cl_kernel kernel = 0;
     cl_int errorNumber = 0;
-    int numberOfMemoryObjects = 5;
-    cl_mem memoryObjects[5] = {0, 0, 0, 0, 0};
+    int numberOfMemoryObjects = 7;
+    cl_mem memoryObjects[7] = {0, 0, 0, 0, 0, 0, 0};
     cl_uint floatVectorWidth;
     size_t maxWorkGroupSize;
 
@@ -50,6 +51,8 @@ struct OpenCLObject {
     cl_uchar *synapseInput;
     cl_int *current;
     cl_int *localSize;
+    cl_float *presynFiringRates;
+    cl_float *postsynFiringRates;
     float *neuronalDynVar;
 };
 
