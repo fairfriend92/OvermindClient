@@ -359,7 +359,7 @@ public class SimulationService extends IntentService {
         Shut down the Threads
          */
 
-        // TODO shutdown using variable shutdown.
+        // TODO: Do orderly shutdown and use shutdownNode as a last resort.
         terminalUpdaterExecutor.shutdownNow();
         kernelInitExecutor.shutdownNow();
         inputCreatorExecutor.shutdownNow();
@@ -513,14 +513,16 @@ public class SimulationService extends IntentService {
 
                 byte[] weights = new byte[0];
                 int[] weightsIndexes = new int[0];
+                byte[] updateWeightsFlags = new byte[0];
 
                 if (newTerminal != null) {
                     weights = newTerminal.newWeights;
                     weightsIndexes = newTerminal.newWeightsIndexes;
+                    updateWeightsFlags = newTerminal.updateWeightsFlags;
                 }
 
                 outputSpikes = simulateDynamics(inputCreatorOutput.resizedSynapticInput, openCLObject,
-                        SimulationParameters.getParameters(), weights, weightsIndexes, inputCreatorOutput.resizedFiringRates);
+                        SimulationParameters.getParameters(), weights, weightsIndexes, inputCreatorOutput.resizedFiringRates, updateWeightsFlags);
 
                 // A return object on length zero means an error has occurred
                 if (outputSpikes.length == 0) {
@@ -621,7 +623,7 @@ public class SimulationService extends IntentService {
 
     public native long initializeOpenCL(String synapseKernel, short numOfNeurons, int filterOrder, short numOfSynapses);
     public native byte[] simulateDynamics(byte[] synapseInput, long openCLObject, float[] simulationParameters,
-                                          byte[] weights, int[] weightsIndexes, float[] presynFiringRates);
+                                          byte[] weights, int[] weightsIndexes, float[] presynFiringRates, byte[] updateWeightsFlags);
     public native void closeOpenCL(long openCLObject);
 }
 

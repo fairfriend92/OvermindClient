@@ -84,3 +84,5 @@
 223	443	0	../../../../build/intermediates/cmake/debug/obj/arm64-v8a/libARM.so	1f0916ed236e2f12
 1	235	0	CMakeFiles/ARM.dir/src/main/jni/native_method.cpp.o	6eb71ce2f9a4bb2e
 235	460	0	../../../../build/intermediates/cmake/debug/obj/arm64-v8a/libARM.so	1f0916ed236e2f12
+1	319	0	CMakeFiles/ARM.dir/src/main/jni/native_method.cpp.o	6eb71ce2f9a4bb2e
+319	622	0	../../../../build/intermediates/cmake/debug/obj/arm64-v8a/libARM.so	1f0916ed236e2f12

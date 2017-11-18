@@ -6,19 +6,23 @@
 #define MAX_NUMBER_MULTIPLICATION 4 
 
 __kernel __attribute__((vec_type_hint(float4)))
-void simulate_dynamics(__constant float* restrict coeff, __global float* restrict weights,
+void simulate_dynamics(__constant float* restrict coeff, __global float* restrict weights, // TODO: Coalesce some of the buffers into one?
 		       __global uchar* restrict input,  __global int* restrict current,
 		       __constant int* restrict localSize, __global float* restrict presynFiringRates,
-		       __global float* restrict postsynFiringRates) 
+		       __global float* restrict postsynFiringRates, __global uchar* restrict updateWeightsFlags)
+// TODO: input, presynFiringRates, postsynFiringRates and updateWeightsFlags could be __constant...
 {
   ushort workId = get_global_id(0) / localSize[0];
   ushort localId = get_global_id(0) - workId * localSize[0];
-  uint weightsOffset = workId * (localSize[0] * FLOAT_VECTOR_WIDTH);
+  uint weightsOffset = workId * (localSize[0] * FLOAT_VECTOR_WIDTH); // The weights buffer is NOT padded with 0s for the synapses that are not active
 
   uchar16 index = vload16(localId, input);
 
   // Synaptic weights 
   float4 weightsVec = vload4(localId, weights + weightsOffset);
+
+  // Weights flags: indicates whether the respective weights should be updated or note. 
+  float4 weightsFlagsVec = vload4(localId, weights + weightsOffset);
 
   // Firing rates of the presynaptic neurons
   float4 preFiringRatesVec = vload4(localId / MAX_NUMBER_MULTIPLICATION, presynFiringRates);  
@@ -46,12 +50,11 @@ void simulate_dynamics(__constant float* restrict coeff, __global float* restric
   int increment = result > 0 ? resultInt : (-resultInt);
 
   // Update the weights using the rate based STDP learning rule
-  weightsVec += postsynFiringRates[workId] * (preFiringRatesVec - weightsVec);
+  weightsVec += weightsFlagsVec * postsynFiringRates[workId] * (preFiringRatesVec - weightsVec);
   vstore4(weightsVec, localId, weights + weightsOffset);
 
   // Increment the synaptic current
   atomic_add(&current[workId], increment);
-
 }
     
   

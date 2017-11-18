@@ -40,8 +40,8 @@ struct OpenCLObject {
     cl_device_id device = 0;
     cl_kernel kernel = 0;
     cl_int errorNumber = 0;
-    int numberOfMemoryObjects = 7;
-    cl_mem memoryObjects[7] = {0, 0, 0, 0, 0, 0, 0};
+    int numberOfMemoryObjects = 8;
+    cl_mem memoryObjects[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     cl_uint floatVectorWidth;
     size_t maxWorkGroupSize;
 
@@ -53,6 +53,7 @@ struct OpenCLObject {
     cl_int *localSize;
     cl_float *presynFiringRates;
     cl_float *postsynFiringRates;
+    cl_float *updateWeightsFlags;
     float *neuronalDynVar;
 };
 
