@@ -31,13 +31,13 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     maxNumberMultiplications = (int) (SYNAPSE_FILTER_ORDER * SAMPLING_RATE / ABSOLUTE_REFRACTORY_PERIOD);
     synapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * 2 * sizeof(cl_float);
     synapseInputBufferSize =  maxNumberMultiplications * NUM_SYNAPSES * sizeof(cl_uchar);
-    synapseWeightsBufferSize = NUM_SYNAPSES * jNumOfNeurons * sizeof(cl_float);
-    currentBufferSize = jNumOfNeurons * sizeof(cl_int);
+    synapseWeightsBufferSize = NUM_SYNAPSES * NUM_NEURONS * sizeof(cl_float);
+    currentBufferSize = NUM_NEURONS * sizeof(cl_int);
     presynFiringRatesBufferSize = NUM_SYNAPSES * sizeof(cl_float);
     postsynFiringRatesBufferSize = NUM_NEURONS * sizeof(cl_float);
 
     // Compute the number of bytes needed to hold all the spikes
-    dataBytes = (jNumOfNeurons % 8) == 0 ? (short)(jNumOfNeurons / 8) : (short)(jNumOfNeurons / 8 + 1);
+    dataBytes = (NUM_NEURONS % 8) == 0 ? (short)(NUM_NEURONS / 8) : (short)(NUM_NEURONS / 8 + 1);
 
     const char *kernelString = env->GetStringUTFChars(jKernel, JNI_FALSE);
 
@@ -112,7 +112,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     obj->numberOfMemoryObjects= 8;
 
     // Allocate memory from the host
-    float *neuronalDynVar = new float[2 * jNumOfNeurons];
+    float *neuronalDynVar = new float[2 * NUM_NEURONS];
     obj->neuronalDynVar = neuronalDynVar;
 
     // Ask the OpenCL implementation to allocate buffers to pass data to and from the kernels
@@ -183,9 +183,9 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
 
     // Synaptic weights and relative flags initialization
     for (int index = 0; index < NUM_SYNAPSES * NUM_NEURONS; index++) {
-        obj->synapseWeights[index] = index % 2 == 0 ? 1.0f : - 0.33f;
-        obj->updateWeightsFlags[index] = 1.0f;
-        //obj->synapseWeights[index] = 0.0f;
+        //obj->synapseWeights[index] = index % 2 == 0 ? 1.0f : - 0.33f;
+        obj->updateWeightsFlags[index] = 0.0f;
+        obj->synapseWeights[index] = 0.0f;
     }
 
     // Initialization of dynamic variables, of the buffer which will hold the total synaptic
@@ -324,14 +324,20 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
         }
 
         // Enter the block if the weights array is sparse.
-        if (numOfNewWeights != numOfActiveSynapses)
+        if (numOfNewWeights != numOfActiveSynapses * NUM_NEURONS)
+        {
+            LOGD("test0");
             for (int i = 0; i < numOfNewWeights; i++)
                 obj->synapseWeights[weightsIndexes[i]] = (cl_float) (MIN_WEIGHT * weights[i]);
+        }
         else
-            for (int i = 0; i < numOfActiveSynapses; i++) {
+        {
+            LOGD("test1");
+            for (int i = 0; i < numOfActiveSynapses * NUM_NEURONS; i++) {
                 obj->synapseWeights[i] = (cl_float) (MIN_WEIGHT * weights[i]);
                 obj->updateWeightsFlags[i] = (cl_float) updateWeightsFlags[i]; // It is assumed that whenever the weights of all the active synapses are updated, so are the respective flags.
             }
+        }
 
         if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[1], obj->synapseWeights, 0, NULL, NULL)))
         {
@@ -352,7 +358,11 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     }
 
     // How many elements of synapseInput[] does a single kernel compute?
-    int inputsPerKernel = obj->floatVectorWidth * maxNumberMultiplications; //TODO: At the moment only floatVectorWidth = 4 & maxMultiplications = 4 are supported, therefore check this condition
+    int inputsPerKernel = obj->floatVectorWidth * 4; // Each input is a char, therefore the char vector width is floatVectorWidth * 4
+
+    LOGD("%d", synapseInputLength);
+
+    // How many kernels are needed to server all the active synapses for a single neuron?
     int localSize = synapseInputLength % inputsPerKernel == 0 ?
                     synapseInputLength / inputsPerKernel : synapseInputLength / inputsPerKernel + 1;
 
@@ -393,7 +403,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
     // Number of kernel instances. If the work group size allowed is smaller than that anticipated
     // some synapses won't be served at all.
-    size_t globalWorksize[1] = {(size_t )localSize * NUM_NEURONS}; // TODO: num of neurons can be made constant.
+    size_t globalWorksize[1] = {(size_t )localSize * NUM_NEURONS};
 
     bool openCLFailed = false;
 

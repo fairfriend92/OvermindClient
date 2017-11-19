@@ -1,9 +1,8 @@
 /* This kernel is for devices with 128 bits wide registers. 
    It computes 4 synapses at a time. */
 
-#define FLOAT_VECTOR_WIDTH 4
+#define SYNAPSES_PER_KERNEL 4
 #define SYNAPSE_FILTER_ORDER 16
-#define MAX_NUMBER_MULTIPLICATION 4 
 
 __kernel __attribute__((vec_type_hint(float4)))
 void simulate_dynamics(__constant float* restrict coeff, __global float* restrict weights, // TODO: Coalesce some of the buffers into one?
@@ -14,7 +13,7 @@ void simulate_dynamics(__constant float* restrict coeff, __global float* restric
 {
   ushort workId = get_global_id(0) / localSize[0];
   ushort localId = get_global_id(0) - workId * localSize[0];
-  uint weightsOffset = workId * (localSize[0] * FLOAT_VECTOR_WIDTH); // The weights buffer is NOT padded with 0s for the synapses that are not active
+  uint weightsOffset = workId * localSize[0]; // The weights buffer is NOT padded with 0s for the synapses that are not active
 
   uchar16 index = vload16(localId, input);
 
@@ -25,7 +24,7 @@ void simulate_dynamics(__constant float* restrict coeff, __global float* restric
   float4 weightsFlagsVec = vload4(localId, weights + weightsOffset);
 
   // Firing rates of the presynaptic neurons
-  float4 preFiringRatesVec = vload4(localId / MAX_NUMBER_MULTIPLICATION, presynFiringRates);  
+  float4 preFiringRatesVec = vload4(localId, presynFiringRates);  
   
   /*
    * The coefficients of the synpatic filter for the inhibitory synapses are stored at 
