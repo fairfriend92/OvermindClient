@@ -281,9 +281,7 @@ public class SimulationService extends IntentService {
                         short dataBytes = (NUMBER_OF_NEURONS % 8) == 0 ?
                                 (short) (NUMBER_OF_NEURONS / 8) : (short) (NUMBER_OF_NEURONS / 8 + 1);
                         byte[] dummyInput = new byte[dataBytes];
-                        Future<?> future = kernelInitExecutor.submit(new KernelInitializer(kernelInitQueue, thisTerminal.ip,
-                                thisTerminal.natPort, dummyInput, thisTerminal, clockSignalsQueue));
-                        kernelInitFutures.add(future);
+                        lateralConnSpikesQueue.put(dummyInput);
                     }
                 }
 
