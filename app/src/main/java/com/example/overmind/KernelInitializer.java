@@ -239,7 +239,7 @@ class KernelInitializer implements Runnable {
             // If the terminal is clocked and it's just received a packet from the server, or if it
             // is not and the first connection has fired again, then DataSender can send the latest
             // array of spikes produced by KernelExecutor
-            if ((!connectedToServer && presynTerminalIndex == 0) ||
+            if ((!connectedToServer && presynTerminalIndex == 0) || //TODO: Instead of any connection (presynTerminalIndex == 0) we should wait for the fastest one.
                     (connectedToServer && presynTerminalIP.equals(Constants.SERVER_IP))) {
 
                 // Put in the queue an object which unblocks the waiting DataSender
@@ -252,7 +252,6 @@ class KernelInitializer implements Runnable {
 
             }
 
-            Log.d("KernelInitializer", " " + presynTerminal.ip);
             kernelInitQueue.put(new Input(synapticInput, presynTerminalIndex, false, numOfConnections, firingRates));
 
         } catch (InterruptedException e) {

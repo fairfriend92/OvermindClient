@@ -100,9 +100,9 @@ class InputCreator implements Runnable {
                 // If the input is null then the respective connection has not fired yet
                 if (inputs.get(i) != null) {
 
-                    Log.d("InputCreator", "input " + i + " is not null");
-
                     Input currentInput = inputs.get(i);
+
+                    Log.d("InputCreator", "input " + i + " is not null. currentInput is empty: " + currentInput.inputIsEmpty);
 
                     // If all the inputs are empty, then there's no need to pass them to
                     // KernelExecutor. The flag signals whether they should be passed or not
@@ -111,18 +111,43 @@ class InputCreator implements Runnable {
                     int arrayLength = currentInput.synapticInput.length;
                     int firingRateArrayLength = currentInput.firingRates.length;
 
-                    // If the complete input we're building is made of inputs sampled at different
-                    // times, there's a possibility that not all of them may fit. Therefore, we must
-                    // check for the remaining space.
+                    /*
+                    If the complete input we're building is made of inputs sampled at different
+                    times, there's a possibility that not all of them may fit. Therefore, we must
+                    check for the remaining space.
+                      */
+
                     if ((Constants.NUMBER_OF_SYNAPSES * Constants.MAX_MULTIPLICATIONS - offset) >= arrayLength) {
                         System.arraycopy(currentInput.synapticInput, 0, totalSynapticInput, offset, arrayLength);
                         System.arraycopy(currentInput.firingRates, 0, totalFiringRates, firingRateOffset, firingRateArrayLength);
                         offset += arrayLength;
                         firingRateOffset += firingRateArrayLength;
-                        inputs.set(i, new Input(new byte[arrayLength], arrayLength, true, numOfConnections, new float[firingRateArrayLength])); // TODO: This should be useless
+
+                        // Putting an empty input in the collection allows to keep track of the length of each input which forms the totalSynapticInput
+                        inputs.set(i, new Input(new byte[arrayLength], arrayLength, true, numOfConnections, currentInput.firingRates));
                     }
-                } else
+                } else if (i == Constants.INDEX_OF_LATERAL_CONN) { // At the beginning the input of the lateral conn. is necessarily true, therefore handle the case separately.
+
+                    /*
+                    If the input of the lateral connections has not been registered yet, put an empty array
+                    in its stead and put another empty array standing for the firing rates.
+                     */
+
+                    int arrayLength = Constants.NUMBER_OF_NEURONS * Constants.MAX_MULTIPLICATIONS;
+                    int firingRateArrayLength = Constants.NUMBER_OF_NEURONS;
+
+                    byte[] synapticInput = new byte[arrayLength];
+                    float[] firingRates = new float[firingRateArrayLength];
+
+                    System.arraycopy(synapticInput, 0, totalSynapticInput, offset, arrayLength);
+                    System.arraycopy(firingRates, 0, totalFiringRates, firingRateOffset, firingRateArrayLength);
+                    offset += arrayLength;
+                    firingRateOffset += firingRateArrayLength;
+
+                    inputs.set(i, new Input(synapticInput, arrayLength, true, numOfConnections, firingRates));
+                } else {
                     finished = true;
+                }
             }
 
             // Resize totalSynapticInput

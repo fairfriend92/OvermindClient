@@ -73,6 +73,7 @@ public class MainActivity extends AppCompatActivity {
         Constants.NUMBER_OF_NEURONS = 1;
         Constants.NUMBER_OF_SYNAPSES = 1024;
         Constants.LATERAL_CONNECTIONS = false;
+        Constants.INDEX_OF_LATERAL_CONN = -1;
 
         // Bring back the home menu view
         setContentView(R.layout.pre_connection);
@@ -288,6 +289,7 @@ public class MainActivity extends AppCompatActivity {
         // Get the server ip from the text box
         Constants.SERVER_IP = editServerIP.getText().toString();
         server.ip = Constants.SERVER_IP;
+        server.serverIP = Constants.SERVER_IP;
 
         try {
             // Get the number of neurons for the local netwowrk from the text box
@@ -384,6 +386,7 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case R.id.checkbox_lateral_connections:
                 Constants.LATERAL_CONNECTIONS = checked;
+                Constants.INDEX_OF_LATERAL_CONN = checked ? 0 : -1;
                 break;
         }
     }

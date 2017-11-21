@@ -183,9 +183,9 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
 
     // Synaptic weights and relative flags initialization
     for (int index = 0; index < NUM_SYNAPSES * NUM_NEURONS; index++) {
-        //obj->synapseWeights[index] = index % 2 == 0 ? 1.0f : - 0.33f;
-        obj->updateWeightsFlags[index] = 0.0f;
-        obj->synapseWeights[index] = 0.0f;
+        obj->synapseWeights[index] = index % 2 == 0 ? (cl_float)1.0f : (cl_float)(- 0.33f);
+        obj->updateWeightsFlags[index] = (cl_float)0.0f;
+        //obj->synapseWeights[index] = 0.0f;
     }
 
     // Initialization of dynamic variables, of the buffer which will hold the total synaptic
@@ -359,8 +359,6 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
     // How many elements of synapseInput[] does a single kernel compute?
     int inputsPerKernel = obj->floatVectorWidth * 4; // Each input is a char, therefore the char vector width is floatVectorWidth * 4
-
-    LOGD("%d", synapseInputLength);
 
     // How many kernels are needed to server all the active synapses for a single neuron?
     int localSize = synapseInputLength % inputsPerKernel == 0 ?

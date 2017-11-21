@@ -8,7 +8,7 @@ __kernel __attribute__((vec_type_hint(float4)))
 void simulate_dynamics(__constant float* restrict coeff, __global float* restrict weights, // TODO: Coalesce some of the buffers into one?
 		       __global uchar* restrict input,  __global int* restrict current,
 		       __constant int* restrict localSize, __global float* restrict presynFiringRates,
-		       __global float* restrict postsynFiringRates, __global uchar* restrict updateWeightsFlags)
+		       __global float* restrict postsynFiringRates, __global float* restrict updateWeightsFlags)
 // TODO: input, presynFiringRates, postsynFiringRates and updateWeightsFlags could be __constant...
 {
   ushort workId = get_global_id(0) / localSize[0];
@@ -21,7 +21,7 @@ void simulate_dynamics(__constant float* restrict coeff, __global float* restric
   float4 weightsVec = vload4(localId, weights + weightsOffset);
 
   // Weights flags: indicates whether the respective weights should be updated or note. 
-  float4 weightsFlagsVec = vload4(localId, weights + weightsOffset);
+  float4 weightsFlagsVec = vload4(localId, updateWeightsFlags + weightsOffset);
 
   // Firing rates of the presynaptic neurons
   float4 preFiringRatesVec = vload4(localId, presynFiringRates);  
