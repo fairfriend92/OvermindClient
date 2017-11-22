@@ -308,6 +308,8 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
      * If the weights have changed, initialize them.
      */
 
+    LOGD("%d %d %d %d", numOfActiveSynapses, NUM_NEURONS, numOfNewWeights, env->GetArrayLength(jUpdateWeightsFlags));
+
     // Proceed only if some weights have been changed.
     if (numOfNewWeights != 0) {
 
@@ -324,7 +326,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
         }
 
         // Enter the block if the weights array is sparse.
-        if (numOfNewWeights != numOfActiveSynapses * NUM_NEURONS)
+        if (env->GetArrayLength(jWeightsIndexes) == numOfNewWeights) // The two numbers are equal if for each index there is a corresponding weight
         {
             LOGD("test0");
             for (int i = 0; i < numOfNewWeights; i++)
@@ -333,7 +335,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
         else
         {
             LOGD("test1");
-            for (int i = 0; i < numOfActiveSynapses * NUM_NEURONS; i++) {
+            for (int i = 0; i < numOfNewWeights; i++) {
                 obj->synapseWeights[i] = (cl_float) (MIN_WEIGHT * weights[i]);
                 obj->updateWeightsFlags[i] = (cl_float) updateWeightsFlags[i]; // It is assumed that whenever the weights of all the active synapses are updated, so are the respective flags.
             }
