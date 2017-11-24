@@ -92,8 +92,6 @@ class InputCreator implements Runnable {
             int offset = 0, firingRateOffset = 0;
             boolean finished = false, inputIsNull = true;
 
-            Log.d("InputCreator", "numOfConnections " + numOfConnections);
-
             // Iterate over the collection of inputs taken from the kernelInitialzer queue
             for (int i = 0; i < numOfConnections && !finished; i++) {
 

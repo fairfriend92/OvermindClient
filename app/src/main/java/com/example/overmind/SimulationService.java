@@ -102,7 +102,7 @@ public class SimulationService extends IntentService {
     ExecutorService terminalUpdaterExecutor = Executors.newSingleThreadExecutor();
 
     // Buffers containing the last updated info about the local network
-    BlockingQueue<Terminal> updatedTerminal = new ArrayBlockingQueue<>(4);
+    BlockingQueue<Terminal> updatedTerminal = new ArrayBlockingQueue<>(1);
     BlockingQueue<Terminal> newWeights = new ArrayBlockingQueue<>(4);
 
     public SimulationService() {
@@ -241,12 +241,29 @@ public class SimulationService extends IntentService {
         // Number of bytes necessary to hold the longest input among those of the presynaptic terminals
         short maxDataBytes = 1;
 
+        Terminal thisTerminal = null;
+
+        // Flag that signals whether the receive() call to the datagram socket timed out or whether
+        // a packet was received.
+        boolean receiveTimedOut = false;
+
         while (!shutdown) {
-            Terminal thisTerminal;
 
             try {
 
-                thisTerminal = updatedTerminal.poll(100, TimeUnit.MICROSECONDS);
+                // Iterate over the list of futures to remove those that signal that the respective
+                // threads are done
+                Iterator iterator = kernelInitFutures.iterator();
+                while (iterator.hasNext()) {
+                    Future<?> future = (Future<?>) iterator.next();
+                    if (future.isDone())
+                        iterator.remove();
+                }
+
+                // If datagramSocket.receive() timed out, the last Terminal retrieved has not been
+                // passed to KernelInitializer and may still be valid
+                if (!receiveTimedOut)
+                    thisTerminal = updatedTerminal.poll();
 
                 // If the terminal info have been updated
                 if (thisTerminal != null) {
@@ -255,10 +272,12 @@ public class SimulationService extends IntentService {
                     SimulationService.thisTerminal = thisTerminal;
 
                     // Change the size of the pool of kernelInitExecutors appropriately
-                    int poolSize = thisTerminal.presynapticTerminals.size() > 0 ? thisTerminal.presynapticTerminals.size() :
-                            kernelInitExecutor.getPoolSize();
-                    kernelInitExecutor.setCorePoolSize(poolSize);
-                    kernelInitExecutor.setMaximumPoolSize(poolSize);
+                    int corePoolSize = thisTerminal.presynapticTerminals.size() > 0 ? thisTerminal.presynapticTerminals.size() :
+                            kernelInitExecutor.getCorePoolSize();
+                    int maximumPoolSize = thisTerminal.presynapticTerminals.size() > kernelInitExecutor.getMaximumPoolSize() ?
+                            thisTerminal.presynapticTerminals.size() : kernelInitExecutor.getMaximumPoolSize();
+                    kernelInitExecutor.setCorePoolSize(corePoolSize);
+                    kernelInitExecutor.setMaximumPoolSize(maximumPoolSize);
 
                     // Update the value of maxDataBytes based on the new inputs
                     maxDataBytes = 1; // First reset the value, in case the previous biggest input is no longer present
@@ -272,6 +291,12 @@ public class SimulationService extends IntentService {
                     int indexOfLateralConn = thisTerminal.presynapticTerminals.indexOf(thisTerminal);
                     Constants.LATERAL_CONNECTIONS = indexOfLateralConn != -1;
 
+                    // If the info about the terminal have been updated, wait for the threads to finish
+                    // before dispatching new ones
+                    for (Future<?> future : kernelInitFutures)
+                        future.get();
+                    kernelInitFutures = new ArrayList<>(kernelInitExecutor.getMaximumPoolSize());
+
                 }
 
                 // Receive the latest packet containing the spikes and store its address
@@ -280,23 +305,7 @@ public class SimulationService extends IntentService {
                 datagramSocket.receive(inputSpikesPacket);
                 inputSpikesBuffer = inputSpikesPacket.getData();
                 InetAddress presynapticTerminalAddr = inputSpikesPacket.getAddress();
-
-                // Iterate over the list of futures to remove those that signal that the respective
-                // threads are done
-                Iterator iterator = kernelInitFutures.iterator();
-                while (iterator.hasNext()) {
-                    Future<?> future = (Future<?>) iterator.next();
-                    if (future.isDone())
-                        iterator.remove();
-                }
-
-                // If the info about the terminal have been updated, wait for the threads to finish
-                // before dispatching new ones
-                if (thisTerminal != null) {
-                    for (Future<?> future : kernelInitFutures)
-                        future.get();
-                    kernelInitFutures = new ArrayList<>();
-                }
+                receiveTimedOut = false;
 
                 // Put the workload in the queue
                 Future<?> future = kernelInitExecutor.submit(new KernelInitializer(kernelInitQueue, presynapticTerminalAddr.toString().substring(1),
@@ -305,6 +314,7 @@ public class SimulationService extends IntentService {
                 kernelInitFutures.add(future);
 
             } catch (SocketTimeoutException e) {
+                receiveTimedOut = true;
                 String stackTrace = Log.getStackTraceString(e);
                 Log.e("SimulationService", stackTrace);
                 if (!getNetworkClass(this).equals("4G")) {
@@ -428,15 +438,11 @@ public class SimulationService extends IntentService {
                     Object obj = MainActivity.thisClient.objectInputStream.readObject();
                     if (obj instanceof Terminal) {
                         thisTerminal = ((Terminal) obj);
-                        try {
-                            updatedTerminal.put(thisTerminal);
-                            for (Terminal presynapticTerminal : thisTerminal.presynapticTerminals){
-                                Log.e("TerminalUpdater", " " + presynapticTerminal.ip);
-                            }
-                            newWeights.put(thisTerminal);
-                        } catch (InterruptedException e) {
-                            String stackTrace = Log.getStackTraceString(e);
-                            Log.e("TerminalUpdater", stackTrace);
+                        updatedTerminal.clear(); // The last terminal is received is only one that matters, thus the queue can be cleared
+                        updatedTerminal.offer(thisTerminal);
+                        newWeights.offer(thisTerminal); // Vice versa, it may be important to conserve more than one weights array if the simulation has not updated them yet
+                        for (Terminal presynConn : thisTerminal.presynapticTerminals) {
+                            Log.d("TerminalUpdater", " " + presynConn.ip);
                         }
                     }
                 } catch (IOException | ClassNotFoundException e) {
