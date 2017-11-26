@@ -84,6 +84,9 @@ public class SimulationService extends IntentService {
     // Buffer where to put the array of spikes produced by the local network
     BlockingQueue<byte[]> kernelExcQueue = new ArrayBlockingQueue<>(128);
 
+    // Buffers from the spikes coming from the presynaptic connections
+    BlockingQueue<byte[]> receivedSpikes = new ArrayBlockingQueue<>(128);
+
     // Executor for the thread that calls the OpenCL method
     ExecutorService kernelExcExecutor = Executors.newSingleThreadExecutor();
 
@@ -307,6 +310,9 @@ public class SimulationService extends IntentService {
                 InetAddress presynapticTerminalAddr = inputSpikesPacket.getAddress();
                 receiveTimedOut = false;
 
+                receivedSpikes.offer(inputSpikesBuffer);
+                inputSpikesBuffer = receivedSpikes.poll();
+
                 // Put the workload in the queue
                 Future<?> future = kernelInitExecutor.submit(new KernelInitializer(kernelInitQueue, presynapticTerminalAddr.toString().substring(1),
                         inputSpikesPacket.getPort(), inputSpikesBuffer, thisTerminal, clockSignalsQueue));
@@ -442,7 +448,7 @@ public class SimulationService extends IntentService {
                         updatedTerminal.offer(thisTerminal);
                         newWeights.offer(thisTerminal); // Vice versa, it may be important to conserve more than one weights array if the simulation has not updated them yet
                         for (Terminal presynConn : thisTerminal.presynapticTerminals) {
-                            Log.d("TerminalUpdater", " " + presynConn.ip);
+                            Log.d("TerminalUpdater", "KernelInitializer " + presynConn.ip);
                         }
                     }
                 } catch (IOException | ClassNotFoundException e) {
@@ -564,19 +570,24 @@ public class SimulationService extends IntentService {
                 }
 
                 if (outputSpikes != null) {
+
                     for (Terminal postsynapticTerminal : thisTerminal.postsynapticTerminals) {
 
-                        try {
-                            InetAddress postsynapticTerminalAddr = InetAddress.getByName(postsynapticTerminal.ip);
-                            DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, dataBytes, postsynapticTerminalAddr, postsynapticTerminal.natPort);
-                            outputSocket.send(outputSpikesPacket);
-                        } catch (IOException e) {
-                            String stackTrace = Log.getStackTraceString(e);
-                            Log.e("DataSender", stackTrace);
+                        // The spikes are sent through the Internet in case of lateral connections
+                        if (!postsynapticTerminal.equals(thisTerminal)) {
+                            try {
+                                InetAddress postsynapticTerminalAddr = InetAddress.getByName(postsynapticTerminal.ip);
+                                DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, dataBytes, postsynapticTerminalAddr, postsynapticTerminal.natPort);
+                                outputSocket.send(outputSpikesPacket);
+                            } catch (IOException e) {
+                                String stackTrace = Log.getStackTraceString(e);
+                                Log.e("DataSender", stackTrace);
+                            }
+                        } else {
+                            receivedSpikes.offer(outputSpikes);
                         }
 
                     }
-                     /* [End of for each loop] */
 
                 } else {
 

@@ -100,8 +100,6 @@ class InputCreator implements Runnable {
 
                     Input currentInput = inputs.get(i);
 
-                    Log.d("InputCreator", "input " + i + " is not null. currentInput is empty: " + currentInput.inputIsEmpty);
-
                     // If all the inputs are empty, then there's no need to pass them to
                     // KernelExecutor. The flag signals whether they should be passed or not
                     inputIsNull &= currentInput.inputIsEmpty;
@@ -124,7 +122,7 @@ class InputCreator implements Runnable {
                         // Putting an empty input in the collection allows to keep track of the length of each input which forms the totalSynapticInput
                         inputs.set(i, new Input(new byte[arrayLength], arrayLength, true, numOfConnections, currentInput.firingRates));
                     }
-                } else if (i == Constants.INDEX_OF_LATERAL_CONN) { // At the beginning the input of the lateral conn. is necessarily true, therefore handle the case separately.
+                } else if (i == Constants.INDEX_OF_LATERAL_CONN) { // At the beginning the input of the lateral conn. is necessarily null, therefore handle the case separately.
 
                     /*
                     If the input of the lateral connections has not been registered yet, put an empty array

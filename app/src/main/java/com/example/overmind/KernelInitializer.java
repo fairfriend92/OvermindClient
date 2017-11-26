@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 class KernelInitializer implements Runnable {
@@ -47,9 +48,6 @@ class KernelInitializer implements Runnable {
     // Atomic long used to compute the refresh rate at which new packets are being received
     private static AtomicLong lastTime = new AtomicLong(0);
 
-    // Flag that signals whether the physical terminal is clocked by the server
-    private static volatile boolean connectedToServer = false;
-
     // Double array with one dimension representing the presynaptic terminals and the other the
     // input of a certain terminal
     private static volatile byte[][] synapticInputCollection;
@@ -57,6 +55,9 @@ class KernelInitializer implements Runnable {
     // Double array where, as before, the first dimension represents a presynaptic terminal and the
     // one the firing rates of the neurons belonging to said terminal
     private static volatile float[][] firingRatesCollection;
+
+    // Index of the terminal whose input should be used as clock of the DataSender thread
+    private static AtomicInteger clockTerminalIndex = new AtomicInteger(0);
 
     KernelInitializer(BlockingQueue<Input> b, String s, int i, byte[] b1, Terminal t,
                       BlockingQueue<Object> b2) {
@@ -95,8 +96,6 @@ class KernelInitializer implements Runnable {
                 threadIsFree = new ArrayList<>(numOfConnections);
 
                 presynTerminalQueue = new ArrayList<>(numOfConnections);
-
-                connectedToServer = presynapticTerminals.contains(MainActivity.server);
 
                 for (int i = 0; i < numOfConnections; i++) {
                     threadsLocks[i] = new Object();
@@ -236,19 +235,38 @@ class KernelInitializer implements Runnable {
         firingRatesCollection[presynTerminalIndex] = firingRates;
 
         try {
-            // If the terminal is clocked and it's just received a packet from the server, or if it
-            // is not and the first connection has fired again, then DataSender can send the latest
-            // array of spikes produced by KernelExecutor
-            if ((!connectedToServer && presynTerminalIndex == 0) || //TODO: Instead of any connection (presynTerminalIndex == 0) we should wait for the fastest one.
-                    (connectedToServer && presynTerminalIP.equals(Constants.SERVER_IP))) {
+
+            /*
+            To clock the DataSender the thread the frequency of the presynaptic terminal which send
+            packets at the highest rate is chosen.
+
+            This terminal (clockTerminal) can stop sending packets without disconnecting at any time.
+            Therefore, if the chosen terminal is running late, pick any other terminal among the
+             presynaptic connections.
+             */
+
+            // Flag that signals if the clockTerminal is taking more time than usual to send a packet
+            boolean clockTerminalIsLate = (System.nanoTime() - lastTime.get()) > InputCreator.waitTime.get();
+
+            Log.d("KernelInitializer", " " + (System.nanoTime() - lastTime.get()) + " " + InputCreator.waitTime.get());
+
+            if (clockTerminalIsLate) {
+                Log.d("KernelInitializer", "test0 " + presynTerminalIndex);
+                clockTerminalIndex.set(presynTerminalIndex); // Chose another terminal to clock DataSender
+            }
+
+            // Update the clock every time clockTerminal send a new packet
+            if (presynTerminalIndex == clockTerminalIndex.get()) {
+
+                Log.d("KernelInitializer", "test " + presynTerminalIndex);
 
                 // Put in the queue an object which unblocks the waiting DataSender
                 clockSignalsQueue.put(new Object());
 
+                lastTime.set(System.nanoTime());
+
                 // Update the refresh rate
                 InputCreator.waitTime.set(System.nanoTime() - lastTime.get());
-
-                lastTime.set(System.nanoTime());
 
             }
 
