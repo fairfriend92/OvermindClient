@@ -84,8 +84,8 @@ public class SimulationService extends IntentService {
     // Buffer where to put the array of spikes produced by the local network
     BlockingQueue<byte[]> kernelExcQueue = new ArrayBlockingQueue<>(128);
 
-    // Buffers from the spikes coming from the presynaptic connections
-    BlockingQueue<byte[]> receivedSpikes = new ArrayBlockingQueue<>(128);
+    // Buffer containing the spikes coming from the presynaptic connections, the ip and the port of the connection
+    BlockingQueue<SpikesPackage> receivedSpikes = new ArrayBlockingQueue<>(128);
 
     // Executor for the thread that calls the OpenCL method
     ExecutorService kernelExcExecutor = Executors.newSingleThreadExecutor();
@@ -117,6 +117,23 @@ public class SimulationService extends IntentService {
 
         shutdown = true;
 
+    }
+
+    /**
+     * Class containing the needed info to identify a connection and a vector storing the latest
+     * spikes sent by said connection.
+     */
+
+    private class SpikesPackage {
+        String ip;
+        byte[] spikes;
+        int natPort;
+
+        SpikesPackage (String ip, byte[] spikes, int natPort) {
+            this.ip = ip;
+            this.spikes = spikes;
+            this.natPort = natPort;
+        }
     }
 
     public static String getNetworkClass(Context context) {
@@ -291,8 +308,8 @@ public class SimulationService extends IntentService {
                     }
 
                     // Determine if the lateral connections option has been changed by the server
-                    int indexOfLateralConn = thisTerminal.presynapticTerminals.indexOf(thisTerminal);
-                    Constants.LATERAL_CONNECTIONS = indexOfLateralConn != -1;
+                    Constants.INDEX_OF_LATERAL_CONN = thisTerminal.presynapticTerminals.indexOf(thisTerminal);
+                    Constants.LATERAL_CONNECTIONS = Constants.INDEX_OF_LATERAL_CONN != -1;
 
                     // If the info about the terminal have been updated, wait for the threads to finish
                     // before dispatching new ones
@@ -310,12 +327,15 @@ public class SimulationService extends IntentService {
                 InetAddress presynapticTerminalAddr = inputSpikesPacket.getAddress();
                 receiveTimedOut = false;
 
-                receivedSpikes.offer(inputSpikesBuffer);
-                inputSpikesBuffer = receivedSpikes.poll();
+                // Put in the FIFO buffer a package containing the spikes just arrived and the ip and nat port
+                // of the terminal which sent them
+                receivedSpikes.offer(new SpikesPackage(presynapticTerminalAddr.toString().substring(1),
+                        inputSpikesBuffer, inputSpikesPacket.getPort()));
+                SpikesPackage oldestPackage = receivedSpikes.poll(); // Retrieve the oldest package in the buffer
 
                 // Put the workload in the queue
-                Future<?> future = kernelInitExecutor.submit(new KernelInitializer(kernelInitQueue, presynapticTerminalAddr.toString().substring(1),
-                        inputSpikesPacket.getPort(), inputSpikesBuffer, thisTerminal, clockSignalsQueue));
+                Future<?> future = kernelInitExecutor.submit(new KernelInitializer(kernelInitQueue, oldestPackage.ip,
+                        oldestPackage.natPort, oldestPackage.spikes, thisTerminal, clockSignalsQueue));
 
                 kernelInitFutures.add(future);
 
@@ -352,7 +372,7 @@ public class SimulationService extends IntentService {
         Shut down the Threads
          */
 
-        // TODO: Do orderly shutdown and use shutdownNode as a last resort.
+        // TODO: Do orderly shutdown and use shutdownNow as a last resort.
         terminalUpdaterExecutor.shutdownNow();
         kernelInitExecutor.shutdownNow();
         inputCreatorExecutor.shutdownNow();
@@ -402,7 +422,7 @@ public class SimulationService extends IntentService {
         thisTerminal = null;
 
         // The field needs to be reset since the next time the terminal connects with the server
-        // some settings, like num of synapses, may have changed. Since it take some time for the
+        // some settings, like num of synapses, may have changed. Since it takes some time for the
         // Terminal object with the new info to arrive from the server, in the meanwhile all
         // incoming udp packets must be discarded to prevent errors.
         KernelInitializer.numOfConnections = 0;
@@ -560,8 +580,10 @@ public class SimulationService extends IntentService {
             while (!SimulationService.shutdown) {
                 byte[] outputSpikes;
 
+                Object clockSignal;
+
                 try {
-                    clockSignals.poll(5, TimeUnit.SECONDS);
+                    clockSignal = clockSignals.poll(5, TimeUnit.SECONDS);
                     outputSpikes = kernelExcQueue.poll();
                 } catch (InterruptedException e) {
                     String stackTrace = Log.getStackTraceString(e);
@@ -569,12 +591,22 @@ public class SimulationService extends IntentService {
                     return;
                 }
 
+                /*
+                When clock signal is null, then the terminal is not receiving any input and the only packet
+                it needs to send is the one needed to keep alive the socket on the server.
+
+                If clock signal is different from null, then the terminal is being stimulated and the
+                spikes should be sent to the postsynaptic terminals. If no spikes have been produced yet
+                (outputSpikes = null), don't do anything at all.
+                 */
+
                 if (outputSpikes != null) {
 
                     for (Terminal postsynapticTerminal : thisTerminal.postsynapticTerminals) {
 
                         // The spikes are sent through the Internet in case of lateral connections
                         if (!postsynapticTerminal.equals(thisTerminal)) {
+                            Log.d("DataSender", "ip: " + postsynapticTerminal.ip);
                             try {
                                 InetAddress postsynapticTerminalAddr = InetAddress.getByName(postsynapticTerminal.ip);
                                 DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, dataBytes, postsynapticTerminalAddr, postsynapticTerminal.natPort);
@@ -584,12 +616,15 @@ public class SimulationService extends IntentService {
                                 Log.e("DataSender", stackTrace);
                             }
                         } else {
-                            receivedSpikes.offer(outputSpikes);
+                            Log.d("DataSender", "lateral connection");
+                            receivedSpikes.offer(new SpikesPackage(thisTerminal.ip, outputSpikes, thisTerminal.natPort));
                         }
 
                     }
 
-                } else {
+                } else if (clockSignal == null) {
+
+                    Log.d("DataSender", "server");
 
                     try {
                         InetAddress serverAddress = InetAddress.getByName(SERVER_IP);

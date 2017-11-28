@@ -60,7 +60,7 @@ class InputCreator implements Runnable {
             // Whenever a new Input is retrieved, we must check whether the number of connections has
             // changed by inspecting it, and if that's the case the arrays must be resized
             // accordingly
-            resizeArrays(firstInput.numOfConnections);
+            resizeArrays(firstInput.connectionsSize.length);
 
             // The retrieved Input is put in the list of inputs waiting to be put together, and the
             // respective flag is set
@@ -77,7 +77,7 @@ class InputCreator implements Runnable {
                 Input currentInput = iterator.next();
 
                 // As before check whether in the meantime the number of connection has changed
-                resizeArrays(currentInput.numOfConnections);
+                resizeArrays(currentInput.connectionsSize.length);
 
                 // Proceed if the current input comes from a connection that has not been served
                 if (!connectionsServed[currentInput.presynTerminalIndex]) {
@@ -89,23 +89,24 @@ class InputCreator implements Runnable {
 
             }
 
-            int offset = 0, firingRateOffset = 0;
-            boolean finished = false, inputIsNull = true;
+            boolean inputIsEmpty = true;
+            int totalFiringRateLength = 0;
 
             // Iterate over the collection of inputs taken from the kernelInitialzer queue
-            for (int i = 0; i < numOfConnections && !finished; i++) {
+            for (int i = 0; i < numOfConnections; i++) {
+
+                Input currentInput = inputs.get(i);
 
                 // If the input is null then the respective connection has not fired yet
-                if (inputs.get(i) != null) {
-
-                    Input currentInput = inputs.get(i);
+                if (currentInput != null) {
 
                     // If all the inputs are empty, then there's no need to pass them to
                     // KernelExecutor. The flag signals whether they should be passed or not
-                    inputIsNull &= currentInput.inputIsEmpty;
+                    inputIsEmpty &= false;
 
                     int arrayLength = currentInput.synapticInput.length;
                     int firingRateArrayLength = currentInput.firingRates.length;
+                    totalFiringRateLength = currentInput.connectionsOffset[numOfConnections - 1];
 
                     /*
                     If the complete input we're building is made of inputs sampled at different
@@ -113,50 +114,35 @@ class InputCreator implements Runnable {
                     check for the remaining space.
                       */
 
+                    int firingRateOffset = (currentInput.connectionsOffset[i] - currentInput.connectionsSize[i]);
+                    int offset = firingRateOffset * Constants.MAX_MULTIPLICATIONS;
+
                     if ((Constants.NUMBER_OF_SYNAPSES * Constants.MAX_MULTIPLICATIONS - offset) >= arrayLength) {
                         System.arraycopy(currentInput.synapticInput, 0, totalSynapticInput, offset, arrayLength);
                         System.arraycopy(currentInput.firingRates, 0, totalFiringRates, firingRateOffset, firingRateArrayLength);
-                        offset += arrayLength;
-                        firingRateOffset += firingRateArrayLength;
-
-                        // Putting an empty input in the collection allows to keep track of the length of each input which forms the totalSynapticInput
-                        inputs.set(i, new Input(new byte[arrayLength], arrayLength, true, numOfConnections, currentInput.firingRates));
                     }
-                } else if (i == Constants.INDEX_OF_LATERAL_CONN) { // At the beginning the input of the lateral conn. is necessarily null, therefore handle the case separately.
 
-                    /*
-                    If the input of the lateral connections has not been registered yet, put an empty array
-                    in its stead and put another empty array standing for the firing rates.
-                     */
+                    // Now that the input has been processed the reference in the buffer should be null
+                    inputs.set(i, null);
 
-                    int arrayLength = Constants.NUMBER_OF_NEURONS * Constants.MAX_MULTIPLICATIONS;
-                    int firingRateArrayLength = Constants.NUMBER_OF_NEURONS;
-
-                    byte[] synapticInput = new byte[arrayLength];
-                    float[] firingRates = new float[firingRateArrayLength];
-
-                    System.arraycopy(synapticInput, 0, totalSynapticInput, offset, arrayLength);
-                    System.arraycopy(firingRates, 0, totalFiringRates, firingRateOffset, firingRateArrayLength);
-                    offset += arrayLength;
-                    firingRateOffset += firingRateArrayLength;
-
-                    inputs.set(i, new Input(synapticInput, arrayLength, true, numOfConnections, firingRates));
-                } else {
-                    finished = true;
                 }
+
             }
 
-            // Resize totalSynapticInput
-            byte[] resizedSynapticInput = new byte[offset];
-            System.arraycopy(totalSynapticInput, 0, resizedSynapticInput, 0, offset);
+            if (!inputIsEmpty) {
 
-            // Resize totalFiringRates
-            float[] resizedFiringRates = new float[firingRateOffset];
-            System.arraycopy(totalFiringRates, 0, resizedFiringRates, 0, firingRateOffset);
+                int totalSynapticInputLenght = totalFiringRateLength * Constants.MAX_MULTIPLICATIONS;
 
-            if (!inputIsNull) {
+                // Resize totalSynapticInput
+                byte[] resizedSynapticInput = new byte[totalSynapticInputLenght];
+                System.arraycopy(totalSynapticInput, 0, resizedSynapticInput, 0, totalSynapticInputLenght);
+
+                // Resize totalFiringRates
+                float[] resizedFiringRates = new float[totalFiringRateLength];
+                System.arraycopy(totalFiringRates, 0, resizedFiringRates, 0, totalFiringRateLength);
+
                 try {
-                    boolean inputSent = inputCreatorQueue.offer(new InputCreatorOutput(resizedSynapticInput, resizedFiringRates), 8 * waitTime.get(), TimeUnit.NANOSECONDS);
+                    boolean inputSent = inputCreatorQueue.offer(new InputCreatorOutput(resizedSynapticInput, resizedFiringRates), waitTime.get(), TimeUnit.NANOSECONDS);
 
                     if (inputSent)
                         Log.e("InputCreator", "input sent");
@@ -171,10 +157,14 @@ class InputCreator implements Runnable {
                         kernelInitQueue.clear();
                     }
 
+                    // Give time for more inputs to accumulate in the kernelInitQueue buffer
+                    //Thread.sleep(waitTime.get() / 1000000);
+
                 } catch (InterruptedException e) {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("InputCreator", stackTrace);
                 }
+
             }
 
         }
@@ -206,16 +196,16 @@ class Input {
 
     byte[] synapticInput;
     int presynTerminalIndex;
-    boolean inputIsEmpty;
-    int numOfConnections;
+    int[] connectionsSize;
+    int[] connectionsOffset;
     float firingRates[];
 
-    Input(byte[] c, int i, boolean b, int i1, float[] f) {
+    Input(byte[] c, int i, int[] i1, int[] i2, float[] f) {
 
         synapticInput = c;
         presynTerminalIndex = i;
-        inputIsEmpty = b;
-        numOfConnections = i1;
+        connectionsSize = i1;
+        connectionsOffset = i2;
         firingRates = f;
 
     }

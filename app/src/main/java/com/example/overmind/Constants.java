@@ -6,7 +6,7 @@ final class Constants {
 
     static short NUMBER_OF_NEURONS = 1;
     static short NUMBER_OF_SYNAPSES = 1024;
-    static boolean LATERAL_CONNECTIONS = false;
+    static boolean LATERAL_CONNECTIONS = false; // TODO: useless since INDEX_LATERAL_CONNECTIONS = -1 can be used as check
     static int INDEX_OF_LATERAL_CONN = -1;
 
     /* Neuronal dynamics constants */

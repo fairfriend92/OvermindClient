@@ -24,7 +24,15 @@ class KernelInitializer implements Runnable {
 
     // Local collection of the presynaptic terminals
     private static volatile List<Terminal> presynapticTerminals = Collections.synchronizedList(new ArrayList<Terminal>());
-    static int numOfConnections = 0;
+
+    // Each element of the array represents the number of neurons of the respective presynaptic connection
+    private static int[] connectionsSize;
+
+    // Each element represents of many neurons come before the ones of the respective connections in the total synaptic input
+    private static int[] connectionsOffset;
+
+    // The number of presynaptic connections
+    static int numOfConnections = 0; // DO NOT make private
 
     // Local variable storing information about the terminal in use
     private Terminal thisTerminal;
@@ -97,10 +105,15 @@ class KernelInitializer implements Runnable {
 
                 presynTerminalQueue = new ArrayList<>(numOfConnections);
 
+                connectionsSize = new int[numOfConnections];
+                connectionsOffset = new int[numOfConnections];
+
                 for (int i = 0; i < numOfConnections; i++) {
                     threadsLocks[i] = new Object();
                     threadIsFree.add(false);
                     presynTerminalQueue.add(new ArrayBlockingQueue<byte[]>(4));
+                    connectionsSize[i] = presynapticTerminals.get(i).numOfNeurons;
+                    connectionsOffset[i] += connectionsSize[i];
                 }
 
             }
@@ -129,6 +142,8 @@ class KernelInitializer implements Runnable {
             return;
         }
 
+        Log.d("KernelInitializer", "test0");
+
         // Put in the buffer of the connection that is being served by this thread the packet just
         // received
         try {
@@ -137,6 +152,8 @@ class KernelInitializer implements Runnable {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("KernelInitializer", stackTrace);
         }
+
+        Log.d("KernelInitializer", "test1");
 
         // Local flag that signals when this thread can proceed to serve its connection
         boolean threadIsFree = false;
@@ -248,17 +265,12 @@ class KernelInitializer implements Runnable {
             // Flag that signals if the clockTerminal is taking more time than usual to send a packet
             boolean clockTerminalIsLate = (System.nanoTime() - lastTime.get()) > InputCreator.waitTime.get();
 
-            Log.d("KernelInitializer", " " + (System.nanoTime() - lastTime.get()) + " " + InputCreator.waitTime.get());
-
             if (clockTerminalIsLate) {
-                Log.d("KernelInitializer", "test0 " + presynTerminalIndex);
                 clockTerminalIndex.set(presynTerminalIndex); // Chose another terminal to clock DataSender
             }
 
             // Update the clock every time clockTerminal send a new packet
             if (presynTerminalIndex == clockTerminalIndex.get()) {
-
-                Log.d("KernelInitializer", "test " + presynTerminalIndex);
 
                 // Put in the queue an object which unblocks the waiting DataSender
                 clockSignalsQueue.put(new Object());
@@ -270,7 +282,7 @@ class KernelInitializer implements Runnable {
 
             }
 
-            kernelInitQueue.put(new Input(synapticInput, presynTerminalIndex, false, numOfConnections, firingRates));
+            kernelInitQueue.put(new Input(synapticInput, presynTerminalIndex, connectionsSize, connectionsOffset, firingRates));
 
         } catch (InterruptedException e) {
             String stackTrace = Log.getStackTraceString(e);
