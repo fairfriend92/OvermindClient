@@ -33,6 +33,9 @@ class InputCreator implements Runnable {
     @Override
     public void run() {
 
+        // Array holding flags which specify which connections have been served
+        connectionsServed  = new boolean[numOfConnections];
+
         // TODO Use local shutdown set by method
         while (!SimulationService.shutdown) {
 
@@ -53,9 +56,6 @@ class InputCreator implements Runnable {
                 Log.e("InputCreator", stackTrace);
                 return;
             }
-
-            // Array holding flags which specify which connections have been served
-            connectionsServed  = new boolean[numOfConnections];
 
             // Whenever a new Input is retrieved, we must check whether the number of connections has
             // changed by inspecting it, and if that's the case the arrays must be resized
@@ -106,7 +106,7 @@ class InputCreator implements Runnable {
 
                     int arrayLength = currentInput.synapticInput.length;
                     int firingRateArrayLength = currentInput.firingRates.length;
-                    totalFiringRateLength = currentInput.connectionsOffset[numOfConnections - 1];
+                    totalFiringRateLength = currentInput.connectionsOffset[currentInput.connectionsOffset.length - 1];
 
                     /*
                     If the complete input we're building is made of inputs sampled at different
@@ -142,7 +142,7 @@ class InputCreator implements Runnable {
                 System.arraycopy(totalFiringRates, 0, resizedFiringRates, 0, totalFiringRateLength);
 
                 try {
-                    boolean inputSent = inputCreatorQueue.offer(new InputCreatorOutput(resizedSynapticInput, resizedFiringRates), waitTime.get(), TimeUnit.NANOSECONDS);
+                    boolean inputSent = inputCreatorQueue.offer(new InputCreatorOutput(resizedSynapticInput, resizedFiringRates), waitTime.get() * 8, TimeUnit.NANOSECONDS);
 
                     if (inputSent)
                         Log.e("InputCreator", "input sent");
@@ -156,6 +156,9 @@ class InputCreator implements Runnable {
                         Log.e("InputCreator", "Capacity 1/3rd of size: Must clear kernelInitQueue");
                         kernelInitQueue.clear();
                     }
+
+                    // Reset the flags that remember which input has been served
+                    connectionsServed = new boolean[numOfConnections];
 
                     // Give time for more inputs to accumulate in the kernelInitQueue buffer
                     //Thread.sleep(waitTime.get() / 1000000);

@@ -142,8 +142,6 @@ class KernelInitializer implements Runnable {
             return;
         }
 
-        Log.d("KernelInitializer", "test0");
-
         // Put in the buffer of the connection that is being served by this thread the packet just
         // received
         try {
@@ -152,8 +150,6 @@ class KernelInitializer implements Runnable {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("KernelInitializer", stackTrace);
         }
-
-        Log.d("KernelInitializer", "test1");
 
         // Local flag that signals when this thread can proceed to serve its connection
         boolean threadIsFree = false;
@@ -259,27 +255,32 @@ class KernelInitializer implements Runnable {
 
             This terminal (clockTerminal) can stop sending packets without disconnecting at any time.
             Therefore, if the chosen terminal is running late, pick any other terminal among the
-             presynaptic connections.
+            presynaptic connections.
              */
 
-            // Flag that signals if the clockTerminal is taking more time than usual to send a packet
-            boolean clockTerminalIsLate = (System.nanoTime() - lastTime.get()) > InputCreator.waitTime.get();
+            // Flag that signals if a new terminal must be designated as clockTerminal. This happens
+            // either if no clockTerminal has been chosen before (lastTime == 0) or if the latest
+            // clockTerminal is running late and waitTime has been already set to a non null value
+            boolean mustUpdateClock = lastTime.get() == 0 ||
+                    (InputCreator.waitTime.get() != 0 && (System.nanoTime() - lastTime.get()) > InputCreator.waitTime.get() * 800);
 
-            if (clockTerminalIsLate) {
+            if (mustUpdateClock) {
                 clockTerminalIndex.set(presynTerminalIndex); // Chose another terminal to clock DataSender
             }
 
             // Update the clock every time clockTerminal send a new packet
             if (presynTerminalIndex == clockTerminalIndex.get()) {
 
+                Log.d("KernelInitializer", "presynTerminalIndex " + presynTerminalIndex + " waitTime " + InputCreator.waitTime.get());
+
                 // Put in the queue an object which unblocks the waiting DataSender
                 clockSignalsQueue.put(new Object());
 
-                lastTime.set(System.nanoTime());
-
                 // Update the refresh rate
-                InputCreator.waitTime.set(System.nanoTime() - lastTime.get());
+                if (lastTime.get() != 0) // lastTime must have been updated at least once
+                    InputCreator.waitTime.set(System.nanoTime() - lastTime.get());
 
+                lastTime.set(System.nanoTime());
             }
 
             kernelInitQueue.put(new Input(synapticInput, presynTerminalIndex, connectionsSize, connectionsOffset, firingRates));
