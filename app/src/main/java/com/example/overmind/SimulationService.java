@@ -584,6 +584,7 @@ public class SimulationService extends IntentService {
 
                 try {
                     clockSignal = clockSignals.poll(5, TimeUnit.SECONDS);
+                    Log.d("DataSender", "kernelExcQueue capacity " + kernelExcQueue.remainingCapacity() + " clockSignal capacity " + clockSignals.remainingCapacity());
                     outputSpikes = kernelExcQueue.poll();
                 } catch (InterruptedException e) {
                     String stackTrace = Log.getStackTraceString(e);
@@ -606,7 +607,7 @@ public class SimulationService extends IntentService {
 
                         // The spikes are sent through the Internet in case of lateral connections
                         if (!postsynapticTerminal.equals(thisTerminal)) {
-                            Log.d("DataSender", "ip: " + postsynapticTerminal.ip);
+                            Log.d("DataSender", "ip + receivedSpikes: " + postsynapticTerminal.ip + " " + receivedSpikes.remainingCapacity());
                             try {
                                 InetAddress postsynapticTerminalAddr = InetAddress.getByName(postsynapticTerminal.ip);
                                 DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, dataBytes, postsynapticTerminalAddr, postsynapticTerminal.natPort);
@@ -616,7 +617,7 @@ public class SimulationService extends IntentService {
                                 Log.e("DataSender", stackTrace);
                             }
                         } else {
-                            Log.d("DataSender", "lateral connection");
+                            Log.d("DataSender", "lateral connection + receivedSpikes " + receivedSpikes.remainingCapacity());
                             receivedSpikes.offer(new SpikesPackage(thisTerminal.ip, outputSpikes, thisTerminal.natPort));
                         }
 

@@ -18,7 +18,7 @@ class InputCreator implements Runnable {
 
     private BlockingQueue<Input> kernelInitQueue;
     private BlockingQueue<InputCreatorOutput> inputCreatorQueue;
-    static AtomicLong waitTime = new AtomicLong(0);
+    static AtomicLong waitTime = new AtomicLong(500000000);
     private int numOfConnections = 0;
     private boolean[] connectionsServed;
     private List<Input> inputs = new ArrayList<>();
@@ -159,9 +159,6 @@ class InputCreator implements Runnable {
 
                     // Reset the flags that remember which input has been served
                     connectionsServed = new boolean[numOfConnections];
-
-                    // Give time for more inputs to accumulate in the kernelInitQueue buffer
-                    //Thread.sleep(waitTime.get() / 1000000);
 
                 } catch (InterruptedException e) {
                     String stackTrace = Log.getStackTraceString(e);
