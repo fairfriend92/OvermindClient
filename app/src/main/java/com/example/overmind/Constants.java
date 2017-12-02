@@ -25,6 +25,4 @@ final class Constants {
     static final int IPTOS_RELIABILITY = 0x04;
     static String SERVER_IP;
 
-    /* Math constants */
-    static final int MILL_TO_NANO = 1000000;
 }

@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 class KernelInitializer implements Runnable {
@@ -60,17 +61,14 @@ class KernelInitializer implements Runnable {
     // one the firing rates of the neurons belonging to said terminal
     private static volatile float[][] firingRatesCollection;
 
-    // Collection of the last time a connection has fired
+    // Collection of the times at which the connections fired
     private static volatile long[] lastFiringTimes;
 
-    // Collections of the shortest time intervals for each connection
-    private static volatile long[] lastTimeIntervals;
+    // Collections of average time intervals between spikes for each connection
+    private static volatile long[] meanTimeIntervals;
 
     // Index of the shortest time interval among the ones in the collection
-    private static volatile int shortestTInterIndex = 0;
-
-    // Time at which the clock of DataSender was updated for the last time
-    private static volatile AtomicLong lastClockUpdateTime = new AtomicLong(0);
+    private static AtomicInteger shortestTInterIndex = new AtomicInteger(0);
 
     KernelInitializer(BlockingQueue<Input> b, String s, int i, byte[] b1, Terminal t,
                       BlockingQueue<Object> b2) {
@@ -98,22 +96,16 @@ class KernelInitializer implements Runnable {
                 // be updated only when threadsCounter == 0
                 presynapticTerminals = new ArrayList<>(thisTerminal.presynapticTerminals);
 
+                /* Point the Objects to new memory space */
+
                 numOfConnections = presynapticTerminals.size();
-
                 synapticInputCollection = new byte[numOfConnections][];
-
                 firingRatesCollection = new float[numOfConnections][];
-
                 lastFiringTimes = new long[numOfConnections];
-
-                lastTimeIntervals = new long[numOfConnections];
-
-                shortestTInterIndex = 0;
-
+                meanTimeIntervals = new long[numOfConnections];
+                shortestTInterIndex = new AtomicInteger(0);
                 threadIsFree = new ArrayList<>(numOfConnections);
-
                 presynTerminalQueue = new ArrayList<>(numOfConnections);
-
                 connectionsSize = new int[numOfConnections];
                 connectionsOffset = new int[numOfConnections];
 
@@ -123,7 +115,7 @@ class KernelInitializer implements Runnable {
                     presynTerminalQueue.add(new ArrayBlockingQueue<byte[]>(4));
                     connectionsSize[i] = presynapticTerminals.get(i).numOfNeurons;
                     connectionsOffset[i] += connectionsSize[i];
-                    lastTimeIntervals[i] = Integer.MAX_VALUE;
+                    meanTimeIntervals[i] = Integer.MAX_VALUE;
                 }
 
             }
@@ -257,29 +249,41 @@ class KernelInitializer implements Runnable {
         synapticInputCollection[presynTerminalIndex] = synapticInput; // Makes sense only in the case synapticInputCollection[presynTerminalIndex] was originally null
         firingRatesCollection[presynTerminalIndex] = firingRates;
 
+        /*
+        The clock used to time the sending of the outgoing packets is chosen among the frequencies of
+        the currently active terminals.
+         */
+
         try {
+            // Compute the time elapsed since the last packet sent by the current presynaptic terminal
             long timeInterval = System.nanoTime() - lastFiringTimes[presynTerminalIndex];
 
-            lastTimeIntervals[presynTerminalIndex] = timeInterval;
-
+            // Save the current time in the array storing the last recorded times at which a presynaptic terminal sent a packet
             lastFiringTimes[presynTerminalIndex] = System.nanoTime();
 
-            shortestTInterIndex = lastTimeIntervals[presynTerminalIndex] < lastTimeIntervals[shortestTInterIndex] ?
-                    presynTerminalIndex : shortestTInterIndex;
+            // Using the moving average algorithm compute the mean time intervals for the current presynaptic terminal
+            meanTimeIntervals[presynTerminalIndex] += 0.025f * (timeInterval - meanTimeIntervals[presynTerminalIndex]);
+            // TODO: The number of samples to compute the average should be a function of the clock
 
-            if (System.nanoTime() - lastClockUpdateTime.get() > lastTimeIntervals[shortestTInterIndex]) {
+            /*
+            The clock is updated only if the current terminal is the one whose frequency has been chosen
+            to clock DataSender.
+             */
 
-                Log.d("KernelInitializer", "presynTerminalIndex " + presynTerminalIndex + " waitTime " + InputCreator.waitTime.get() +
-                " shortestTIIndex " + shortestTInterIndex);
+            if (presynTerminalIndex == shortestTInterIndex.get()) {
 
                 // Put in the queue an object which unblocks the waiting DataSender
                 clockSignalsQueue.put(new Object());
 
                 // Update the refresh rate
-                InputCreator.waitTime.set(lastTimeIntervals[shortestTInterIndex]);
+                InputCreator.waitTime.set(meanTimeIntervals[shortestTInterIndex.get()]);
 
-                lastClockUpdateTime.set(System.nanoTime());
             }
+
+            // If the mean time interval of the current presynaptic terminal is shorter that the one used,
+            // save the index of the terminal so that the clock will be updated the next time this terminal fires
+            shortestTInterIndex.set(meanTimeIntervals[presynTerminalIndex] < meanTimeIntervals[shortestTInterIndex.get()] ?
+                    presynTerminalIndex : shortestTInterIndex.get());
 
             kernelInitQueue.put(new Input(synapticInput, presynTerminalIndex, connectionsSize, connectionsOffset, firingRates));
 

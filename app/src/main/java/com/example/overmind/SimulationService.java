@@ -327,15 +327,9 @@ public class SimulationService extends IntentService {
                 InetAddress presynapticTerminalAddr = inputSpikesPacket.getAddress();
                 receiveTimedOut = false;
 
-                // Put in the FIFO buffer a package containing the spikes just arrived and the ip and nat port
-                // of the terminal which sent them
-                receivedSpikes.offer(new SpikesPackage(presynapticTerminalAddr.toString().substring(1),
-                        inputSpikesBuffer, inputSpikesPacket.getPort()));
-                SpikesPackage oldestPackage = receivedSpikes.poll(); // Retrieve the oldest package in the buffer
-
                 // Put the workload in the queue
-                Future<?> future = kernelInitExecutor.submit(new KernelInitializer(kernelInitQueue, oldestPackage.ip,
-                        oldestPackage.natPort, oldestPackage.spikes, thisTerminal, clockSignalsQueue));
+                Future<?> future = kernelInitExecutor.submit(new KernelInitializer(kernelInitQueue, presynapticTerminalAddr.toString().substring(1),
+                        inputSpikesPacket.getPort(), inputSpikesBuffer, thisTerminal, clockSignalsQueue));
 
                 kernelInitFutures.add(future);
 
@@ -541,8 +535,6 @@ public class SimulationService extends IntentService {
                         errorRaised = true;
                     }
                 } else {
-                    Log.d("KernelExecutor", " " + outputSpikes[0] + " " + thisTerminal.ip);
-
                     try {
                         kernelExcQueue.put(outputSpikes);
                     } catch (InterruptedException e) {
@@ -580,17 +572,18 @@ public class SimulationService extends IntentService {
             while (!SimulationService.shutdown) {
                 byte[] outputSpikes;
 
-                Object clockSignal;
+                Object clockSignal = null;
 
                 try {
+                    Log.d("DataSender", "kernelExcQueue size " + kernelExcQueue.size() + " clockSignal size " + clockSignals.size());
                     clockSignal = clockSignals.poll(5, TimeUnit.SECONDS);
-                    Log.d("DataSender", "kernelExcQueue capacity " + kernelExcQueue.remainingCapacity() + " clockSignal capacity " + clockSignals.remainingCapacity());
-                    outputSpikes = kernelExcQueue.poll();
                 } catch (InterruptedException e) {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("DataSender", stackTrace);
                     return;
                 }
+
+                outputSpikes = kernelExcQueue.poll();
 
                 /*
                 When clock signal is null, then the terminal is not receiving any input and the only packet
@@ -605,20 +598,14 @@ public class SimulationService extends IntentService {
 
                     for (Terminal postsynapticTerminal : thisTerminal.postsynapticTerminals) {
 
-                        // The spikes are sent through the Internet in case of lateral connections
-                        if (!postsynapticTerminal.equals(thisTerminal)) {
-                            Log.d("DataSender", "ip + receivedSpikes: " + postsynapticTerminal.ip + " " + receivedSpikes.remainingCapacity());
-                            try {
-                                InetAddress postsynapticTerminalAddr = InetAddress.getByName(postsynapticTerminal.ip);
-                                DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, dataBytes, postsynapticTerminalAddr, postsynapticTerminal.natPort);
-                                outputSocket.send(outputSpikesPacket);
-                            } catch (IOException e) {
-                                String stackTrace = Log.getStackTraceString(e);
-                                Log.e("DataSender", stackTrace);
-                            }
-                        } else {
-                            Log.d("DataSender", "lateral connection + receivedSpikes " + receivedSpikes.remainingCapacity());
-                            receivedSpikes.offer(new SpikesPackage(thisTerminal.ip, outputSpikes, thisTerminal.natPort));
+                        Log.d("DataSender", "ip + receivedSpikes: " + postsynapticTerminal.ip + " " + receivedSpikes.remainingCapacity());
+                        try {
+                            InetAddress postsynapticTerminalAddr = InetAddress.getByName(postsynapticTerminal.ip);
+                            DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, dataBytes, postsynapticTerminalAddr, postsynapticTerminal.natPort);
+                            outputSocket.send(outputSpikesPacket);
+                        } catch (IOException e) {
+                            String stackTrace = Log.getStackTraceString(e);
+                            Log.e("DataSender", stackTrace);
                         }
 
                     }
