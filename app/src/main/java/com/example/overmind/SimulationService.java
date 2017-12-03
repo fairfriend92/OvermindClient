@@ -572,11 +572,17 @@ public class SimulationService extends IntentService {
             while (!SimulationService.shutdown) {
                 byte[] outputSpikes;
 
-                Object clockSignal = null;
+                Object clockSignal;
+                long waitTime = 5000000000L;
+
+                if (kernelExcQueue.size() != 0) {
+                    int waitFactor = (kernelExcQueue.remainingCapacity() + kernelExcQueue.size()) / kernelExcQueue.size();
+                    waitTime = InputCreator.waitTime.get() * waitFactor;
+                }
 
                 try {
                     Log.d("DataSender", "kernelExcQueue size " + kernelExcQueue.size() + " clockSignal size " + clockSignals.size());
-                    clockSignal = clockSignals.poll(5, TimeUnit.SECONDS);
+                    clockSignal = clockSignals.poll(waitTime, TimeUnit.NANOSECONDS);
                 } catch (InterruptedException e) {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("DataSender", stackTrace);
