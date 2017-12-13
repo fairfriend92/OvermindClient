@@ -19,6 +19,11 @@
         android:layout_height="0dp"
         android:text="@string/server_ip"
         android:onClick="lookUpServerIP" />
+    <CheckBox android:id="@+id/checkbox_local_connection"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/checkbox_local_connection"
+        android:onClick="onCheckboxClicked"/>
     <TextView android:id="@+android:id/title"
         style="?android:attr/listSeparatorTextViewStyle"
         android:text="@string/neural_network_settings_title"

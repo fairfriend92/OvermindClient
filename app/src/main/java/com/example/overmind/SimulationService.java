@@ -337,7 +337,7 @@ public class SimulationService extends IntentService {
                 receiveTimedOut = true;
                 String stackTrace = Log.getStackTraceString(e);
                 Log.e("SimulationService", stackTrace);
-                if (!getNetworkClass(this).equals("4G")) {
+                if (!getNetworkClass(this).equals("4G") & !Constants.USE_LOCAL_CONNECTION) {
                     shutDown();
                     if (!errorRaised) {
                         errornumber = 2;
@@ -604,7 +604,7 @@ public class SimulationService extends IntentService {
 
                     for (Terminal postsynapticTerminal : thisTerminal.postsynapticTerminals) {
 
-                        Log.d("DataSender", "ip + receivedSpikes: " + postsynapticTerminal.ip + " " + receivedSpikes.remainingCapacity());
+                        Log.d("DataSender", "ip + natPort + receivedSpikes: " + postsynapticTerminal.ip + " " + postsynapticTerminal.natPort + " " + receivedSpikes.remainingCapacity());
                         try {
                             InetAddress postsynapticTerminalAddr = InetAddress.getByName(postsynapticTerminal.ip);
                             DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, dataBytes, postsynapticTerminalAddr, postsynapticTerminal.natPort);

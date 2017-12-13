@@ -28,6 +28,8 @@ import android.widget.TextView;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
@@ -74,6 +76,7 @@ public class MainActivity extends AppCompatActivity {
         Constants.NUMBER_OF_SYNAPSES = 1024;
         Constants.LATERAL_CONNECTIONS = false;
         Constants.INDEX_OF_LATERAL_CONN = -1;
+        Constants.USE_LOCAL_CONNECTION = false;
 
         // Bring back the home menu view
         setContentView(R.layout.pre_connection);
@@ -290,6 +293,7 @@ public class MainActivity extends AppCompatActivity {
         Constants.SERVER_IP = editServerIP.getText().toString();
         server.ip = Constants.SERVER_IP;
         server.serverIP = Constants.SERVER_IP;
+        server.natPort = Constants.UDP_PORT;
 
         try {
             // Get the number of neurons for the local netwowrk from the text box
@@ -387,6 +391,9 @@ public class MainActivity extends AppCompatActivity {
             case R.id.checkbox_lateral_connections:
                 Constants.LATERAL_CONNECTIONS = checked;
                 Constants.INDEX_OF_LATERAL_CONN = checked ? 0 : -1;
+                break;
+            case R.id.checkbox_local_connection:
+                Constants.USE_LOCAL_CONNECTION = true; // TODO: When this option is enabled, check that wifi is on.
                 break;
         }
     }

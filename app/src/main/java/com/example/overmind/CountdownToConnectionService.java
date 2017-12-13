@@ -21,7 +21,7 @@ public class CountdownToConnectionService extends IntentService {
 
         String connectionClass = "null";
 
-        while (!connectionClass.equals("4G") && !shutdown) {
+        while (!connectionClass.equals("4G") && !shutdown & !Constants.USE_LOCAL_CONNECTION) {
 
             try {
                 Thread.sleep(10000);

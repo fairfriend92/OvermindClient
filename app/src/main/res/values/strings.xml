@@ -48,5 +48,6 @@
     <string name="wrong_neurons_failure_title">"Wrong number of neurons"</string>
     <string name="lateral_connections_failure_message">"When lateral connections are enabled, the number of neurons must be less than the number of synapses."</string>
     <string name="lateral_connections_failure_title">"Wrong number of neurons"</string>
+    <string name="checkbox_local_connection">"Use local connection"</string>
 
 </resources>

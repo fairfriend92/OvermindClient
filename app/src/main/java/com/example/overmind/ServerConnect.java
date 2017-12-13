@@ -12,7 +12,9 @@ import android.widget.Toast;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
@@ -29,11 +31,22 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
 
         context = contexts[0];
         String ip = null;
-        try (java.util.Scanner s = new java.util.Scanner(new java.net.URL("https://api.ipify.org").openStream(), "UTF-8").useDelimiter("\\A")) {
-            ip = s.next();
-        } catch (java.io.IOException e) {
-            String stackTrace = Log.getStackTraceString(e);
-            Log.e("ServerConnect", stackTrace);
+
+        if (!Constants.USE_LOCAL_CONNECTION) {
+            try (java.util.Scanner s = new java.util.Scanner(new java.net.URL("https://api.ipify.org").openStream(), "UTF-8").useDelimiter("\\A")) {
+                ip = s.next();
+            } catch (java.io.IOException e) {
+                String stackTrace = Log.getStackTraceString(e);
+                Log.e("ServerConnect", stackTrace);
+            }
+        } else {
+            try {
+                Socket socket = new Socket("192.168.1.1", 80);
+                ip = socket.getLocalAddress().getHostAddress();
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         thisTerminal.ip = ip;
 

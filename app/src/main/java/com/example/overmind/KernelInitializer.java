@@ -130,10 +130,14 @@ class KernelInitializer implements Runnable {
         // Identify the presynaptic terminal using the IP contained in the header of the datagram
         // packet
         Terminal presynTerminal = new Terminal();
-        presynTerminal.serverIP = MainActivity.server.ip;
         presynTerminal.ip = presynTerminalIP;
         presynTerminal.natPort = presynTerminalNatPort;
         int presynTerminalIndex = presynapticTerminals.indexOf(presynTerminal);
+
+        // The server port is not known but if the terminal is connected to the server and if the
+        // presynaptic ip is that of the server, assume that the unknown connection comes from the server
+        presynTerminalIndex = presynTerminalIndex == -1 & presynTerminal.ip.equals(MainActivity.server.ip) ?
+                presynapticTerminals.indexOf(MainActivity.server) : presynTerminalIndex;
 
         // If it was not possible to identify the presynaptic terminal drop the packet and return
         if (presynTerminalIndex == -1) {
