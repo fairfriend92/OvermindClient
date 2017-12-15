@@ -22,11 +22,13 @@ class InputCreator implements Runnable {
     private int numOfConnections = 0;
     private boolean[] connectionsServed;
     private List<Input> inputs = new ArrayList<>();
+    private BlockingQueue<Object> clockSignals;
 
-    InputCreator(BlockingQueue<Input> l, BlockingQueue<InputCreatorOutput> b) {
+    InputCreator(BlockingQueue<Input> l, BlockingQueue<InputCreatorOutput> b, BlockingQueue<Object> clockSignals)  {
 
         kernelInitQueue = l;
         inputCreatorQueue = b;
+        this.clockSignals = clockSignals;
 
     }
 
@@ -67,7 +69,7 @@ class InputCreator implements Runnable {
             inputs.set(firstInput.presynTerminalIndex, firstInput);
             connectionsServed[firstInput.presynTerminalIndex] = true;
 
-            Log.e("InputCreator", "firstInput " + firstInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
+            Log.d("InputCreator", "firstInput " + firstInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
 
             Iterator<Input> iterator = kernelInitQueue.iterator();
 
@@ -81,7 +83,7 @@ class InputCreator implements Runnable {
 
                 // Proceed if the current input comes from a connection that has not been served
                 if (!connectionsServed[currentInput.presynTerminalIndex]) {
-                    Log.e("InputCreator", "currentInput " + currentInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
+                    Log.d("InputCreator", "currentInput " + currentInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
                     inputs.set(currentInput.presynTerminalIndex, currentInput);
                     connectionsServed[currentInput.presynTerminalIndex] = true;
                     iterator.remove();
@@ -142,13 +144,19 @@ class InputCreator implements Runnable {
                 System.arraycopy(totalFiringRates, 0, resizedFiringRates, 0, totalFiringRateLength);
 
                 try {
-                    boolean inputSent = inputCreatorQueue.offer(new InputCreatorOutput(resizedSynapticInput, resizedFiringRates), waitTime.get() * 8, TimeUnit.NANOSECONDS);
+
+                    Object test = clockSignals.poll(waitTime.get(), TimeUnit.NANOSECONDS);
+
+                    int inputCreatorQueueSize = inputCreatorQueue.size(); // The size of the queue could change in the meantime, therefore store locally the value.
+                    int waitFactor = inputCreatorQueueSize == 0 ? 1 :
+                            (inputCreatorQueue.remainingCapacity() + inputCreatorQueue.size()) / inputCreatorQueueSize * 8;
+
+                    boolean inputSent = inputCreatorQueue.offer(new InputCreatorOutput(resizedSynapticInput, resizedFiringRates), waitTime.get() * waitFactor, TimeUnit.NANOSECONDS);
 
                     if (inputSent)
-                        Log.e("InputCreator", "input sent");
+                        Log.d("InputCreator", "input sent " + (test == null));
                     else
-                        Log.e("InputCreator", "input NOT sent");
-
+                        Log.d("InputCreator", "input NOT sent");
 
                     // In cas the pressure on the buffer is such that the capacity goes under the
                     // threshold, to prevent the application from stalling the queue is cleared

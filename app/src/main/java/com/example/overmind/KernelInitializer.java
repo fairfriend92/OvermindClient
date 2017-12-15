@@ -68,7 +68,7 @@ class KernelInitializer implements Runnable {
     private static volatile long[] meanTimeIntervals;
 
     // Index of the shortest time interval among the ones in the collection
-    private static AtomicInteger shortestTInterIndex = new AtomicInteger(0);
+    private static AtomicInteger shortestTInterIndex;
 
     KernelInitializer(BlockingQueue<Input> b, String s, int i, byte[] b1, Terminal t,
                       BlockingQueue<Object> b2) {
@@ -274,7 +274,9 @@ class KernelInitializer implements Runnable {
             to clock DataSender.
              */
 
-            if (presynTerminalIndex == shortestTInterIndex.get()) {
+            if (presynTerminalIndex == shortestTInterIndex.get() & presynTerminalIndex != Constants.INDEX_OF_LATERAL_CONN) {
+
+                Log.d("KernelInitializer", " " + presynTerminalIndex + " " + Constants.INDEX_OF_LATERAL_CONN);
 
                 // Put in the queue an object which unblocks the waiting DataSender
                 clockSignalsQueue.put(new Object());
@@ -286,7 +288,9 @@ class KernelInitializer implements Runnable {
 
             // If the mean time interval of the current presynaptic terminal is shorter that the one used,
             // save the index of the terminal so that the clock will be updated the next time this terminal fires
-            shortestTInterIndex.set(meanTimeIntervals[presynTerminalIndex] < meanTimeIntervals[shortestTInterIndex.get()] ?
+            // TODO: Index should change of if too much pressured is applied on the buffer.
+            shortestTInterIndex.set(meanTimeIntervals[presynTerminalIndex] < 0.1f * (System.nanoTime() - lastFiringTimes[shortestTInterIndex.get()]) &
+                    kernelInitQueue.remainingCapacity() < (kernelInitQueue.size() / 2) ?
                     presynTerminalIndex : shortestTInterIndex.get());
 
             kernelInitQueue.put(new Input(synapticInput, presynTerminalIndex, connectionsSize, connectionsOffset, firingRates));

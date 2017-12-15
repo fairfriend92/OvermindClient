@@ -248,7 +248,7 @@ public class SimulationService extends IntentService {
         long openCLObject = initializeOpenCL(kernel, NUMBER_OF_NEURONS, Constants.SYNAPSE_FILTER_ORDER, Constants.NUMBER_OF_SYNAPSES);
 
         // Launch those threads that are persistent
-        inputCreatorExecutor.execute(new InputCreator(kernelInitQueue, inputCreatorQueue));
+        inputCreatorExecutor.execute(new InputCreator(kernelInitQueue, inputCreatorQueue, clockSignalsQueue));
         newOpenCLObject = kernelExcExecutor.submit(new KernelExecutor(inputCreatorQueue, kernelExcQueue, openCLObject, newWeights));
         dataSenderExecutor.execute(new DataSender(kernelExcQueue, datagramSocket, clockSignalsQueue));
         terminalUpdaterExecutor.execute(new TerminalUpdater(updatedTerminal, newWeights));
@@ -572,24 +572,13 @@ public class SimulationService extends IntentService {
             while (!SimulationService.shutdown) {
                 byte[] outputSpikes;
 
-                Object clockSignal;
-                long waitTime = 5000000000L;
-
-                if (kernelExcQueue.size() != 0) {
-                    int waitFactor = (kernelExcQueue.remainingCapacity() + kernelExcQueue.size()) / kernelExcQueue.size();
-                    waitTime = InputCreator.waitTime.get() * waitFactor;
-                }
-
                 try {
-                    Log.d("DataSender", "kernelExcQueue size " + kernelExcQueue.size() + " clockSignal size " + clockSignals.size());
-                    clockSignal = clockSignals.poll(waitTime, TimeUnit.NANOSECONDS);
+                    outputSpikes = kernelExcQueue.poll(5, TimeUnit.SECONDS);
                 } catch (InterruptedException e) {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("DataSender", stackTrace);
                     return;
                 }
-
-                outputSpikes = kernelExcQueue.poll();
 
                 /*
                 When clock signal is null, then the terminal is not receiving any input and the only packet
@@ -604,7 +593,6 @@ public class SimulationService extends IntentService {
 
                     for (Terminal postsynapticTerminal : thisTerminal.postsynapticTerminals) {
 
-                        Log.d("DataSender", "ip + natPort + receivedSpikes: " + postsynapticTerminal.ip + " " + postsynapticTerminal.natPort + " " + receivedSpikes.remainingCapacity());
                         try {
                             InetAddress postsynapticTerminalAddr = InetAddress.getByName(postsynapticTerminal.ip);
                             DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, dataBytes, postsynapticTerminalAddr, postsynapticTerminal.natPort);
@@ -616,9 +604,7 @@ public class SimulationService extends IntentService {
 
                     }
 
-                } else if (clockSignal == null) {
-
-                    Log.d("DataSender", "server");
+                } else {
 
                     try {
                         InetAddress serverAddress = InetAddress.getByName(SERVER_IP);
