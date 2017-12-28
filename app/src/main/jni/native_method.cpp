@@ -247,6 +247,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
     int numOfNewWeights = env->GetArrayLength(jWeights);
     int synapseInputLength = env->GetArrayLength(jSynapseInput);
+    int weightsFlagLength = env->GetArrayLength(jUpdateWeightsFlags);
     int numOfActiveSynapses = synapseInputLength / maxNumberMultiplications;
 
     /* [Input initialization] */
@@ -310,14 +311,33 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
     LOGD("%d %d %d %d", numOfActiveSynapses, NUM_NEURONS, numOfNewWeights, env->GetArrayLength(jUpdateWeightsFlags));
 
+    // Proceed inside if the flags that tell which weights must be updated hava changed.
+    if (weightsFlagLength != 0) {
+
+        obj->updateWeightsFlags = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[7], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
+        mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
+        for (int i = 0; i < weightsFlagLength; i++) {
+            obj->updateWeightsFlags[i] = (cl_float) updateWeightsFlags[i];
+        }
+
+        if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[7], obj->updateWeightsFlags, 0, NULL, NULL)))
+        {
+            cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+            LOGE("Unmap memory objects failed");
+        }
+
+        env->ReleaseByteArrayElements(jUpdateWeightsFlags, updateWeightsFlags, 0);
+
+    }
+
     // Proceed only if some weights have been changed.
     if (numOfNewWeights != 0) {
 
         obj->synapseWeights = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
         mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-        obj->updateWeightsFlags = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[7], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
-        mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
 
         if (!mapMemoryObjectsSuccess)
         {
@@ -332,12 +352,11 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
             for (int i = 0; i < numOfNewWeights; i++)
                 obj->synapseWeights[weightsIndexes[i]] = (cl_float) (MIN_WEIGHT * weights[i]);
         }
-        else
+        else // Enter the block if the weights array is filled completely.
         {
             LOGD("test1");
             for (int i = 0; i < numOfNewWeights; i++) {
                 obj->synapseWeights[i] = (cl_float) (MIN_WEIGHT * weights[i]);
-                obj->updateWeightsFlags[i] = (cl_float) updateWeightsFlags[i]; // It is assumed that whenever the weights of all the active synapses are updated, so are the respective flags.
             }
         }
 
@@ -347,15 +366,8 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
             LOGE("Unmap memory objects failed");
         }
 
-        if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[7], obj->updateWeightsFlags, 0, NULL, NULL)))
-        {
-            cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-            LOGE("Unmap memory objects failed");
-        }
-
         env->ReleaseByteArrayElements(jWeights, weights, 0);
         env->ReleaseIntArrayElements(jWeightsIndexes, weightsIndexes, 0);
-        env->ReleaseByteArrayElements(jUpdateWeightsFlags, updateWeightsFlags, 0);
 
     }
 

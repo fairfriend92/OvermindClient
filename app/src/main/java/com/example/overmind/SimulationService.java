@@ -84,9 +84,6 @@ public class SimulationService extends IntentService {
     // Buffer where to put the array of spikes produced by the local network
     BlockingQueue<byte[]> kernelExcQueue = new ArrayBlockingQueue<>(128);
 
-    // Buffer containing the spikes coming from the presynaptic connections, the ip and the port of the connection
-    BlockingQueue<SpikesPackage> receivedSpikes = new ArrayBlockingQueue<>(128);
-
     // Executor for the thread that calls the OpenCL method
     ExecutorService kernelExcExecutor = Executors.newSingleThreadExecutor();
 
@@ -504,6 +501,7 @@ public class SimulationService extends IntentService {
         @Override
         public Long call () {
             while (!shutdown) {
+
                 Terminal newTerminal = null;
 
                 try {

@@ -260,38 +260,42 @@ class KernelInitializer implements Runnable {
 
         try {
             // Compute the time elapsed since the last packet sent by the current presynaptic terminal
-            long timeInterval = System.nanoTime() - lastFiringTimes[presynTerminalIndex];
+            long timeInterval = lastFiringTimes[presynTerminalIndex] != 0 ?
+                    System.nanoTime() - lastFiringTimes[presynTerminalIndex] : 0;
+
+            // Using the moving average algorithm compute the mean time intervals for the current presynaptic terminal
+            meanTimeIntervals[presynTerminalIndex] += lastFiringTimes[presynTerminalIndex] == 0 ?
+                    0 : 0.025f * (timeInterval - meanTimeIntervals[presynTerminalIndex]);
+            // TODO: The number of samples to compute the average should be a function of the clock
 
             // Save the current time in the array storing the last recorded times at which a presynaptic terminal sent a packet
             lastFiringTimes[presynTerminalIndex] = System.nanoTime();
-
-            // Using the moving average algorithm compute the mean time intervals for the current presynaptic terminal
-            meanTimeIntervals[presynTerminalIndex] += 0.025f * (timeInterval - meanTimeIntervals[presynTerminalIndex]);
-            // TODO: The number of samples to compute the average should be a function of the clock
 
             /*
             The clock is updated only if the current terminal is the one whose frequency has been chosen
             to clock DataSender.
              */
 
+            // TODO: Perhaps checking against the lateral connections is not necessary?
+
             if (presynTerminalIndex == shortestTInterIndex.get() & presynTerminalIndex != Constants.INDEX_OF_LATERAL_CONN) {
 
-                Log.d("KernelInitializer", " " + presynTerminalIndex + " " + Constants.INDEX_OF_LATERAL_CONN);
+                Log.d("KernelInitializer", " " + presynTerminalIndex + " " + Constants.INDEX_OF_LATERAL_CONN + " waitTime " + InputCreator.waitTime.get());
 
-                // Put in the queue an object which unblocks the waiting DataSender
                 clockSignalsQueue.put(new Object());
 
                 // Update the refresh rate
-                InputCreator.waitTime.set(meanTimeIntervals[shortestTInterIndex.get()]);
+                if (meanTimeIntervals[shortestTInterIndex.get()] != 0)
+                    InputCreator.waitTime.set(meanTimeIntervals[shortestTInterIndex.get()]);
 
             }
 
-            // If the mean time interval of the current presynaptic terminal is shorter that the one used,
-            // save the index of the terminal so that the clock will be updated the next time this terminal fires
-            // TODO: Index should change of if too much pressured is applied on the buffer.
-            shortestTInterIndex.set(meanTimeIntervals[presynTerminalIndex] < 0.1f * (System.nanoTime() - lastFiringTimes[shortestTInterIndex.get()]) &
-                    kernelInitQueue.remainingCapacity() < (kernelInitQueue.size() / 2) ?
-                    presynTerminalIndex : shortestTInterIndex.get());
+            boolean mustChangeIndex = shortestTInterIndex.get() == Constants.INDEX_OF_LATERAL_CONN | (
+                    System.nanoTime() - lastFiringTimes[shortestTInterIndex.get()] > 8 * meanTimeIntervals[shortestTInterIndex.get()] &
+                    meanTimeIntervals[presynTerminalIndex] < meanTimeIntervals[shortestTInterIndex.get()]); // New clock must be faster than old one
+
+            shortestTInterIndex.set(mustChangeIndex & presynTerminalIndex != Constants.INDEX_OF_LATERAL_CONN
+                    ? presynTerminalIndex : shortestTInterIndex.get());
 
             kernelInitQueue.put(new Input(synapticInput, presynTerminalIndex, connectionsSize, connectionsOffset, firingRates));
 

@@ -145,18 +145,22 @@ class InputCreator implements Runnable {
 
                 try {
 
-                    Object test = clockSignals.poll(waitTime.get(), TimeUnit.NANOSECONDS);
+                    int kernelInitQueueSize = kernelInitQueue.size();
+                    int kernelInitQueueRemainingCapacity = kernelInitQueue.remainingCapacity();
+                    int waitFactor = kernelInitQueueRemainingCapacity / (kernelInitQueueSize + kernelInitQueueRemainingCapacity) * 8;
 
-                    int inputCreatorQueueSize = inputCreatorQueue.size(); // The size of the queue could change in the meantime, therefore store locally the value.
-                    int waitFactor = inputCreatorQueueSize == 0 ? 1 :
-                            (inputCreatorQueue.remainingCapacity() + inputCreatorQueue.size()) / inputCreatorQueueSize * 8;
+                    Object newClockSignal = clockSignals.poll(waitTime.get() * 8, TimeUnit.NANOSECONDS);
 
-                    boolean inputSent = inputCreatorQueue.offer(new InputCreatorOutput(resizedSynapticInput, resizedFiringRates), waitTime.get() * waitFactor, TimeUnit.NANOSECONDS);
+                    if (newClockSignal != null) {
+                        boolean inputSent = inputCreatorQueue.offer(new InputCreatorOutput(resizedSynapticInput, resizedFiringRates), waitTime.get() * waitFactor, TimeUnit.NANOSECONDS);
 
-                    if (inputSent)
-                        Log.d("InputCreator", "input sent " + (test == null));
-                    else
-                        Log.d("InputCreator", "input NOT sent");
+                        if (inputSent)
+                            Log.d("InputCreator", "input sent ");
+                        else
+                            Log.d("InputCreator", "input NOT sent");
+                    } else {
+                        Log.d("InputCreator", "clock null input NOT sent");
+                    }
 
                     // In cas the pressure on the buffer is such that the capacity goes under the
                     // threshold, to prevent the application from stalling the queue is cleared

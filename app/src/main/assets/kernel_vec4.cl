@@ -3,6 +3,7 @@
 
 #define SYNAPSES_PER_KERNEL 4
 #define SYNAPSE_FILTER_ORDER 16
+#define LEARNING_RATE 0.1f
 
 __kernel __attribute__((vec_type_hint(float4)))
 void simulate_dynamics(__constant float* restrict coeff, __global float* restrict weights, // TODO: Coalesce some of the buffers into one?
@@ -49,7 +50,7 @@ void simulate_dynamics(__constant float* restrict coeff, __global float* restric
   int increment = result > 0 ? resultInt : (-resultInt);
 
   // Update the weights using the rate based STDP learning rule
-  weightsVec += weightsFlagsVec * postsynFiringRates[workId] * (preFiringRatesVec - weightsVec);
+  weightsVec += weightsFlagsVec * LEARNING_RATE * postsynFiringRates[workId] * (preFiringRatesVec - weightsVec);
   vstore4(weightsVec, localId, weights + weightsOffset);
 
   // Increment the synaptic current

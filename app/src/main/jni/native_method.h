@@ -13,7 +13,7 @@
 #define INH_SYNAPSE_TIME_SCALE 3
 #define ABSOLUTE_REFRACTORY_PERIOD 2
 #define MIN_WEIGHT 0.0078f
-#define MEAN_RATE_INCREMENT 0.1f
+#define MEAN_RATE_INCREMENT 0.01f
 
 // Abbreviations
 #define potentialVar obj->neuronalDynVar[workId * 2]
