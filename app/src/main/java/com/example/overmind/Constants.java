@@ -2,7 +2,7 @@ package com.example.overmind;
 
 final class Constants {
 
-    /* Neural netowrk constants */
+    /* Neural network constants */
 
     static short NUMBER_OF_NEURONS = 1;
     static short NUMBER_OF_SYNAPSES = 1024;

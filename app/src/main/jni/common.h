@@ -15,10 +15,17 @@
 #include <sstream>
 
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, "OpenCL debug", __VA_ARGS__)
+/*
 #define LOGE(x...) do { \
   char buf[512]; \
   sprintf(buf, x); \
   __android_log_print(ANDROID_LOG_ERROR,"OpenCL error", "%s | %s:%i", buf, __FILE__, __LINE__); \
+} while (0)
+*/
+#define LOGE(x...) do { \
+  char buf[512]; \
+  sprintf(buf, x); \
+  __android_log_print(ANDROID_LOG_ERROR,"OpenCL error", "%s", buf); \
 } while (0)
 
 bool printProfilingInfo(cl_event event);

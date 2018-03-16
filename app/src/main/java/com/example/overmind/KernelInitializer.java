@@ -277,8 +277,10 @@ class KernelInitializer implements Runnable {
              */
 
             // TODO: Perhaps checking against the lateral connections is not necessary?
+            // presynTerminalIndex == shortestTInterIndex.get() & presynTerminalIndex != Constants.INDEX_OF_LATERAL_CONN
+            // presynTerminalIP.equals(Constants.SERVER_IP)
 
-            if (presynTerminalIndex == shortestTInterIndex.get() & presynTerminalIndex != Constants.INDEX_OF_LATERAL_CONN) {
+            if (presynTerminalIP.equals(Constants.SERVER_IP)) {
 
                 Log.d("KernelInitializer", " " + presynTerminalIndex + " " + Constants.INDEX_OF_LATERAL_CONN + " waitTime " + InputCreator.waitTime.get());
 

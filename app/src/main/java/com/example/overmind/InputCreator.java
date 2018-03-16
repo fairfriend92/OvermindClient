@@ -151,7 +151,8 @@ class InputCreator implements Runnable {
 
                     Object newClockSignal = clockSignals.poll(waitTime.get() * 8, TimeUnit.NANOSECONDS);
 
-                    if (newClockSignal != null) {
+                    // newClockSignal != null
+                    if (waitTime.get() != 0) {
                         boolean inputSent = inputCreatorQueue.offer(new InputCreatorOutput(resizedSynapticInput, resizedFiringRates), waitTime.get() * waitFactor, TimeUnit.NANOSECONDS);
 
                         if (inputSent)

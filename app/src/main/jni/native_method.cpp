@@ -15,6 +15,9 @@ size_t currentBufferSize;
 size_t presynFiringRatesBufferSize;
 size_t postsynFiringRatesBufferSize;
 
+// Debug variables
+int counter = 400;
+
 // How many bytes are needed to represent every neuron's spike?
 short dataBytes;
 
@@ -309,7 +312,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
      * If the weights have changed, initialize them.
      */
 
-    LOGD("%d %d %d %d", numOfActiveSynapses, NUM_NEURONS, numOfNewWeights, env->GetArrayLength(jUpdateWeightsFlags));
+    //LOGD("%d %d %d %d", numOfActiveSynapses, NUM_NEURONS, numOfNewWeights, env->GetArrayLength(jUpdateWeightsFlags));
 
     // Proceed inside if the flags that tell which weights must be updated hava changed.
     if (weightsFlagLength != 0) {
@@ -336,7 +339,6 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
         obj->synapseWeights = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
         mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
-
 
 
         if (!mapMemoryObjectsSuccess)
@@ -490,6 +492,32 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
         obj->current[workId] = (cl_int)0;
     }
     /* [Simulate the neuronal dynamics] */
+
+    if (counter == 400) {
+        obj->synapseWeights = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
+        mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
+        if (!mapMemoryObjectsSuccess)
+        {
+            cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+            LOGE("Failed to map buffer");
+        }
+
+        int offset = NUM_SYNAPSES - 1024 + NUM_SYNAPSES * 15;
+
+        for (int weightIndex = 0; weightIndex < 1024; weightIndex++) {
+            LOGE("%lf", obj->synapseWeights[offset + weightIndex]);
+        }
+
+        if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[1], obj->synapseWeights, 0, NULL, NULL)))
+        {
+            cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+            LOGE("Unmap memory objects failed");
+        }
+    }
+
+    // Decrease counter and reset it when it becomes zero
+    counter = counter == 0 ? 400 : counter - 1;
 
     if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[3], obj->current, 0, NULL, NULL)))
     {

@@ -103,7 +103,7 @@ public class SimulationService extends IntentService {
 
     // Buffers containing the last updated info about the local network
     BlockingQueue<Terminal> updatedTerminal = new ArrayBlockingQueue<>(1);
-    BlockingQueue<Terminal> newWeights = new ArrayBlockingQueue<>(4);
+    BlockingQueue<Terminal> newWeights = new ArrayBlockingQueue<>(16);
 
     public SimulationService() {
         super("SimulationService");
@@ -114,23 +114,6 @@ public class SimulationService extends IntentService {
 
         shutdown = true;
 
-    }
-
-    /**
-     * Class containing the needed info to identify a connection and a vector storing the latest
-     * spikes sent by said connection.
-     */
-
-    private class SpikesPackage {
-        String ip;
-        byte[] spikes;
-        int natPort;
-
-        SpikesPackage (String ip, byte[] spikes, int natPort) {
-            this.ip = ip;
-            this.spikes = spikes;
-            this.natPort = natPort;
-        }
     }
 
     public static String getNetworkClass(Context context) {
@@ -455,7 +438,8 @@ public class SimulationService extends IntentService {
                     Object obj = MainActivity.thisClient.objectInputStream.readObject();
                     if (obj instanceof Terminal) {
                         thisTerminal = ((Terminal) obj);
-                        updatedTerminal.clear(); // The last terminal is received is only one that matters, thus the queue can be cleared
+                        Log.d("TerminalUpdater", " " + thisTerminal.newWeights.length);
+                        updatedTerminal.clear(); // The last terminal that is received is only one that matters, thus the queue can be cleared
                         updatedTerminal.offer(thisTerminal);
                         newWeights.offer(thisTerminal); // Vice versa, it may be important to conserve more than one weights array if the simulation has not updated them yet
                         for (Terminal presynConn : thisTerminal.presynapticTerminals) {
