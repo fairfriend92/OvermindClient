@@ -1,3 +1,3 @@
-/home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/release/armeabi-v7a/CMakeFiles/edit_cache.dir
-/home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/release/armeabi-v7a/CMakeFiles/rebuild_cache.dir
-/home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/release/armeabi-v7a/CMakeFiles/ARM.dir
+/Users/rodolforocco/Android projects/OvermindClient/app/.externalNativeBuild/cmake/release/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Users/rodolforocco/Android projects/OvermindClient/app/.externalNativeBuild/cmake/release/armeabi-v7a/CMakeFiles/rebuild_cache.dir
+/Users/rodolforocco/Android projects/OvermindClient/app/.externalNativeBuild/cmake/release/armeabi-v7a/CMakeFiles/ARM.dir

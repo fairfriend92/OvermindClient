@@ -2,11 +2,11 @@
 {
 	"buildFiles" : 
 	[
-		"/home/rodolfo/AndroidStudioProjects/MyApplication/app/CMakeLists.txt"
+		"/Users/rodolforocco/Android projects/OvermindClient/app/CMakeLists.txt"
 	],
 	"cleanCommands" : 
 	[
-		"/home/rodolfo/Android/Sdk/cmake/3.6.4111459/bin/cmake --build /home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/debug/arm64-v8a --target clean"
+		"/Users/rodolforocco/Library/Android/sdk/cmake/3.6.4111459/bin/cmake --build /Users/rodolforocco/Android\\ projects/OvermindClient/app/.externalNativeBuild/cmake/debug/arm64-v8a --target clean"
 	],
 	"cppFileExtensions" : [ "cpp" ],
 	"libraries" : 
@@ -15,25 +15,25 @@
 		{
 			"abi" : "arm64-v8a",
 			"artifactName" : "ARM",
-			"buildCommand" : "/home/rodolfo/Android/Sdk/cmake/3.6.4111459/bin/cmake --build /home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/debug/arm64-v8a --target ARM",
+			"buildCommand" : "/Users/rodolforocco/Library/Android/sdk/cmake/3.6.4111459/bin/cmake --build /Users/rodolforocco/Android\\ projects/OvermindClient/app/.externalNativeBuild/cmake/debug/arm64-v8a --target ARM",
 			"buildType" : "debug",
 			"files" : 
 			[
 				
 				{
-					"flags" : "  --target=aarch64-none-linux-android --gcc-toolchain=/home/rodolfo/Android/Sdk/ndk-bundle/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_64 --sysroot=/home/rodolfo/Android/Sdk/ndk-bundle/sysroot  -DARM_EXPORTS -I../../../../src/main/assets -I../../../../OpenCL/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/arm64-v8a/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include/backward  -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sysroot/usr/include/aarch64-linux-android -D__ANDROID_API__=22 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security  -std=c++11 -O0 -fno-limit-debug-info  -fPIC    -c ",
-					"src" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/src/main/jni/native_method.cpp",
-					"workingDirectory" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/debug/arm64-v8a"
+					"flags" : "  --target=aarch64-none-linux-android --gcc-toolchain=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/aarch64-linux-android-4.9/prebuilt/darwin-x86_64 --sysroot=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot  -DARM_EXPORTS -I../../../../src/main/assets -I../../../../OpenCL/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/cxx-stl/llvm-libc++/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/android/support/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/cxx-stl/llvm-libc++abi/include  -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot/usr/include/aarch64-linux-android -D__ANDROID_API__=22 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11 -std=c++11 -O0 -fno-limit-debug-info  -fPIC    -c ",
+					"src" : "/Users/rodolforocco/Android projects/OvermindClient/app/src/main/jni/native_method.cpp",
+					"workingDirectory" : "/Users/rodolforocco/Android projects/OvermindClient/app/.externalNativeBuild/cmake/debug/arm64-v8a"
 				},
 				
 				{
-					"flags" : "  --target=aarch64-none-linux-android --gcc-toolchain=/home/rodolfo/Android/Sdk/ndk-bundle/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_64 --sysroot=/home/rodolfo/Android/Sdk/ndk-bundle/sysroot  -DARM_EXPORTS -I../../../../src/main/assets -I../../../../OpenCL/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/arm64-v8a/include -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include/backward  -isystem /home/rodolfo/Android/Sdk/ndk-bundle/sysroot/usr/include/aarch64-linux-android -D__ANDROID_API__=22 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security  -std=c++11 -O0 -fno-limit-debug-info  -fPIC    -c ",
-					"src" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/src/main/jni/common.cpp",
-					"workingDirectory" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/.externalNativeBuild/cmake/debug/arm64-v8a"
+					"flags" : "  --target=aarch64-none-linux-android --gcc-toolchain=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/aarch64-linux-android-4.9/prebuilt/darwin-x86_64 --sysroot=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot  -DARM_EXPORTS -I../../../../src/main/assets -I../../../../OpenCL/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/cxx-stl/llvm-libc++/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/android/support/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/cxx-stl/llvm-libc++abi/include  -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot/usr/include/aarch64-linux-android -D__ANDROID_API__=22 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11 -std=c++11 -O0 -fno-limit-debug-info  -fPIC    -c ",
+					"src" : "/Users/rodolforocco/Android projects/OvermindClient/app/src/main/jni/common.cpp",
+					"workingDirectory" : "/Users/rodolforocco/Android projects/OvermindClient/app/.externalNativeBuild/cmake/debug/arm64-v8a"
 				}
 			],
-			"output" : "/home/rodolfo/AndroidStudioProjects/MyApplication/app/build/intermediates/cmake/debug/obj/arm64-v8a/libARM.so",
-			"toolchain" : "989357106649298674"
+			"output" : "/Users/rodolforocco/Android projects/OvermindClient/app/build/intermediates/cmake/debug/obj/arm64-v8a/libARM.so",
+			"toolchain" : "17883089153795610479"
 		},
 		"GLES_mali-Debug-arm64-v8a" : 
 		{
@@ -41,15 +41,15 @@
 			"artifactName" : "GLES_mali",
 			"buildType" : "debug",
 			"output" : "../../../../src/main/jniLibs/arm64-v8a/libGLES_mali.so",
-			"toolchain" : "989357106649298674"
+			"toolchain" : "17883089153795610479"
 		}
 	},
 	"toolchains" : 
 	{
-		"989357106649298674" : 
+		"17883089153795610479" : 
 		{
-			"cCompilerExecutable" : "/home/rodolfo/Android/Sdk/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin/clang",
-			"cppCompilerExecutable" : "/home/rodolfo/Android/Sdk/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++"
+			"cCompilerExecutable" : "/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang",
+			"cppCompilerExecutable" : "/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang++"
 		}
 	}
 }

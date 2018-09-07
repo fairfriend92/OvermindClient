@@ -5,10 +5,11 @@ import java.util.ArrayList;
 
 public class Terminal implements Serializable {
     public short numOfNeurons, numOfDendrites, numOfSynapses;
+    public ArrayList<Population> populations = new ArrayList<>(); // TODO: Arrays and collections shouldn't be created here.
     public String serverIP;
     public String ip;
     public int natPort;
-    public ArrayList<Terminal> presynapticTerminals = new ArrayList<>(); // TODO: Arrays and collections shouldn't be created here.
+    public ArrayList<Terminal> presynapticTerminals = new ArrayList<>();
     public ArrayList<Terminal> postsynapticTerminals = new ArrayList<>();
     public byte[] newWeights = new byte[0];
     public int[] newWeightsIndexes = new int[0];

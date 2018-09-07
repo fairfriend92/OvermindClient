@@ -46,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
 
     // GUI elements
     private EditText editServerIP = null;
+    private EditText editLocalIP = null;
     private EditText editNumOfNeurons = null;
     private EditText editNumOfSynapses = null;
     private TextView currentView = null; // Field displaying the value of the current injected by the user
@@ -81,6 +82,7 @@ public class MainActivity extends AppCompatActivity {
         // Bring back the home menu view
         setContentView(R.layout.pre_connection);
         editServerIP = (EditText) findViewById(R.id.edit_ip);
+        editLocalIP = (EditText) findViewById(R.id.edit_local_ip);
         editNumOfNeurons = (EditText) findViewById(R.id.edit_num_of_neurons);
         editNumOfSynapses = (EditText) findViewById(R.id.edit_num_of_synapses);
     }
@@ -291,9 +293,16 @@ public class MainActivity extends AppCompatActivity {
 
         // Get the server ip from the text box
         Constants.SERVER_IP = editServerIP.getText().toString();
+
         server.ip = Constants.SERVER_IP;
         server.serverIP = Constants.SERVER_IP;
         server.natPort = Constants.UDP_PORT;
+
+        assert editLocalIP != null;
+
+        // If the local IP text box has been filled, get its value
+        String localIP = editLocalIP.getText().toString();
+        Constants.DEVICE_IP = localIP;
 
         try {
             // Get the number of neurons for the local netwowrk from the text box
@@ -560,6 +569,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Create the editable fields
         editServerIP = (EditText) findViewById(R.id.edit_ip);
+        editLocalIP = (EditText) findViewById(R.id.edit_local_ip);
         editNumOfNeurons = (EditText) findViewById(R.id.edit_num_of_neurons);
         editNumOfSynapses = (EditText) findViewById(R.id.edit_num_of_synapses);
 
