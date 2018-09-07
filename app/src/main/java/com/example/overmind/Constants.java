@@ -24,6 +24,7 @@ final class Constants {
     static int UDP_PORT = 4194;
     static final int IPTOS_RELIABILITY = 0x04;
     static String SERVER_IP;
+    static String DEVICE_IP;
     static boolean USE_LOCAL_CONNECTION = false;
 
 }

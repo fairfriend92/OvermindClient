@@ -6,16 +6,23 @@
 package com.example.overmind;
 
 import android.content.Context;
+import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
+import android.text.format.Formatter;
 import android.util.Log;
 import android.widget.Toast;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Enumeration;
+
+import static android.content.Context.WIFI_SERVICE;
 
 class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
     private Context context;
@@ -39,14 +46,22 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
                 String stackTrace = Log.getStackTraceString(e);
                 Log.e("ServerConnect", stackTrace);
             }
-        } else {
+        } else if (Constants.DEVICE_IP.equals("")) {
+            Log.d("ServerConnect", "Local IP was not set by user");
             try {
-                Socket socket = new Socket("192.168.1.1", 80);
-                ip = socket.getLocalAddress().getHostAddress();
-                socket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+                for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
+                    NetworkInterface intf = en.nextElement();
+                    for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements();) {
+                        InetAddress inetAddress = enumIpAddr.nextElement();
+                        if (!inetAddress.isLoopbackAddress()) {
+                            ip = inetAddress.getHostAddress();
+                        }
+                    }
+                }
+            } catch (SocketException ex) {}
+        } else {
+            Log.d("ServerConnect", "Local IP was set by user");
+            ip = Constants.DEVICE_IP;
         }
         thisTerminal.ip = ip;
 

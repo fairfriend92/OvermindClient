@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">OvermindClient</string>
     <string name="edit_ip">Enter the OvermindServer IP</string>
+    <string name="edit_local_ip">Enter device IP if known</string>
     <string name="start_simulation">Start simulation</string>
     <string name="server_ip">Look up the IP on the Overmind webpage</string>
     <string name="connection_failed_title">Connection failed</string>

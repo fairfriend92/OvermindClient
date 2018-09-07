@@ -4,7 +4,12 @@ import java.io.Serializable;
 import java.util.ArrayList;
 
 public class Terminal implements Serializable {
+    // These are total numbers for all the populations
     public short numOfNeurons, numOfDendrites, numOfSynapses;
+
+    // Populations that live on this terminal
+    public Population[] populations = new Population[0];
+
     public String serverIP;
     public String ip;
     public int natPort;
@@ -23,5 +28,4 @@ public class Terminal implements Serializable {
         else
             return compare.ip.equals(this.ip);
     }
-
 }
