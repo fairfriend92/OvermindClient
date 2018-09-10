@@ -503,11 +503,14 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
             LOGE("Failed to map buffer");
         }
 
+        // Un-comment for map of synaptic weights
+        /*
         int offset = NUM_SYNAPSES - 1024 + NUM_SYNAPSES * 15;
 
         for (int weightIndex = 0; weightIndex < 1024; weightIndex++) {
             LOGE("%lf", obj->synapseWeights[offset + weightIndex]);
         }
+         */
 
         if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[1], obj->synapseWeights, 0, NULL, NULL)))
         {

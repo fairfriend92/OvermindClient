@@ -6,9 +6,7 @@
 package com.example.overmind;
 
 import android.content.Context;
-import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
-import android.text.format.Formatter;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -18,11 +16,8 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Enumeration;
-
-import static android.content.Context.WIFI_SERVICE;
 
 class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
     private Context context;
@@ -102,6 +97,11 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
             thisTerminal.numOfSynapses = Constants.NUMBER_OF_SYNAPSES;
         }
 
+        // By default every terminal has just one population
+        Population defaultPopulation = new Population(thisTerminal.numOfNeurons,
+                thisTerminal.numOfDendrites, thisTerminal.numOfSynapses);
+        thisTerminal.populations.add(defaultPopulation);
+
         thisTerminal.natPort = 0;
         thisTerminal.serverIP = Constants.SERVER_IP;
         thisTerminal.presynapticTerminals = new ArrayList<>();
@@ -112,6 +112,10 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
         if (Constants.LATERAL_CONNECTIONS) {
             thisTerminal.presynapticTerminals.add(thisTerminal);
             thisTerminal.postsynapticTerminals.add(thisTerminal);
+
+
+            thisTerminal.updateMaps(defaultPopulation.id, thisTerminal.id, Terminal.INPUT_TO_POPULATION);
+            thisTerminal.updateMaps(defaultPopulation.id, thisTerminal.id, Terminal.POPULATION_TO_OUTPUT);
         }
 
         /*

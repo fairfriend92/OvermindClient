@@ -6,14 +6,29 @@
     </shared>
   </component>
   <component name="AndroidLogFilters">
-    <option name="TOOL_WINDOW_CUSTOM_FILTER" value="opencl" />
-    <option name="TOOL_WINDOW_LOG_LEVEL" value="error" />
+    <option name="TOOL_WINDOW_CUSTOM_FILTER" value="InputCreator" />
+    <option name="TOOL_WINDOW_LOG_LEVEL" value="verbose" />
     <option name="TOOL_WINDOW_CONFIGURED_FILTER" value="No Filters" />
     <option name="LOGCAT_FORMAT_STRING" value="%4$c: %6$s" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ca50b962-a988-47d9-97ce-c78b82bfa005" name="Default" comment="Created Population class, modified Terminal">
+    <list default="true" id="ca50b962-a988-47d9-97ce-c78b82bfa005" name="Default" comment="">
+      <change beforePath="$PROJECT_DIR$/.gradle/4.4/fileHashes/fileHashes.bin" afterPath="$PROJECT_DIR$/.gradle/4.4/fileHashes/fileHashes.bin" />
+      <change beforePath="$PROJECT_DIR$/.gradle/4.4/fileHashes/fileHashes.lock" afterPath="$PROJECT_DIR$/.gradle/4.4/fileHashes/fileHashes.lock" />
+      <change beforePath="$PROJECT_DIR$/.gradle/4.4/javaCompile/classAnalysis.bin" afterPath="$PROJECT_DIR$/.gradle/4.4/javaCompile/classAnalysis.bin" />
+      <change beforePath="$PROJECT_DIR$/.gradle/4.4/javaCompile/javaCompile.lock" afterPath="$PROJECT_DIR$/.gradle/4.4/javaCompile/javaCompile.lock" />
+      <change beforePath="$PROJECT_DIR$/.gradle/4.4/javaCompile/taskHistory.bin" afterPath="$PROJECT_DIR$/.gradle/4.4/javaCompile/taskHistory.bin" />
+      <change beforePath="$PROJECT_DIR$/.gradle/4.4/taskHistory/taskHistory.bin" afterPath="$PROJECT_DIR$/.gradle/4.4/taskHistory/taskHistory.bin" />
+      <change beforePath="$PROJECT_DIR$/.gradle/4.4/taskHistory/taskHistory.lock" afterPath="$PROJECT_DIR$/.gradle/4.4/taskHistory/taskHistory.lock" />
+      <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change beforePath="$PROJECT_DIR$/app/.externalNativeBuild/cmake/debug/arm64-v8a/.ninja_deps" afterPath="$PROJECT_DIR$/app/.externalNativeBuild/cmake/debug/arm64-v8a/.ninja_deps" />
+      <change beforePath="$PROJECT_DIR$/app/.externalNativeBuild/cmake/debug/arm64-v8a/.ninja_log" afterPath="$PROJECT_DIR$/app/.externalNativeBuild/cmake/debug/arm64-v8a/.ninja_log" />
+      <change beforePath="$PROJECT_DIR$/app/.externalNativeBuild/cmake/debug/arm64-v8a/CMakeFiles/ARM.dir/src/main/jni/native_method.cpp.o" afterPath="$PROJECT_DIR$/app/.externalNativeBuild/cmake/debug/arm64-v8a/CMakeFiles/ARM.dir/src/main/jni/native_method.cpp.o" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/overmind/Population.java" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/overmind/Population.java" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/overmind/ServerConnect.java" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/overmind/ServerConnect.java" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/overmind/Terminal.java" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/overmind/Terminal.java" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/jni/native_method.cpp" afterPath="$PROJECT_DIR$/app/src/main/jni/native_method.cpp" />
     </list>
     <ignored path="MyApplication.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -52,22 +67,34 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="Population.java" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/Population.java">
+      <file leaf-file-name="SimulationService.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/SimulationService.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="45">
-              <caret line="3" column="92" lean-forward="false" selection-start-line="3" selection-start-column="92" selection-end-line="3" selection-end-column="92" />
+            <state relative-caret-position="180">
+              <caret line="271" column="50" lean-forward="false" selection-start-line="271" selection-start-column="38" selection-end-line="271" selection-end-column="50" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Terminal.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="Population.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/Population.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="390">
+              <caret line="26" column="0" lean-forward="true" selection-start-line="26" selection-start-column="0" selection-end-line="26" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Terminal.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/Terminal.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="360">
-              <caret line="25" column="41" lean-forward="true" selection-start-line="25" selection-start-column="41" selection-end-line="25" selection-end-column="41" />
-              <folding />
+            <state relative-caret-position="240">
+              <caret line="16" column="10" lean-forward="false" selection-start-line="16" selection-start-column="4" selection-end-line="16" selection-end-column="10" />
+              <folding>
+                <element signature="imports" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -75,18 +102,18 @@
       <file leaf-file-name="KernelInitializer.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/KernelInitializer.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-1647">
-              <caret line="134" column="31" lean-forward="false" selection-start-line="134" selection-start-column="12" selection-end-line="134" selection-end-column="31" />
+            <state relative-caret-position="373">
+              <caret line="290" column="92" lean-forward="false" selection-start-line="290" selection-start-column="92" selection-end-line="290" selection-end-column="92" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="InputCreator.java" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/InputCreator.java">
+      <file leaf-file-name="ServerConnect.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/ServerConnect.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="938">
-              <caret line="154" column="43" lean-forward="false" selection-start-line="154" selection-start-column="43" selection-end-line="154" selection-end-column="43" />
+            <state relative-caret-position="309">
+              <caret line="117" column="104" lean-forward="false" selection-start-line="117" selection-start-column="104" selection-end-line="117" selection-end-column="104" />
               <folding />
             </state>
           </provider>
@@ -101,6 +128,13 @@
         <option value="Class" />
       </list>
     </option>
+  </component>
+  <component name="FindInProjectRecents">
+    <findStrings>
+      <find>iterator</find>
+      <find>presynterminalindex</find>
+      <find>lateral</find>
+    </findStrings>
   </component>
   <component name="Git.Settings">
     <option name="PREVIOUS_COMMIT_AUTHORS">
@@ -2052,7 +2086,6 @@
         <option value="$PROJECT_DIR$/app/src/main/java/com/example/overmind/ErrorDialogFragment.java" />
         <option value="$PROJECT_DIR$/app/src/main/assets/kernel_vec4.cl" />
         <option value="$PROJECT_DIR$/app/src/main/res/values/strings.xml" />
-        <option value="$PROJECT_DIR$/app/src/main/java/com/example/overmind/ServerConnect.java" />
         <option value="$PROJECT_DIR$/app/src/main/java/com/example/overmind/CountdownToConnectionService.java" />
         <option value="$USER_HOME$/tesi/code/dynamics.c" />
         <option value="$PROJECT_DIR$/app/src/main/java/com/example/overmind/InputCreator.java" />
@@ -2062,18 +2095,18 @@
         <option value="$PROJECT_DIR$/app/src/main/java/com/example/overmind/MainActivity.java" />
         <option value="$PROJECT_DIR$/app/src/main/java/com/example/overmind/KernelInitializer.java" />
         <option value="$PROJECT_DIR$/app/src/main/jni/common.h" />
-        <option value="$PROJECT_DIR$/app/src/main/jni/native_method.cpp" />
         <option value="$PROJECT_DIR$/app/src/main/res/layout/pre_connection.xml" />
+        <option value="$PROJECT_DIR$/app/src/main/jni/native_method.cpp" />
         <option value="$PROJECT_DIR$/app/src/main/java/com/example/overmind/Population.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/example/overmind/ServerConnect.java" />
         <option value="$PROJECT_DIR$/app/src/main/java/com/example/overmind/Terminal.java" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" fullScreen="true">
-    <option name="x" value="1" />
-    <option name="y" value="41" />
-    <option name="width" value="1918" />
-    <option name="height" value="1038" />
+  <component name="ProjectFrameBounds" extendedState="6" fullScreen="true">
+    <option name="y" value="23" />
+    <option name="width" value="1440" />
+    <option name="height" value="803" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true">
     <ConfirmationsSetting value="2" id="Add" />
@@ -2120,6 +2153,17 @@
               <item name="java" type="edd41e36:AndroidSourceTypeNode" />
               <item name="overmind" type="cbb59c9e:AndroidPsiDirectoryNode" />
               <item name="InputCreator.java" type="529ef68f:ClassesTreeStructureProvider$PsiClassOwnerTreeNode" />
+            </path>
+            <path>
+              <item name="OvermindClient" type="1abcf292:AndroidViewProjectNode" />
+              <item name="app" type="feadf853:AndroidModuleNode" />
+              <item name="cpp" type="9a30073f:AndroidJniFolderNode" />
+            </path>
+            <path>
+              <item name="OvermindClient" type="1abcf292:AndroidViewProjectNode" />
+              <item name="app" type="feadf853:AndroidModuleNode" />
+              <item name="cpp" type="9a30073f:AndroidJniFolderNode" />
+              <item name="" type="e12020bf:NdkLibraryNode" />
             </path>
           </expand>
           <select />
@@ -2502,13 +2546,6 @@
       <option name="presentableId" value="Default" />
       <updated>1481823723005</updated>
     </task>
-    <task id="LOCAL-00023" summary="Altri miglioramenti a KernelInitializer (1)">
-      <created>1498592476992</created>
-      <option name="number" value="00023" />
-      <option name="presentableId" value="LOCAL-00023" />
-      <option name="project" value="LOCAL" />
-      <updated>1498592476992</updated>
-    </task>
     <task id="LOCAL-00024" summary="Altri miglioramenti a KernelInitializer (1)">
       <created>1498592530154</created>
       <option name="number" value="00024" />
@@ -2845,7 +2882,14 @@
       <option name="project" value="LOCAL" />
       <updated>1536321871701</updated>
     </task>
-    <option name="localTasksCounter" value="72" />
+    <task id="LOCAL-00072" summary="Created Population class, modified Terminal">
+      <created>1536322034334</created>
+      <option name="number" value="00072" />
+      <option name="presentableId" value="LOCAL-00072" />
+      <option name="project" value="LOCAL" />
+      <updated>1536322034334</updated>
+    </task>
+    <option name="localTasksCounter" value="73" />
     <servers />
   </component>
   <component name="TodoView" selected-index="4">
@@ -2858,12 +2902,13 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="0" width="1440" height="900" extended-state="0" />
+    <frame x="0" y="0" width="1440" height="900" extended-state="6" />
+    <editor active="true" />
     <layout>
       <window_info id="Android Profiler" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
       <window_info id="Build Variants" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.512275" order="8" side_tool="true" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.439779" sideWeight="0.42032087" order="7" side_tool="true" content_ui="tabs" />
-      <window_info id="Logcat" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32889965" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
+      <window_info id="Logcat" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.24425635" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
       <window_info id="Capture Tool" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Build" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4435028" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
@@ -2880,7 +2925,7 @@
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32928178" sideWeight="0.20673077" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32889965" sideWeight="0.491453" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="Captures" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.23962805" sideWeight="0.47790506" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.23962805" sideWeight="0.47790506" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32930845" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Gradle" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32959402" sideWeight="0.49346405" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Theme Preview" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
@@ -2989,9 +3034,9 @@
     <MESSAGE value="backup commit" />
     <MESSAGE value="milestone - laurea!" />
     <MESSAGE value="First commit from mac" />
-    <MESSAGE value="Created Population class, modified Terminal" />
     <MESSAGE value="Upload of Population class" />
-    <option name="LAST_COMMIT_MESSAGE" value="Upload of Population class" />
+    <MESSAGE value="Created Population class, modified Terminal" />
+    <option name="LAST_COMMIT_MESSAGE" value="Created Population class, modified Terminal" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -3213,22 +3258,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/jni/native_method.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="15">
-          <caret line="36" column="43" lean-forward="false" selection-start-line="36" selection-start-column="31" selection-end-line="36" selection-end-column="43" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/SimulationService.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1020">
-          <caret line="105" column="68" lean-forward="false" selection-start-line="105" selection-start-column="68" selection-end-line="105" selection-end-column="68" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/res/layout/pre_connection.xml">
       <provider editor-type-id="android-designer2">
         <state />
@@ -3236,14 +3265,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="112">
           <caret line="9" column="10" lean-forward="true" selection-start-line="9" selection-start-column="10" selection-end-line="9" selection-end-column="10" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/ServerConnect.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="744">
-          <caret line="144" column="60" lean-forward="false" selection-start-line="144" selection-start-column="48" selection-end-line="144" selection-end-column="60" />
           <folding />
         </state>
       </provider>
@@ -3258,33 +3279,59 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/InputCreator.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="938">
+        <state relative-caret-position="622">
           <caret line="154" column="43" lean-forward="false" selection-start-line="154" selection-start-column="43" selection-end-line="154" selection-end-column="43" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/jni/native_method.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="243">
+          <caret line="503" column="9" lean-forward="false" selection-start-line="503" selection-start-column="9" selection-end-line="503" selection-end-column="9" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/SimulationService.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="180">
+          <caret line="271" column="50" lean-forward="false" selection-start-line="271" selection-start-column="38" selection-end-line="271" selection-end-column="50" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/KernelInitializer.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1647">
-          <caret line="134" column="31" lean-forward="false" selection-start-line="134" selection-start-column="12" selection-end-line="134" selection-end-column="31" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/Terminal.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="360">
-          <caret line="25" column="41" lean-forward="true" selection-start-line="25" selection-start-column="41" selection-end-line="25" selection-end-column="41" />
+        <state relative-caret-position="373">
+          <caret line="290" column="92" lean-forward="false" selection-start-line="290" selection-start-column="92" selection-end-line="290" selection-end-column="92" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/Population.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="45">
-          <caret line="3" column="92" lean-forward="false" selection-start-line="3" selection-start-column="92" selection-end-line="3" selection-end-column="92" />
+        <state relative-caret-position="390">
+          <caret line="26" column="0" lean-forward="true" selection-start-line="26" selection-start-column="0" selection-end-line="26" selection-end-column="0" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/ServerConnect.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="309">
+          <caret line="117" column="104" lean-forward="false" selection-start-line="117" selection-start-column="104" selection-end-line="117" selection-end-column="104" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/Terminal.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="240">
+          <caret line="16" column="10" lean-forward="false" selection-start-line="16" selection-start-column="4" selection-end-line="16" selection-end-column="10" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
