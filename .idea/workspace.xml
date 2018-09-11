@@ -22,13 +22,8 @@
       <change beforePath="$PROJECT_DIR$/.gradle/4.4/taskHistory/taskHistory.lock" afterPath="$PROJECT_DIR$/.gradle/4.4/taskHistory/taskHistory.lock" />
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change beforePath="$PROJECT_DIR$/app/.externalNativeBuild/cmake/debug/arm64-v8a/.ninja_deps" afterPath="$PROJECT_DIR$/app/.externalNativeBuild/cmake/debug/arm64-v8a/.ninja_deps" />
-      <change beforePath="$PROJECT_DIR$/app/.externalNativeBuild/cmake/debug/arm64-v8a/.ninja_log" afterPath="$PROJECT_DIR$/app/.externalNativeBuild/cmake/debug/arm64-v8a/.ninja_log" />
-      <change beforePath="$PROJECT_DIR$/app/.externalNativeBuild/cmake/debug/arm64-v8a/CMakeFiles/ARM.dir/src/main/jni/native_method.cpp.o" afterPath="$PROJECT_DIR$/app/.externalNativeBuild/cmake/debug/arm64-v8a/CMakeFiles/ARM.dir/src/main/jni/native_method.cpp.o" />
       <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/overmind/Population.java" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/overmind/Population.java" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/overmind/ServerConnect.java" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/overmind/ServerConnect.java" />
       <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/overmind/Terminal.java" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/overmind/Terminal.java" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/jni/native_method.cpp" afterPath="$PROJECT_DIR$/app/src/main/jni/native_method.cpp" />
     </list>
     <ignored path="MyApplication.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -77,21 +72,23 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Population.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="Population.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/Population.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="390">
-              <caret line="26" column="0" lean-forward="true" selection-start-line="26" selection-start-column="0" selection-end-line="26" selection-end-column="0" />
-              <folding />
+            <state relative-caret-position="488">
+              <caret line="35" column="0" lean-forward="true" selection-start-line="35" selection-start-column="0" selection-end-line="35" selection-end-column="0" />
+              <folding>
+                <element signature="imports" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Terminal.java" pinned="false" current-in-tab="true">
+      <file leaf-file-name="Terminal.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/Terminal.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="240">
-              <caret line="16" column="10" lean-forward="false" selection-start-line="16" selection-start-column="4" selection-end-line="16" selection-end-column="10" />
+            <state relative-caret-position="749">
+              <caret line="124" column="0" lean-forward="true" selection-start-line="124" selection-start-column="0" selection-end-line="124" selection-end-column="0" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -112,7 +109,7 @@
       <file leaf-file-name="ServerConnect.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/ServerConnect.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="309">
+            <state relative-caret-position="445">
               <caret line="117" column="104" lean-forward="false" selection-start-line="117" selection-start-column="104" selection-end-line="117" selection-end-column="104" />
               <folding />
             </state>
@@ -2097,13 +2094,13 @@
         <option value="$PROJECT_DIR$/app/src/main/jni/common.h" />
         <option value="$PROJECT_DIR$/app/src/main/res/layout/pre_connection.xml" />
         <option value="$PROJECT_DIR$/app/src/main/jni/native_method.cpp" />
-        <option value="$PROJECT_DIR$/app/src/main/java/com/example/overmind/Population.java" />
         <option value="$PROJECT_DIR$/app/src/main/java/com/example/overmind/ServerConnect.java" />
         <option value="$PROJECT_DIR$/app/src/main/java/com/example/overmind/Terminal.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/example/overmind/Population.java" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6" fullScreen="true">
+  <component name="ProjectFrameBounds" fullScreen="true">
     <option name="y" value="23" />
     <option name="width" value="1440" />
     <option name="height" value="803" />
@@ -2546,13 +2543,6 @@
       <option name="presentableId" value="Default" />
       <updated>1481823723005</updated>
     </task>
-    <task id="LOCAL-00024" summary="Altri miglioramenti a KernelInitializer (1)">
-      <created>1498592530154</created>
-      <option name="number" value="00024" />
-      <option name="presentableId" value="LOCAL-00024" />
-      <option name="project" value="LOCAL" />
-      <updated>1498592530154</updated>
-    </task>
     <task id="LOCAL-00025" summary="Uso di future per capire quando KernelInitializer esaurisce il workload">
       <created>1498938523356</created>
       <option name="number" value="00025" />
@@ -2889,7 +2879,14 @@
       <option name="project" value="LOCAL" />
       <updated>1536322034334</updated>
     </task>
-    <option name="localTasksCounter" value="73" />
+    <task id="LOCAL-00073" summary="Created methods and objects to partition a terminal into multiple populations">
+      <created>1536591987467</created>
+      <option name="number" value="00073" />
+      <option name="presentableId" value="LOCAL-00073" />
+      <option name="project" value="LOCAL" />
+      <updated>1536591987468</updated>
+    </task>
+    <option name="localTasksCounter" value="74" />
     <servers />
   </component>
   <component name="TodoView" selected-index="4">
@@ -2902,7 +2899,7 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="0" width="1440" height="900" extended-state="6" />
+    <frame x="0" y="0" width="1440" height="900" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info id="Android Profiler" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
@@ -3011,7 +3008,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="synapticInput ora è in byte invece che char" />
     <MESSAGE value="localSize è letto dalla memoria dell'host.&#10;" />
     <MESSAGE value="pesi sinaptici non sparsi.&#10;" />
     <MESSAGE value="ridotto numero argomenti di simulatedynamics&#10;" />
@@ -3036,7 +3032,8 @@
     <MESSAGE value="First commit from mac" />
     <MESSAGE value="Upload of Population class" />
     <MESSAGE value="Created Population class, modified Terminal" />
-    <option name="LAST_COMMIT_MESSAGE" value="Created Population class, modified Terminal" />
+    <MESSAGE value="Created methods and objects to partition a terminal into multiple populations" />
+    <option name="LAST_COMMIT_MESSAGE" value="Created methods and objects to partition a terminal into multiple populations" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -3309,17 +3306,9 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/Population.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="390">
-          <caret line="26" column="0" lean-forward="true" selection-start-line="26" selection-start-column="0" selection-end-line="26" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/ServerConnect.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="309">
+        <state relative-caret-position="445">
           <caret line="117" column="104" lean-forward="false" selection-start-line="117" selection-start-column="104" selection-end-line="117" selection-end-column="104" />
           <folding />
         </state>
@@ -3327,8 +3316,18 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/Terminal.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="240">
-          <caret line="16" column="10" lean-forward="false" selection-start-line="16" selection-start-column="4" selection-end-line="16" selection-end-column="10" />
+        <state relative-caret-position="749">
+          <caret line="124" column="0" lean-forward="true" selection-start-line="124" selection-start-column="0" selection-end-line="124" selection-end-column="0" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/Population.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="488">
+          <caret line="35" column="0" lean-forward="true" selection-start-line="35" selection-start-column="0" selection-end-line="35" selection-end-column="0" />
           <folding>
             <element signature="imports" expanded="true" />
           </folding>
