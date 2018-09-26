@@ -97,11 +97,6 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
             thisTerminal.numOfSynapses = Constants.NUMBER_OF_SYNAPSES;
         }
 
-        // By default every terminal has just one population
-        Population defaultPopulation = new Population(thisTerminal.numOfNeurons,
-                thisTerminal.numOfDendrites, thisTerminal.numOfSynapses);
-        thisTerminal.populations.add(defaultPopulation);
-
         thisTerminal.natPort = 0;
         thisTerminal.serverIP = Constants.SERVER_IP;
         thisTerminal.presynapticTerminals = new ArrayList<>();
@@ -112,10 +107,6 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
         if (Constants.LATERAL_CONNECTIONS) {
             thisTerminal.presynapticTerminals.add(thisTerminal);
             thisTerminal.postsynapticTerminals.add(thisTerminal);
-
-
-            thisTerminal.updateMaps(defaultPopulation.id, thisTerminal.id, Terminal.INPUT_TO_POPULATION);
-            thisTerminal.updateMaps(defaultPopulation.id, thisTerminal.id, Terminal.POPULATION_TO_OUTPUT);
         }
 
         /*
