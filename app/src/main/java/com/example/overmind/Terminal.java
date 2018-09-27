@@ -19,6 +19,9 @@ public class Terminal implements Serializable {
     // Populations that live on this terminal
     public HashMap<Integer, Population> populations = new HashMap<>();
 
+    // Matrix that organizes populations based on their connections
+    public Population[][] popsMatrix = null;
+
     // Map that connects a presynpatic terminal to the populations it stimulates that live on this terminal
     public HashMap<Integer, ArrayList<Integer>> inputsToPopulations = new HashMap<>();
 
@@ -89,6 +92,7 @@ public class Terminal implements Serializable {
             // returned null
             if (input != null) {
                 input.outputIndexes.remove(pop.id);
+                input.numOfSynapses += pop.numOfNeurons;
 
                 // If the input is not connected to any other postsynaptic
                 // population, it should be removed too
@@ -115,6 +119,7 @@ public class Terminal implements Serializable {
         for (Integer outputId : pop.outputIndexes) {
             Population output = populations.get(outputId);
             if (output != null) {
+                output.numOfDendrites += pop.numOfNeurons;
                 output.inputIndexes.remove(pop.id);
                 if (output.inputIndexes.size() == 0)
                     removePopulation(output);
@@ -137,6 +142,8 @@ public class Terminal implements Serializable {
      */
 
     public void addPopulation(Population pop) {
+        populations.put(pop.id, pop);
+
         for (Integer inputId : pop.inputIndexes) {
             Population input = populations.get(inputId);
 
@@ -189,5 +196,13 @@ public class Terminal implements Serializable {
         System.arraycopy(terminal.newWeights, 0, this.newWeights, 0, terminal.newWeights.length);
         System.arraycopy(terminal.newWeightsIndexes, 0, this.newWeightsIndexes, 0, terminal.newWeightsIndexes.length);
         System.arraycopy(terminal.updateWeightsFlags, 0, this.updateWeightsFlags, 0, terminal.updateWeightsFlags.length);
+
+        if (terminal.popsMatrix != null) {
+            this.popsMatrix = new Population[terminal.popsMatrix.length][];
+            for (int i = 0; i < terminal.popsMatrix.length; i++) {
+                this.popsMatrix[i] = new Population[terminal.popsMatrix[i].length];
+                System.arraycopy(terminal.popsMatrix[i], 0, this.popsMatrix[i], 0, terminal.popsMatrix[i].length);
+            }
+        }
     }
 }

@@ -247,6 +247,8 @@ public class SimulationService extends IntentService {
         // a packet was received.
         boolean receiveTimedOut = false;
 
+        IndexesMatrixBuilder indexesMatrixBuilder = new IndexesMatrixBuilder();
+
         while (!shutdown) {
 
             try {
@@ -268,7 +270,7 @@ public class SimulationService extends IntentService {
                 // If the terminal info have been updated
                 if (thisTerminal != null) {
 
-                    // Update the varaible holding the terminal info
+                    // Update the variable holding the terminal info
                     SimulationService.thisTerminal = thisTerminal;
 
                     // Change the size of the pool of kernelInitExecutors appropriately
@@ -290,6 +292,9 @@ public class SimulationService extends IntentService {
                     // Determine if the lateral connections option has been changed by the server
                     Constants.INDEX_OF_LATERAL_CONN = thisTerminal.presynapticTerminals.indexOf(thisTerminal);
                     Constants.LATERAL_CONNECTIONS = Constants.INDEX_OF_LATERAL_CONN != -1;
+
+                    if (thisTerminal.popsMatrix != null)
+                        indexesMatrixBuilder.buildMatrix(thisTerminal.popsMatrix);
 
                     // If the info about the terminal have been updated, wait for the threads to finish
                     // before dispatching new ones

@@ -376,7 +376,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     // How many elements of synapseInput[] does a single kernel compute?
     int inputsPerKernel = obj->floatVectorWidth * 4; // Each input is a char, therefore the char vector width is floatVectorWidth * 4
 
-    // How many kernels are needed to server all the active synapses for a single neuron?
+    // How many kernels are needed to serve all the active synapses for a single neuron?
     int localSize = synapseInputLength % inputsPerKernel == 0 ?
                     synapseInputLength / inputsPerKernel : synapseInputLength / inputsPerKernel + 1;
 
