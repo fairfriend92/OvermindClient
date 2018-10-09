@@ -247,8 +247,6 @@ public class SimulationService extends IntentService {
         // a packet was received.
         boolean receiveTimedOut = false;
 
-        IndexesMatrixBuilder indexesMatrixBuilder = new IndexesMatrixBuilder();
-
         while (!shutdown) {
 
             try {
@@ -292,9 +290,6 @@ public class SimulationService extends IntentService {
                     // Determine if the lateral connections option has been changed by the server
                     Constants.INDEX_OF_LATERAL_CONN = thisTerminal.presynapticTerminals.indexOf(thisTerminal);
                     Constants.LATERAL_CONNECTIONS = Constants.INDEX_OF_LATERAL_CONN != -1;
-
-                    if (thisTerminal.popsMatrix != null)
-                        indexesMatrixBuilder.buildMatrix(thisTerminal.popsMatrix);
 
                     // If the info about the terminal have been updated, wait for the threads to finish
                     // before dispatching new ones
@@ -479,6 +474,8 @@ public class SimulationService extends IntentService {
         private byte[] outputSpikes = new byte[data_bytes];
         private BlockingQueue<byte[]> kernelExcQueue;
         private BlockingQueue<Terminal> newTerminalQueue;
+        private IndexesMatrixBuilder indexesMatrixBuilder = new IndexesMatrixBuilder();
+        private boolean populationPresent = false;
 
         KernelExecutor(BlockingQueue<InputCreatorOutput> b, BlockingQueue<byte[]> b1, long l1, BlockingQueue<Terminal> b2) {
             inputCreatorQueue = b;
@@ -501,32 +498,48 @@ public class SimulationService extends IntentService {
                     Log.e("KernelExecutor", stackTrace);
                 }
 
+                // TODO: Instead of assigning zero length arrays is it possible to pass a null to the native side and check against nullptr?
                 byte[] weights = new byte[0];
                 int[] weightsIndexes = new int[0];
                 byte[] updateWeightsFlags = new byte[0];
+                IndexesMatrices indexesMatrices = new IndexesMatrices(
+                        new int[0][0], new int[0][0]);
 
                 if (newTerminal != null) {
                     weights = newTerminal.newWeights;
                     weightsIndexes = newTerminal.newWeightsIndexes;
                     updateWeightsFlags = newTerminal.updateWeightsFlags;
+
+                    // If the matrix of populations has been created, it should be used to generate the indexes for the
+                    // synapses
+                    if (newTerminal.popsMatrix != null) {
+                        indexesMatrices = indexesMatrixBuilder.buildIndexesMatrix(newTerminal);
+                        if (newTerminal.popsMatrix.length != 0)
+                            populationPresent = true;
+                    }
                 }
 
-                outputSpikes = simulateDynamics(inputCreatorOutput.resizedSynapticInput, openCLObject,
-                        SimulationParameters.getParameters(), weights, weightsIndexes, inputCreatorOutput.resizedFiringRates, updateWeightsFlags);
+                // Call the native side only if there is at least one population
+                if (populationPresent) {
+                    outputSpikes = simulateDynamics(inputCreatorOutput.resizedSynapticInput, openCLObject,
+                            SimulationParameters.getParameters(), weights, weightsIndexes,
+                            inputCreatorOutput.resizedFiringRates, updateWeightsFlags,
+                            indexesMatrices.indexesMatrix, indexesMatrices.neuronsMatrix);
 
-                // A return object on length zero means an error has occurred
-                if (outputSpikes.length == 0) {
-                    shutDown();
-                    if (!errorRaised) {
-                        errornumber = 6;
-                        errorRaised = true;
-                    }
-                } else {
-                    try {
-                        kernelExcQueue.put(outputSpikes);
-                    } catch (InterruptedException e) {
-                        String stackTrace = Log.getStackTraceString(e);
-                        Log.e("KernelExecutor", stackTrace);
+                    // A return object on length zero means an error has occurred
+                    if (outputSpikes.length == 0) {
+                        shutDown();
+                        if (!errorRaised) {
+                            errornumber = 6;
+                            errorRaised = true;
+                        }
+                    } else {
+                        try {
+                            kernelExcQueue.put(outputSpikes);
+                        } catch (InterruptedException e) {
+                            String stackTrace = Log.getStackTraceString(e);
+                            Log.e("KernelExecutor", stackTrace);
+                        }
                     }
                 }
             }
@@ -582,7 +595,7 @@ public class SimulationService extends IntentService {
 
                         try {
                             InetAddress postsynapticTerminalAddr = InetAddress.getByName(postsynapticTerminal.ip);
-                            DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, dataBytes, postsynapticTerminalAddr, postsynapticTerminal.natPort);
+                            DatagramPacket outputSpikesPacket = new DatagramPacket(outputSpikes, outputSpikes.length, postsynapticTerminalAddr, postsynapticTerminal.natPort);
                             outputSocket.send(outputSpikesPacket);
                         } catch (IOException e) {
                             String stackTrace = Log.getStackTraceString(e);
@@ -612,7 +625,8 @@ public class SimulationService extends IntentService {
 
     public native long initializeOpenCL(String synapseKernel, short numOfNeurons, int filterOrder, short numOfSynapses);
     public native byte[] simulateDynamics(byte[] synapseInput, long openCLObject, float[] simulationParameters,
-                                          byte[] weights, int[] weightsIndexes, float[] presynFiringRates, byte[] updateWeightsFlags);
+                                          byte[] weights, int[] weightsIndexes, float[] presynFiringRates, byte[] updateWeightsFlags,
+                                          int[][] indexesmatrix, int[][] neuronsMatrix);
     public native void closeOpenCL(long openCLObject);
 }
 

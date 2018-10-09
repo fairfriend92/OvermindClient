@@ -14,15 +14,7 @@
 #define ABSOLUTE_REFRACTORY_PERIOD 2
 #define MIN_WEIGHT 0.0078f
 #define MEAN_RATE_INCREMENT 0.01f
-
-// Abbreviations
-#define potentialVar obj->neuronalDynVar[workId * 2]
-#define recoveryVar obj->neuronalDynVar[workId * 2 + 1]
-#define aPar simulationParameters[0]
-#define bPar simulationParameters[1]
-#define cPar simulationParameters[2]
-#define dPar simulationParameters[3]
-#define IPar simulationParameters[4]
+#define SYNAPSE_FILTER_ORDER 16
 
 #include <android/log.h>
 #include <jni.h>
@@ -40,8 +32,8 @@ struct OpenCLObject {
     cl_device_id device = 0;
     cl_kernel kernel = 0;
     cl_int errorNumber = 0;
-    int numberOfMemoryObjects = 8;
-    cl_mem memoryObjects[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    int numberOfMemoryObjects = 10;
+    cl_mem memoryObjects[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     cl_uint floatVectorWidth;
     size_t maxWorkGroupSize;
 
@@ -49,11 +41,13 @@ struct OpenCLObject {
     cl_float *synapseCoeff;
     cl_float *synapseWeights;
     cl_uchar *synapseInput;
+    cl_ushort *synapseIndexes;
     cl_int *current;
-    cl_int *localSize;
+    cl_ushort *neuronsIndexes;
     cl_float *presynFiringRates;
     cl_float *postsynFiringRates;
     cl_float *updateWeightsFlags;
+    cl_int *globalIdOffset;
     float *neuronalDynVar;
 };
 

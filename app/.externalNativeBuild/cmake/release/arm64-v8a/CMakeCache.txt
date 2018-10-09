@@ -18,6 +18,9 @@
 ANDROID_ABI:UNINITIALIZED=arm64-v8a
 
 //No help, variable specified on the command line.
+ANDROID_ARM_NEON:UNINITIALIZED=TRUE
+
+//No help, variable specified on the command line.
 ANDROID_NDK:UNINITIALIZED=/Users/rodolforocco/Library/Android/sdk/ndk-bundle
 
 //No help, variable specified on the command line.
@@ -43,7 +46,7 @@ CMAKE_ASM_FLAGS_RELEASE:STRING=
 CMAKE_BUILD_TYPE:STRING=Release
 
 //Flags used by the compiler during all build types.
-CMAKE_CXX_FLAGS:STRING=-std=c++11
+CMAKE_CXX_FLAGS:STRING=-std=c++11 -mfloat-abi=softfp  -mfpu=neon
 
 //Flags used by the compiler during debug builds.
 CMAKE_CXX_FLAGS_DEBUG:STRING=

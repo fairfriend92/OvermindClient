@@ -14,7 +14,9 @@ add_library( ARM
              src/main/jni/native_method.cpp
              src/main/jni/native_method.h
              src/main/jni/common.cpp
-             src/main/jni/common.h )
+             src/main/jni/common.h
+             src/main/jni/populations_methods.cpp
+             src/main/jni/populations_methods.h)
 include_directories( src/main/assets/ )
 
 #add_library( Qualcomm
@@ -22,7 +24,10 @@ include_directories( src/main/assets/ )
 #             src/main/jni/native_method.cpp
 #             src/main/jni/native_method.h
 #             src/main/jni/common.cpp
-#             src/main/jni/common.h )
+#             src/main/jni/common.h
+#             src/main/jni/populations_methods.cpp
+#             src/main/jni/populations_methods.h)
+
 
 add_library( GLES_mali
              SHARED

@@ -1,46 +1,68 @@
-#include "native_method.h"
+#include "populations_methods.h"
 
-int SYNAPSE_FILTER_ORDER = 16;
 short NUM_SYNAPSES = 1024;
 short NUM_NEURONS = 1024;
 
 // Maximum number of multiplications needed to compute the current response of a synapse
- int maxNumberMultiplications = 0;
+int maxMultiplications = 0;
+
+// Array whose elements contain how many neurons each layer has
+int *layersNeurons = nullptr;
+
+// Array whose elements contain how many synapses each layer has
+int *layersSynapses = nullptr;
+
+// How many layers the populations matrix is made of
+int numOfLayers = 0;
+
+int synapsesOffset = 0, neuronsOffset = 0;
 
 // Size of the buffers needed to store data
 size_t synapseCoeffBufferSize;
 size_t synapseInputBufferSize;
 size_t synapseWeightsBufferSize;
+size_t synapseIndexesBufferSize;
 size_t currentBufferSize;
+size_t neuronsIndexesBufferSize;
 size_t presynFiringRatesBufferSize;
 size_t postsynFiringRatesBufferSize;
 
 // Debug variables
 int counter = 400;
 
-// How many bytes are needed to represent every neuron's spike?
-short dataBytes;
-
 extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
         JNIEnv *env, jobject thiz, jstring jKernel, jshort jNumOfNeurons, jint jFilterOrder, jshort jNumOfSynapses) {
+    // Reset sensible fields
+    numOfLayers = 0;
+
+    delete[] layersSynapses;
+    layersSynapses = new int[1];
+
     // Create a new openCL object since the one created in the getNumOfSynapses function could not be returned
     struct OpenCLObject *obj;
     obj = (struct OpenCLObject *)malloc(sizeof(struct OpenCLObject)); // TODO: perhaps the pointer can be stored in this file like the buffer size variables?
 
     // Compute the size of the GPU buffers
-    SYNAPSE_FILTER_ORDER = jFilterOrder;
+    //SYNAPSE_FILTER_ORDER = jFilterOrder;
     NUM_SYNAPSES = jNumOfSynapses;
     NUM_NEURONS = jNumOfNeurons;
-    maxNumberMultiplications = (int) (SYNAPSE_FILTER_ORDER * SAMPLING_RATE / ABSOLUTE_REFRACTORY_PERIOD);
+    maxMultiplications = (int) (SYNAPSE_FILTER_ORDER * SAMPLING_RATE / ABSOLUTE_REFRACTORY_PERIOD);
     synapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * 2 * sizeof(cl_float);
-    synapseInputBufferSize =  maxNumberMultiplications * NUM_SYNAPSES * sizeof(cl_uchar);
+
+    /*
+     * The size of the buffer for the synaptic input and firing rate is proportional to (NUM_SYNAPSES + NUM_NEURONS)
+     * rather than simply (NUM_OF_SYNAPSES) because theoretically every neuron could be part of
+     * a population and become the input of another neuron.
+     */
+
+    synapseInputBufferSize =  maxMultiplications * (NUM_SYNAPSES + NUM_NEURONS)  * sizeof(cl_uchar);
+    presynFiringRatesBufferSize = (NUM_SYNAPSES + NUM_NEURONS) * sizeof(cl_float);
+
+    synapseIndexesBufferSize = NUM_SYNAPSES * NUM_NEURONS * sizeof(cl_ushort);
     synapseWeightsBufferSize = NUM_SYNAPSES * NUM_NEURONS * sizeof(cl_float);
     currentBufferSize = NUM_NEURONS * sizeof(cl_int);
-    presynFiringRatesBufferSize = NUM_SYNAPSES * sizeof(cl_float);
     postsynFiringRatesBufferSize = NUM_NEURONS * sizeof(cl_float);
-
-    // Compute the number of bytes needed to hold all the spikes
-    dataBytes = (NUM_NEURONS % 8) == 0 ? (short)(NUM_NEURONS / 8) : (short)(NUM_NEURONS / 8 + 1);
+    neuronsIndexesBufferSize = synapseIndexesBufferSize;
 
     const char *kernelString = env->GetStringUTFChars(jKernel, JNI_FALSE);
 
@@ -112,7 +134,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     env->ReleaseStringUTFChars(jKernel, kernelString);
 
     bool createMemoryObjectsSuccess = true;
-    obj->numberOfMemoryObjects= 8;
+    obj->numberOfMemoryObjects = 10;
 
     // Allocate memory from the host
     float *neuronalDynVar = new float[2 * NUM_NEURONS];
@@ -131,7 +153,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     obj->memoryObjects[3] = clCreateBuffer(obj->context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, currentBufferSize, NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-    obj->memoryObjects[4] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(cl_int), NULL, &obj->errorNumber);
+    obj->memoryObjects[4] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, neuronsIndexesBufferSize, NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     obj->memoryObjects[5] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, presynFiringRatesBufferSize, NULL, &obj->errorNumber);
@@ -141,6 +163,13 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     obj->memoryObjects[7] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, synapseWeightsBufferSize, NULL, &obj->errorNumber);
+    createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
+    obj->memoryObjects[8] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, synapseIndexesBufferSize, NULL, &obj->errorNumber);
+    createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
+    obj->memoryObjects[9] = clCreateBuffer(obj->context, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
+                                           sizeof(cl_uint), NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
     if (!createMemoryObjectsSuccess)
@@ -237,7 +266,8 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
 
 extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynamics(
         JNIEnv *env, jobject thiz, jbyteArray jSynapseInput, jlong jOpenCLObject, jfloatArray jSimulationParameters,
-        jbyteArray jWeights, jintArray jWeightsIndexes, jfloatArray jPresynFiringRates, jbyteArray jUpdateWeightsFlags) {
+        jbyteArray jWeights, jintArray jWeightsIndexes, jfloatArray jPresynFiringRates, jbyteArray jUpdateWeightsFlags,
+        jobjectArray jIndexesMatrix, jobjectArray jNeuronsMatrix) {
     struct OpenCLObject *obj;
     obj = (struct OpenCLObject *)jOpenCLObject;
 
@@ -249,72 +279,17 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     jbyte *updateWeightsFlags = env->GetByteArrayElements(jUpdateWeightsFlags, JNI_FALSE);
 
     int numOfNewWeights = env->GetArrayLength(jWeights);
-    int synapseInputLength = env->GetArrayLength(jSynapseInput);
     int weightsFlagLength = env->GetArrayLength(jUpdateWeightsFlags);
-    int numOfActiveSynapses = synapseInputLength / maxNumberMultiplications;
-
-    /* [Input initialization] */
-
-    /*
-     * Map the memory buffers that holds the input of the synapses and the presynaptic firing rates.
-     */
-
-    bool mapMemoryObjectsSuccess = true;
-
-    // Map the buffer
-    obj->synapseInput = (cl_uchar *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[2], CL_TRUE, CL_MAP_WRITE, 0, synapseInputBufferSize, 0, NULL, NULL, &obj->errorNumber);
-    mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
-
-    obj->presynFiringRates = (cl_float *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[5], CL_TRUE, CL_MAP_WRITE, 0, presynFiringRatesBufferSize, 0, NULL, NULL, &obj->errorNumber);
-    mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
-
-    // Catch eventual errors
-    if (!mapMemoryObjectsSuccess)
-    {
-        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-        LOGE("Failed to map buffer");
-    }
-
-    // Initialize the buffer on the CPU side with the data received from Java Native Interface
-    for (int i = 0; i < numOfActiveSynapses; i++)
-    {
-        obj->presynFiringRates[i] = (cl_float)presynFiringRates[i];
-        for (int j = 0; j < maxNumberMultiplications; j++)
-        {
-            obj->synapseInput[i * maxNumberMultiplications + j] = (cl_uchar)synapseInput[i * maxNumberMultiplications + j];
-        }
-    }
-
-    /*
-    for (int i = 0; i < synapseInputLength; i++) {
-        obj->synapseInput[i] = (cl_uchar)synapseInput[i];
-    }
-    */
-
-    // Un-map the buffer
-    if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[2], obj->synapseInput, 0, NULL, NULL)))
-    {
-        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-        LOGE("Unmap memory objects failed");
-    }
-
-    if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[5], obj->presynFiringRates, 0, NULL, NULL)))
-    {
-        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-        LOGE("Unmap memory objects failed");
-    }
-
-    // Release the java array since the data has been passed to the memory buffer
-    env->ReleaseByteArrayElements(jSynapseInput, synapseInput, 0);
-    env->ReleaseFloatArrayElements(jPresynFiringRates, presynFiringRates, 0);
+    int matrixDepth = env->GetArrayLength(jIndexesMatrix);
+    int inputNeurons = (env->GetArrayLength(jSynapseInput)) / maxMultiplications;
 
     /*
      * If the weights have changed, initialize them.
      */
 
-    //LOGD("%d %d %d %d", numOfActiveSynapses, NUM_NEURONS, numOfNewWeights, env->GetArrayLength(jUpdateWeightsFlags));
+    bool mapMemoryObjectsSuccess = true;
 
-    // Proceed inside if the flags that tell which weights must be updated hava changed.
+    // Proceed inside if the flags that tell which weights must be updated have changed.
     if (weightsFlagLength != 0) {
 
         obj->updateWeightsFlags = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[7], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
@@ -337,6 +312,8 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     // Proceed only if some weights have been changed.
     if (numOfNewWeights != 0) {
 
+        neuronsOffset = synapsesOffset = 0;
+
         obj->synapseWeights = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
         mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
@@ -350,13 +327,11 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
         // Enter the block if the weights array is sparse.
         if (env->GetArrayLength(jWeightsIndexes) == numOfNewWeights) // The two numbers are equal if for each index there is a corresponding weight
         {
-            LOGD("test0");
             for (int i = 0; i < numOfNewWeights; i++)
                 obj->synapseWeights[weightsIndexes[i]] = (cl_float) (MIN_WEIGHT * weights[i]);
         }
         else // Enter the block if the weights array is filled completely.
         {
-            LOGD("test1");
             for (int i = 0; i < numOfNewWeights; i++) {
                 obj->synapseWeights[i] = (cl_float) (MIN_WEIGHT * weights[i]);
             }
@@ -373,128 +348,28 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
     }
 
-    // How many elements of synapseInput[] does a single kernel compute?
-    int inputsPerKernel = obj->floatVectorWidth * 4; // Each input is a char, therefore the char vector width is floatVectorWidth * 4
+    /*
+     * If the matrix of the populations has changed the indexes of the synapses and the neurons  will have too,
+     * therefore the respective memory buffers must be re-initialized with the new indexes
+     */
 
-    // How many kernels are needed to serve all the active synapses for a single neuron?
-    int localSize = synapseInputLength % inputsPerKernel == 0 ?
-                    synapseInputLength / inputsPerKernel : synapseInputLength / inputsPerKernel + 1;
+    LOGD("test 0");
 
-    // Map the local size value to the gpu memory buffer
-    obj->localSize = (cl_int *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[4], CL_TRUE, CL_MAP_WRITE, 0,
-                                                  sizeof(cl_int), 0, NULL, NULL, &obj->errorNumber);
-    mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+    if (matrixDepth != 0) { // If the order of the matrix is 0 that means that no change has occurred
+        int maxNeuronIndex = 0; // The number of neurons of the current population
 
-    obj->localSize[0] = (cl_int)localSize;
+        // Dynamic memory allocation
+        delete[] layersNeurons;
+        layersNeurons = new int[matrixDepth];
 
-    if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[4], obj->localSize, 0, NULL, NULL)))
-    {
-        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-        LOGE("Unmap memory objects failed");
-    }
+        delete[] layersSynapses;
+        layersSynapses = new int[matrixDepth];
 
-    /* [Input initialization] */
+        // Map the memory buffers used to store the indexes
+        obj->synapseIndexes = (cl_ushort *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[8], CL_TRUE, CL_MAP_WRITE, 0, synapseIndexesBufferSize, 0, NULL, NULL, &obj->errorNumber);
+        mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-    /* [Set Kernel Arguments] */
-
-    // Tell the kernels which data to use before they are scheduled
-    bool setKernelArgumentSuccess = true;
-    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 0, sizeof(cl_mem), &obj->memoryObjects[0]));
-    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 1, sizeof(cl_mem), &obj->memoryObjects[1]));
-    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 2, sizeof(cl_mem), &obj->memoryObjects[2]));
-    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 3, sizeof(cl_mem), &obj->memoryObjects[3]));
-    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 4, sizeof(cl_mem), &obj->memoryObjects[4]));
-    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 5, sizeof(cl_mem), &obj->memoryObjects[5]));
-    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 6, sizeof(cl_mem), &obj->memoryObjects[6]));
-    setKernelArgumentSuccess &= checkSuccess(clSetKernelArg(obj->kernel, 7, sizeof(cl_mem), &obj->memoryObjects[7]));
-
-    // Catch eventual errors
-    if (!setKernelArgumentSuccess)
-    {
-        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-        LOGE("Failed to set OpenCL kernel arguments");
-    }
-
-    // Number of kernel instances. If the work group size allowed is smaller than that anticipated
-    // some synapses won't be served at all.
-    size_t globalWorksize[1] = {(size_t )localSize * NUM_NEURONS};
-
-    bool openCLFailed = false;
-
-    // Enqueue the kernel
-    if (!checkSuccess(clEnqueueNDRangeKernel(obj->commandQueue, obj->kernel, 1, NULL, globalWorksize, NULL, 0, NULL, NULL)))
-    {
-        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-        LOGE("Failed to enqueue OpenCL kernel");
-        openCLFailed = true;
-    }
-
-    // Wait for kernel execution completion
-    if (!checkSuccess(clFinish(obj->commandQueue)))
-    {
-        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-        LOGE("Failed waiting for kernel execution to finish");
-        openCLFailed = true;
-    }
-
-    // If an error occurred return an empty byte array
-    if (openCLFailed) {
-        jbyteArray errorByte = env->NewByteArray(0);
-        return errorByte;
-    }
-
-    /* [Kernel execution] */
-
-    /* [Simulate the neuronal dynamics] */
-
-    // Map the OpenCL memory buffer so that it can be accessed by the host
-    obj->current = (cl_int *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[3], CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, currentBufferSize, 0, NULL, NULL, &obj->errorNumber);
-    mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
-
-    obj->postsynFiringRates = (cl_float *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[6],
-                                                             CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, postsynFiringRatesBufferSize, 0, NULL, NULL, &obj->errorNumber);
-    mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
-
-    if (!mapMemoryObjectsSuccess)
-    {
-        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-        LOGE("Failed to map buffer");
-    }
-
-    // Array holding the spikes fired by the neurons. Each bit represents a spike if it is set.
-    char actionPotentials[dataBytes];
-
-    // Simulate the neuronal dynamics using the current computed by the OpenCL implementation
-    for (short workId = 0; workId < NUM_NEURONS; workId++)
-    {
-        // Convert back from int to float
-        float unsignedCurrentFloat = (float)(obj->current[workId]) / 32768000.0f;
-        float currentFloat = obj->current[workId] > 0 ? unsignedCurrentFloat : (-unsignedCurrentFloat);
-
-        // Compute the potential and the recovery variable using Euler integration and Izhikevich model
-        potentialVar += 0.04f * pow(potentialVar, 2) + 5.0f * potentialVar + 140.0f - recoveryVar + currentFloat + IPar;
-        recoveryVar += aPar * (bPar * potentialVar - recoveryVar);
-
-        // Set the bits corresponding to the neurons that have fired and update the moving average of the firing rates
-        if (potentialVar >= 30.0f)
-        {
-            actionPotentials[(short)(workId / 8)] |= (1 << (workId - (short)(workId / 8) * 8));
-            recoveryVar += dPar;
-            potentialVar = cPar;
-            obj->postsynFiringRates[workId] += (cl_float)(MEAN_RATE_INCREMENT * (1 - obj->postsynFiringRates[workId]));
-        }
-        else
-        {
-            actionPotentials[(short)(workId / 8)] &= ~(1 << (workId - (short)(workId / 8) * 8));
-            obj->postsynFiringRates[workId] -= (cl_float)(MEAN_RATE_INCREMENT * obj->postsynFiringRates[workId]);
-        }
-
-        obj->current[workId] = (cl_int)0;
-    }
-    /* [Simulate the neuronal dynamics] */
-
-    if (counter == 400) {
-        obj->synapseWeights = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
+        obj->neuronsIndexes = (cl_ushort *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[4], CL_TRUE, CL_MAP_WRITE, 0, neuronsIndexesBufferSize, 0, NULL, NULL, &obj->errorNumber);
         mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
         if (!mapMemoryObjectsSuccess)
@@ -503,39 +378,300 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
             LOGE("Failed to map buffer");
         }
 
-        // Un-comment for map of synaptic weights
-        /*
-        int offset = NUM_SYNAPSES - 1024 + NUM_SYNAPSES * 15;
+        // Matrix depth can potentially change at every iteration and is different from zero only when the terminal is
+        // updated whereas the number of layers changes only when a layer is added or subtracted to the matrix
+        numOfLayers = matrixDepth;
 
-        for (int weightIndex = 0; weightIndex < 1024; weightIndex++) {
-            LOGE("%lf", obj->synapseWeights[offset + weightIndex]);
+        // Iterate over the rows of the populations matrix
+        for (int i = 0; i < matrixDepth; i++) {
+            layersNeurons[i] = 0;
+
+            // Get the array containing the indexes of the synapses of the i-th row
+            jobject indexesRow = env->GetObjectArrayElement(jIndexesMatrix, (jsize) i);
+            jintArray jIndexesArray = (jintArray) indexesRow;
+            jint *indexesArray = env->GetIntArrayElements(jIndexesArray, JNI_FALSE);
+
+            // Get the aray containing the indexes of the neurons
+            jobject neuronsRow = env->GetObjectArrayElement(jNeuronsMatrix, (jsize) i);
+            jintArray jNeuronsArray = (jintArray) neuronsRow;
+            jint *neuronsArray = env->GetIntArrayElements(jNeuronsArray, JNI_FALSE);
+
+            // Get how many input synapses this layer has
+            layersSynapses[i] = env->GetArrayLength(jIndexesArray);
+
+            // Iterate over the synapses of all the populations of a given layer/row
+            for (int j = 0; j < layersSynapses[i]; j++) {
+
+                obj->synapseIndexes[synapsesOffset + j] = (cl_ushort)indexesArray[j];
+                LOGD("synapsesIndexes %d %d %d", i, j, indexesArray[j]);
+
+                obj->neuronsIndexes[synapsesOffset + j] = (cl_ushort)(neuronsOffset + layersNeurons[i] + neuronsArray[j]);
+                LOGD("neuronsIndexes %d %d %d", i, j, neuronsOffset + layersNeurons[i] + neuronsArray[j]);
+
+                // Add the number of neurons of the last population to be considered to the total for this layer
+                layersNeurons[i] = neuronsArray[j] == 0 | j == (layersSynapses[i] - 1)?
+                                   layersNeurons[i] + maxNeuronIndex : layersNeurons[i];
+
+                // Save the highest neurons index that has been find within the current population
+                maxNeuronIndex = neuronsArray[j];
+            }
+
+            layersNeurons[i] += 1;
+            synapsesOffset += layersSynapses[i];
+            neuronsOffset += layersNeurons[i];
+            env->ReleaseIntArrayElements(jIndexesArray, indexesArray, 0);
         }
-         */
 
-        if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[1], obj->synapseWeights, 0, NULL, NULL)))
+        // Now that the initialization is complete the buffers can be unmapped
+        if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[8], obj->synapseIndexes, 0, NULL, NULL)))
+        {
+            cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+            LOGE("Unmap memory objects failed");
+        }
+
+        if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[4], obj->neuronsIndexes, 0, NULL, NULL)))
         {
             cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
             LOGE("Unmap memory objects failed");
         }
     }
 
-    // Decrease counter and reset it when it becomes zero
-    counter = counter == 0 ? 400 : counter - 1;
+    LOGD("test 1");
 
-    if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[3], obj->current, 0, NULL, NULL)))
-    {
-        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-        LOGE("Unmap memory objects failed");
+    /*
+     * The loop iterates over the layers that make up the organization of the populations. For each iteration the memory buffers are
+     * mapped and populated, the kernels are scheduled, the neuronal dynamics are simulated and the synaptic inputs for the next
+     * iteration are built.
+     */
+
+    // How many neurons have been considered up to this point
+    int neuronsComputed = 0;
+
+    // The number of bytes needed to hold all the spikes
+    short dataBytes = (neuronsOffset % 8) == 0 ? (short)(neuronsOffset / 8) :
+                        (short)(neuronsOffset / 8 + 1);
+
+    // Array holding the spikes fired by the neurons. Each bit represents a spike if it is set.
+    char actionPotentials[dataBytes];
+
+    // Iterate over the input layers
+    for (int i = 0; i <= numOfLayers; i++) {
+
+        /* Open the buffers */
+
+        obj->synapseInput = (cl_uchar *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[2], CL_TRUE, CL_MAP_WRITE, 0, synapseInputBufferSize, 0, NULL, NULL, &obj->errorNumber);
+        mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
+        LOGD(" %d", mapMemoryObjectsSuccess);
+
+        obj->presynFiringRates = (cl_float *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[5], CL_TRUE, CL_MAP_WRITE, 0, presynFiringRatesBufferSize, 0, NULL, NULL, &obj->errorNumber);
+        mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
+        LOGD(" %d", mapMemoryObjectsSuccess);
+
+        obj->current = (cl_int *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[3], CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, currentBufferSize, 0, NULL, NULL, &obj->errorNumber);
+        mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
+        LOGD(" %d", mapMemoryObjectsSuccess);
+
+        obj->postsynFiringRates = (cl_float *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[6],
+                                                                 CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, postsynFiringRatesBufferSize, 0, NULL, NULL, &obj->errorNumber);
+        mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
+        LOGD(" %d", mapMemoryObjectsSuccess);
+
+        obj->globalIdOffset = (cl_int *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[9], CL_TRUE, CL_MAP_WRITE, 0, sizeof(cl_uint), 0, NULL, NULL, &obj->errorNumber);
+        mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
+        LOGD(" %d", mapMemoryObjectsSuccess);
+
+        if (!mapMemoryObjectsSuccess)
+        {
+            cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+            LOGE("Failed to map buffer");
+        }
+
+        /* Map the buffers */
+
+        if (i != 0) {
+            LOGD("a");
+            obj->globalIdOffset[0] += (cl_uint) layersSynapses[i - 1];
+
+            LOGD("b");
+
+            // Call function that compute the neuronal dynamics
+            computeNeuronalDynamics(neuronsComputed, layersNeurons[i - 1], obj->current,
+                                    simulationParameters, obj->neuronalDynVar,
+                                    obj->postsynFiringRates, actionPotentials);
+
+            LOGD("d");
+
+            // TODO: Theoretically the last 2 steps shouldn't be done in the last iteration
+
+            // Build the synaptic input from the last action potentials. inputNeurons is passed because
+            // the synapseInput buffer also contains the inputs coming from the presynaptic terminals
+            buildSynapticInput(inputNeurons + neuronsComputed, actionPotentials,
+                               layersNeurons[i - 1], maxMultiplications, obj->synapseInput);
+
+            LOGD("e");
+
+            // Copy the postsynaptic firing rates to the presynaptic buffer
+            for (int j = neuronsComputed; j < neuronsComputed + layersNeurons[i - 1]; j++) {
+                obj->presynFiringRates[inputNeurons + j] = obj->postsynFiringRates[j];
+            }
+
+            LOGD("f");
+
+            neuronsComputed += layersNeurons[i - 1];
+
+            LOGD("g");
+        } else {
+            obj->globalIdOffset[0] = (cl_uint) 0;
+
+            for (int j = 0; j < inputNeurons; j++) {
+
+                LOGD("0a");
+
+                // Load the presynaptic firing rates
+                obj->presynFiringRates[j] = (cl_float) presynFiringRates[j];
+
+                LOGD("01");
+
+                // Load the inputs of the synapses - the operation must be repeated for each multiplication/time step
+
+                for (int k = 0; k < maxMultiplications; k++) {
+                    obj->synapseInput[j * maxMultiplications +
+                                      k] = (cl_uchar) synapseInput[j * maxMultiplications + k];
+                }
+
+
+                LOGD("02");
+            }
+        }
+
+        LOGD("test 2");
+
+        /* Un-map the buffers */
+
+        if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[2], obj->synapseInput, 0, NULL, NULL)))
+        {
+            cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+            LOGE("Unmap memory objects failed");
+        }
+
+        if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[5], obj->presynFiringRates, 0, NULL, NULL)))
+        {
+            cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+            LOGE("Unmap memory objects failed");
+        }
+
+        if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[3], obj->current, 0, NULL, NULL)))
+        {
+            cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+            LOGE("Unmap memory objects failed");
+        }
+
+        if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[6], obj->postsynFiringRates, 0, NULL, NULL)))
+        {
+            cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+            LOGE("Unmap memory objects failed");
+        }
+
+        if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[9], obj->globalIdOffset, 0, NULL, NULL)))
+        {
+            cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+            LOGE("Unmap memory objects failed");
+        }
+
+        LOGD("test 21");
+
+        /* Execute the kernels */
+
+        if (i < numOfLayers) {
+
+            // Tell the kernels which data to use before they are scheduled TODO: Maybe this operation can be done once before the for loop.
+            bool setKernelArgumentSuccess = true;
+            setKernelArgumentSuccess &= checkSuccess(
+                    clSetKernelArg(obj->kernel, 0, sizeof(cl_mem), &obj->memoryObjects[0]));
+            setKernelArgumentSuccess &= checkSuccess(
+                    clSetKernelArg(obj->kernel, 1, sizeof(cl_mem), &obj->memoryObjects[1]));
+            setKernelArgumentSuccess &= checkSuccess(
+                    clSetKernelArg(obj->kernel, 2, sizeof(cl_mem), &obj->memoryObjects[2]));
+            setKernelArgumentSuccess &= checkSuccess(
+                    clSetKernelArg(obj->kernel, 3, sizeof(cl_mem), &obj->memoryObjects[3]));
+            setKernelArgumentSuccess &= checkSuccess(
+                    clSetKernelArg(obj->kernel, 4, sizeof(cl_mem), &obj->memoryObjects[4]));
+            setKernelArgumentSuccess &= checkSuccess(
+                    clSetKernelArg(obj->kernel, 5, sizeof(cl_mem), &obj->memoryObjects[5]));
+            setKernelArgumentSuccess &= checkSuccess(
+                    clSetKernelArg(obj->kernel, 6, sizeof(cl_mem), &obj->memoryObjects[6]));
+            setKernelArgumentSuccess &= checkSuccess(
+                    clSetKernelArg(obj->kernel, 7, sizeof(cl_mem), &obj->memoryObjects[7]));
+            setKernelArgumentSuccess &= checkSuccess(
+                    clSetKernelArg(obj->kernel, 8, sizeof(cl_mem), &obj->memoryObjects[8]));
+            setKernelArgumentSuccess &= checkSuccess(
+                    clSetKernelArg(obj->kernel, 9, sizeof(cl_mem), &obj->memoryObjects[9]));
+
+            // Catch eventual errors
+            if (!setKernelArgumentSuccess) {
+                cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel,
+                              obj->memoryObjects, obj->numberOfMemoryObjects);
+                LOGE("Failed to set OpenCL kernel arguments");
+            }
+
+            LOGD("test 22 %d", layersSynapses[i]);
+
+            // Number of kernel instances.
+            size_t globalWorksize[1] = {(size_t) layersSynapses[i] / obj->floatVectorWidth};
+
+            bool openCLFailed = false;
+
+            LOGD("test 23");
+
+            // Enqueue the kernel
+            if (!checkSuccess(
+                    clEnqueueNDRangeKernel(obj->commandQueue, obj->kernel, 1, NULL, globalWorksize,
+                                           NULL, 0, NULL, NULL))) {
+                cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel,
+                              obj->memoryObjects, obj->numberOfMemoryObjects);
+                LOGE("Failed to enqueue OpenCL kernel");
+                openCLFailed = true;
+            }
+
+            LOGD("test 24");
+
+            // Wait for kernel execution completion
+            if (!checkSuccess(clFinish(obj->commandQueue))) {
+                cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel,
+                              obj->memoryObjects, obj->numberOfMemoryObjects);
+                LOGE("Failed waiting for kernel execution to finish");
+                openCLFailed = true;
+            }
+
+            LOGD("test 25");
+
+            // If an error occurred return an empty byte array
+            if (openCLFailed) {
+                jbyteArray errorByte = env->NewByteArray(0);
+                return errorByte;
+            }
+
+            LOGD("test 26");
+        }
     }
 
-    if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[6], obj->postsynFiringRates, 0, NULL, NULL)))
-    {
-        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-        LOGE("Unmap memory objects failed");
-    }
+    // The array used to move data from the java side to the native one can be released
+    env->ReleaseByteArrayElements(jSynapseInput, synapseInput, 0);
+    env->ReleaseFloatArrayElements(jPresynFiringRates, presynFiringRates, 0);
+
+    LOGD("test 3");
+
+    //counter = printSynapticMaps(counter, obj, synapseWeightsBufferSize, NUM_SYNAPSES);
 
     // Release the array storing the simulation parameters
     env->ReleaseFloatArrayElements(jSimulationParameters, simulationParameters, 0);
+
+    LOGD("%d", dataBytes);
 
     // Create the array where to store the output
     jbyteArray outputSpikes = env->NewByteArray(dataBytes);

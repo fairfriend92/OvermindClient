@@ -7,9 +7,10 @@ arguments :
 -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/Users/rodolforocco/Android projects/OvermindClient/app/build/intermediates/cmake/debug/obj/arm64-v8a
 -DCMAKE_BUILD_TYPE=Debug
 -DANDROID_NDK=/Users/rodolforocco/Library/Android/sdk/ndk-bundle
--DCMAKE_CXX_FLAGS=-std=c++11
+-DCMAKE_CXX_FLAGS=-std=c++11 -mfloat-abi=softfp  -mfpu=neon
 -DCMAKE_TOOLCHAIN_FILE=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/build/cmake/android.toolchain.cmake
 -DCMAKE_MAKE_PROGRAM=/Users/rodolforocco/Library/Android/sdk/cmake/3.6.4111459/bin/ninja
 -GAndroid Gradle - Ninja
+-DANDROID_ARM_NEON=TRUE
 jvmArgs : 
 

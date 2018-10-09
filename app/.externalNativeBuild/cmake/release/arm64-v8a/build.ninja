@@ -54,7 +54,7 @@ build rebuild_cache: phony CMakeFiles/rebuild_cache.util
 build CMakeFiles/ARM.dir/src/main/jni/native_method.cpp.o: CXX_COMPILER__ARM ../../../../src/main/jni/native_method.cpp
   DEFINES = -DARM_EXPORTS
   DEP_FILE = CMakeFiles/ARM.dir/src/main/jni/native_method.cpp.o.d
-  FLAGS = -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot/usr/include/aarch64-linux-android -D__ANDROID_API__=22 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11 -std=c++11 -O2 -DNDEBUG  -fPIC
+  FLAGS = -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot/usr/include/aarch64-linux-android -D__ANDROID_API__=22 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11 -std=c++11 -mfloat-abi=softfp  -mfpu=neon -O2 -DNDEBUG  -fPIC
   INCLUDES = -I../../../../src/main/assets -I../../../../OpenCL/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/cxx-stl/llvm-libc++/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/android/support/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/cxx-stl/llvm-libc++abi/include
   IN_ABS = "/Users/rodolforocco/Android projects/OvermindClient/app/src/main/jni/native_method.cpp"
   OBJECT_DIR = CMakeFiles/ARM.dir
@@ -62,9 +62,17 @@ build CMakeFiles/ARM.dir/src/main/jni/native_method.cpp.o: CXX_COMPILER__ARM ../
 build CMakeFiles/ARM.dir/src/main/jni/common.cpp.o: CXX_COMPILER__ARM ../../../../src/main/jni/common.cpp
   DEFINES = -DARM_EXPORTS
   DEP_FILE = CMakeFiles/ARM.dir/src/main/jni/common.cpp.o.d
-  FLAGS = -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot/usr/include/aarch64-linux-android -D__ANDROID_API__=22 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11 -std=c++11 -O2 -DNDEBUG  -fPIC
+  FLAGS = -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot/usr/include/aarch64-linux-android -D__ANDROID_API__=22 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11 -std=c++11 -mfloat-abi=softfp  -mfpu=neon -O2 -DNDEBUG  -fPIC
   INCLUDES = -I../../../../src/main/assets -I../../../../OpenCL/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/cxx-stl/llvm-libc++/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/android/support/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/cxx-stl/llvm-libc++abi/include
   IN_ABS = "/Users/rodolforocco/Android projects/OvermindClient/app/src/main/jni/common.cpp"
+  OBJECT_DIR = CMakeFiles/ARM.dir
+  OBJECT_FILE_DIR = CMakeFiles/ARM.dir/src/main/jni
+build CMakeFiles/ARM.dir/src/main/jni/populations_methods.cpp.o: CXX_COMPILER__ARM ../../../../src/main/jni/populations_methods.cpp
+  DEFINES = -DARM_EXPORTS
+  DEP_FILE = CMakeFiles/ARM.dir/src/main/jni/populations_methods.cpp.o.d
+  FLAGS = -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot/usr/include/aarch64-linux-android -D__ANDROID_API__=22 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11 -std=c++11 -mfloat-abi=softfp  -mfpu=neon -O2 -DNDEBUG  -fPIC
+  INCLUDES = -I../../../../src/main/assets -I../../../../OpenCL/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/cxx-stl/llvm-libc++/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/android/support/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/cxx-stl/llvm-libc++abi/include
+  IN_ABS = "/Users/rodolforocco/Android projects/OvermindClient/app/src/main/jni/populations_methods.cpp"
   OBJECT_DIR = CMakeFiles/ARM.dir
   OBJECT_FILE_DIR = CMakeFiles/ARM.dir/src/main/jni
 
@@ -75,8 +83,8 @@ build CMakeFiles/ARM.dir/src/main/jni/common.cpp.o: CXX_COMPILER__ARM ../../../.
 #############################################
 # Link the shared library ../../../../build/intermediates/cmake/release/obj/arm64-v8a/libARM.so
 
-build ../../../../build/intermediates/cmake/release/obj/arm64-v8a/libARM.so: CXX_SHARED_LIBRARY_LINKER__ARM CMakeFiles/ARM.dir/src/main/jni/native_method.cpp.o CMakeFiles/ARM.dir/src/main/jni/common.cpp.o | ../../../../src/main/jniLibs/arm64-v8a/libGLES_mali.so
-  LANGUAGE_COMPILE_FLAGS = -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot/usr/include/aarch64-linux-android -D__ANDROID_API__=22 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11 -std=c++11 -O2 -DNDEBUG
+build ../../../../build/intermediates/cmake/release/obj/arm64-v8a/libARM.so: CXX_SHARED_LIBRARY_LINKER__ARM CMakeFiles/ARM.dir/src/main/jni/native_method.cpp.o CMakeFiles/ARM.dir/src/main/jni/common.cpp.o CMakeFiles/ARM.dir/src/main/jni/populations_methods.cpp.o | ../../../../src/main/jniLibs/arm64-v8a/libGLES_mali.so
+  LANGUAGE_COMPILE_FLAGS = -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot/usr/include/aarch64-linux-android -D__ANDROID_API__=22 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11 -std=c++11 -mfloat-abi=softfp  -mfpu=neon -O2 -DNDEBUG
   LINK_FLAGS = -Wl,--exclude-libs,libgcc.a -Wl,--exclude-libs,libatomic.a -nostdlib++ --sysroot /Users/rodolforocco/Library/Android/sdk/ndk-bundle/platforms/android-22/arch-arm64 -Wl,--build-id -Wl,--warn-shared-textrel -Wl,--fatal-warnings -L/Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/cxx-stl/llvm-libc++/libs/arm64-v8a -Wl,--no-undefined -Wl,-z,noexecstack -Qunused-arguments -Wl,-z,relro -Wl,-z,now
   LINK_LIBRARIES = -llog ../../../../src/main/jniLibs/arm64-v8a/libGLES_mali.so -latomic -lm "/Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/cxx-stl/llvm-libc++/libs/arm64-v8a/libc++_static.a" "/Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/cxx-stl/llvm-libc++/libs/arm64-v8a/libc++abi.a"
   OBJECT_DIR = CMakeFiles/ARM.dir

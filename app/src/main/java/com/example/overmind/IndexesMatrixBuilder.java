@@ -1,32 +1,58 @@
 package com.example.overmind;
 
 import android.util.Log;
-
 import java.util.ArrayList;
 
 /**
- * This class takes care of building the matrix that stores the indexes that allow the populations
- * neurons to access the right inputs
+ * Simple class that groups together the two matrices to pass them to a different class.
+ */
+
+class IndexesMatrices {
+    int[][] indexesMatrix;
+    int[][] neuronsMatrix;
+
+    IndexesMatrices(int[][] indexesMatrix, int[][] neuronsMatrix) {
+        this.indexesMatrix = indexesMatrix;
+        this.neuronsMatrix = neuronsMatrix;
+    }
+}
+
+/**
+ * Class that contains the necessary methods to build the matrix of the synaptic indexes and that
+ * of the neuron indexes. The entries of the first tell which input the synapse is connected to.
+ * The entries of the second one tells to which neuron the synapse belongs.
+ *
+ * Consequently both the matrix have as many entries as synapses.
  */
 
 class IndexesMatrixBuilder {
     private Terminal terminal = null;
+    private int[] tmpIndexes, tmpNeurons;
 
-    /*
-    Build a matrix whose rows are collections of indexes which give synapses access to the right
-    inputs. The indexes are repeated for every neuron, even if the neurons of the same population
-    have the same synapses (but different weights) and therefore the same inputs
+    /**
+     * Build a matrix whose rows are collections of indexes which give synapses access to the right
+     * inputs. The indexes are repeated for every neuron, even if the neurons of the same population
+     * have the same synapses (but different weights) and therefore the same inputs.
+     *
+     * Additionally create a matrix with as many elements as synapses in which every entry tells to
+     * which neuron the respective synapse belongs.
+     *
+     * @param terminal This physical terminal
+     * @return A matrix of the indexes that the synapses use to access the right input
      */
 
-    int[][] buildMatrix(Population[][] popsMatrix) {
-        terminal = SimulationService.thisTerminal;
+    IndexesMatrices buildIndexesMatrix(Terminal terminal) {
+        this.terminal = terminal;
+        Population[][] popsMatrix = terminal.popsMatrix;
 
         int[][] indexesMatrix = new int[popsMatrix.length][];
+        int[][] neuronsMatrix = new int[popsMatrix.length][];
 
         // Iterate over the layers
         for (int i = 0; i < popsMatrix.length; i++) {
             int rowLength = 0;
             indexesMatrix[i] = new int[0];
+            neuronsMatrix[i] = new int[0];
 
             // Iterate over the populations belonging to a given layer
             for (int j = 0; j < popsMatrix[i].length; j++) {
@@ -34,7 +60,7 @@ class IndexesMatrixBuilder {
                 ArrayList<int[]> inputsInfo = getInputsInfo(i, j, popsMatrix);
 
                 // Build the collection of indexes for population (i, j)
-                int[] tmpIndexes =  fillIndexesArray(inputsInfo, popsMatrix[i][j].numOfNeurons);
+                fillArrays(inputsInfo, popsMatrix[i][j].numOfNeurons);
 
                 // Update the length of the collection of indexes for this layer
                 rowLength += tmpIndexes.length;
@@ -45,20 +71,27 @@ class IndexesMatrixBuilder {
                  */
 
                 int[] newIndexes = new int[rowLength];
+                int[] newNeurons = new int[rowLength];
+
                 System.arraycopy(indexesMatrix[i], 0, newIndexes, 0, indexesMatrix[i].length);
                 System.arraycopy(tmpIndexes, 0, newIndexes, indexesMatrix[i].length, tmpIndexes.length);
                 indexesMatrix[i] = newIndexes;
+
+                System.arraycopy(neuronsMatrix[i], 0, newNeurons, 0, neuronsMatrix[i].length);
+                System.arraycopy(tmpNeurons, 0, newNeurons, neuronsMatrix[i].length, tmpNeurons.length);
+                neuronsMatrix[i] = newNeurons;
             }
         }
 
         // For debugging purposes print on the terminal all the indexes sequentially
-        printMatrix(indexesMatrix);
-        return indexesMatrix;
+        //printMatrix(indexesMatrix);
+
+        return new IndexesMatrices(indexesMatrix, neuronsMatrix);
     }
 
     /**
      * Prints on the terminal all the indexes sequentially. For debugging purposes.
-     * @param indexesMatrix: The collections of all the indexes
+     * @param indexesMatrix The collections of all the indexes
      */
 
     private void printMatrix(int[][] indexesMatrix) {
@@ -79,10 +112,10 @@ class IndexesMatrixBuilder {
      * which the populations appear in the matrix, from left to right and from up to down.
      * Presynaptic terminals are going to be included as well at the beginning of the memory buffer
      *
-     * @param row: The row of the population whose inputs must be inspected
-     * @param column: The column
-     * @param matrix: The matrix of the populations
-     * @return: Array containing couples of integer, the first one of which is the numbers of
+     * @param row The row of the population whose inputs must be inspected
+     * @param column The column
+     * @param matrix The matrix of the populations
+     * @return  Array containing couples of integer, the first one of which is the numbers of
      * neurons of the inputs and the second one their offsets
      */
 
@@ -131,14 +164,16 @@ class IndexesMatrixBuilder {
      * This is made necessary by the fact that the OpenCL kernel are not aware of how neurons are
      * grouped into populations.
      *
+     * Also, create an array whose elements are neurons index. For each synapse an element is created.
+     * The value of said element tells to which neuron the synapse belongs.
+     *
      * @param inputsInfo: An array of couples of integer, representing respectively the number of
      *                  neurons and the offset of a given input.
      * @param numOfNeurons: The number of neurons of the population for which the array is being
      *                    built.
-     * @return: The array of indexes.
      */
 
-    private int[] fillIndexesArray(ArrayList<int[]> inputsInfo, int numOfNeurons) {
+    private void fillArrays(ArrayList<int[]> inputsInfo, int numOfNeurons) {
         int[] indexes = new int[0];
 
         // This indexes count all the synapses that have been considered
@@ -148,10 +183,10 @@ class IndexesMatrixBuilder {
         for (int[] info : inputsInfo) {
             int numOfSynapses = info[0], offset = info[1];
 
-            // Array which is going to contain only the indexes for the current inpu
+            // Array which is going to contain only the indexes for the current input
             int[] tmpIndexes = new int[numOfSynapses];
 
-            // Populate the array for the current inpu
+            // Populate the array for the current input
             for (int i = offset; i < offset + numOfSynapses; i++, j++) {
                 tmpIndexes[i - offset] = i;
             }
@@ -168,14 +203,20 @@ class IndexesMatrixBuilder {
 
         /*
         Once the array of indexes has been created for one neuron, copy it as many times as
-        necessary to cover the connections of all the neurons of the population
+        necessary to cover the connections of all the neurons of the population.
+
+        Also populate the array of neurons with the index of the neuron to which the respective
+        synapse belongs
          */
 
-        int[] repeatedIndexes = new int[indexes.length * numOfNeurons];
+        tmpIndexes = new int[indexes.length * numOfNeurons];
+        tmpNeurons = new int[indexes.length * numOfNeurons];
         for (int i = 0; i < numOfNeurons; i++) {
-            System.arraycopy(indexes, 0, repeatedIndexes, i * indexes.length, indexes.length);
+            System.arraycopy(indexes, 0, tmpIndexes, i * indexes.length, indexes.length);
+            for (j = i * indexes.length; j < (i + 1) * indexes.length; j++)
+                tmpNeurons[j] = i;
         }
-        return repeatedIndexes;
+
     }
 
 }
