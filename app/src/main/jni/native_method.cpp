@@ -312,8 +312,6 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     // Proceed only if some weights have been changed.
     if (numOfNewWeights != 0) {
 
-        neuronsOffset = synapsesOffset = 0;
-
         obj->synapseWeights = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
         mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
@@ -357,6 +355,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
     if (matrixDepth != 0) { // If the order of the matrix is 0 that means that no change has occurred
         int maxNeuronIndex = 0; // The number of neurons of the current population
+        neuronsOffset = synapsesOffset = 0;
 
         // Dynamic memory allocation
         delete[] layersNeurons;
@@ -399,27 +398,42 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
             // Get how many input synapses this layer has
             layersSynapses[i] = env->GetArrayLength(jIndexesArray);
 
+            bool neuronsUpdated = false;
+
             // Iterate over the synapses of all the populations of a given layer/row
             for (int j = 0; j < layersSynapses[i]; j++) {
 
+                // The number of neurons should be update at the beginning of a new population and at the
+                // end of the last one
+                bool mustUpdateNeurons = neuronsArray[j] == 0 | j == (layersSynapses[i] - 1);
+
+                if (mustUpdateNeurons & !neuronsUpdated) {
+                    LOGD("neuronsIndexes %d", obj->neuronsIndexes[synapsesOffset + j]);
+
+                    neuronsUpdated = true;
+
+                    // Add the number of neurons of the last population to be considered to the total for this layer
+                    layersNeurons[i] = neuronsArray[j] == 0 | j == (layersSynapses[i] - 1)?
+                                       layersNeurons[i] + maxNeuronIndex : layersNeurons[i];
+                } else if (!mustUpdateNeurons) {
+                    neuronsUpdated = false;
+                }
+
                 obj->synapseIndexes[synapsesOffset + j] = (cl_ushort)indexesArray[j];
-                LOGD("synapsesIndexes %d %d %d", i, j, indexesArray[j]);
+                //LOGD("synapsesIndexes %d %d %d", i, j, indexesArray[j]);
 
                 obj->neuronsIndexes[synapsesOffset + j] = (cl_ushort)(neuronsOffset + layersNeurons[i] + neuronsArray[j]);
-                LOGD("neuronsIndexes %d %d %d", i, j, neuronsOffset + layersNeurons[i] + neuronsArray[j]);
-
-                // Add the number of neurons of the last population to be considered to the total for this layer
-                layersNeurons[i] = neuronsArray[j] == 0 | j == (layersSynapses[i] - 1)?
-                                   layersNeurons[i] + maxNeuronIndex : layersNeurons[i];
 
                 // Save the highest neurons index that has been find within the current population
-                maxNeuronIndex = neuronsArray[j];
+                maxNeuronIndex = neuronsArray[j] + 1;
             }
 
-            layersNeurons[i] += 1;
             synapsesOffset += layersSynapses[i];
             neuronsOffset += layersNeurons[i];
             env->ReleaseIntArrayElements(jIndexesArray, indexesArray, 0);
+
+            LOGD("synapsesOffset %d layerSynapses %d neuronsOffset %d layerNeurons %d i %d maxDepth %d",
+                 synapsesOffset, layersSynapses[i], neuronsOffset, layersNeurons[i], i, matrixDepth);
         }
 
         // Now that the initialization is complete the buffers can be unmapped
@@ -495,9 +509,9 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
         if (i != 0) {
             LOGD("a");
-            obj->globalIdOffset[0] += (cl_uint) layersSynapses[i - 1];
+            obj->globalIdOffset[0] += (cl_uint) layersSynapses[i - 1] / maxMultiplications;
 
-            LOGD("b");
+            LOGD("b %d %d", neuronsComputed, layersNeurons[i - 1]);
 
             // Call function that compute the neuronal dynamics
             computeNeuronalDynamics(neuronsComputed, layersNeurons[i - 1], obj->current,
@@ -530,12 +544,12 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
             for (int j = 0; j < inputNeurons; j++) {
 
-                LOGD("0a");
+                //LOGD("0a");
 
                 // Load the presynaptic firing rates
                 obj->presynFiringRates[j] = (cl_float) presynFiringRates[j];
 
-                LOGD("01");
+                //LOGD("01");
 
                 // Load the inputs of the synapses - the operation must be repeated for each multiplication/time step
 
@@ -545,7 +559,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
                 }
 
 
-                LOGD("02");
+                //LOGD("02");
             }
         }
 
@@ -671,7 +685,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     // Release the array storing the simulation parameters
     env->ReleaseFloatArrayElements(jSimulationParameters, simulationParameters, 0);
 
-    LOGD("%d", dataBytes);
+    LOGD("databytes %d", dataBytes);
 
     // Create the array where to store the output
     jbyteArray outputSpikes = env->NewByteArray(dataBytes);
