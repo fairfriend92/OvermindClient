@@ -17,11 +17,11 @@ void simulate_dynamics(__constant float* restrict coeff, __global float* restric
   uint globalId = get_global_id(0) + globalIdOffset[0];
 
   // Id of the neuron to which the synapses belong
-  ushort neuronIndex = neuronsIndexes[globalId];
+  ushort neuronIndex = neuronsIndexes[SYN_X_WI * globalId];
 
   // Id of the input synapses
   ushort4 preFRIndexesVec = vload4(globalId, synIndexes);
-  ushort4 synIndexesVec = (ushort)SYN_X_WI * preFRIndexesVec;
+  ushort4 synIndexesVec = ((ushort)SYN_X_WI) * preFRIndexesVec;
   
   // Load the synaptic input (the coeffiecients of the filter kernel)
   uchar16 synInput = (uchar16)(input[synIndexesVec.x], input[synIndexesVec.x + 1], input[synIndexesVec.x + 2], input[synIndexesVec.x + 3],

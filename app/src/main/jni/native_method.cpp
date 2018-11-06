@@ -50,13 +50,15 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     synapseCoeffBufferSize = SYNAPSE_FILTER_ORDER * 2 * sizeof(cl_float);
 
     /*
-     * The size of the buffer for the synaptic input and firing rate is proportional to (NUM_SYNAPSES + NUM_NEURONS)
-     * rather than simply (NUM_OF_SYNAPSES) because theoretically every neuron could be part of
-     * a population and become the input of another neuron.
+     * Worst case scenario for every neuron there is a different population which is connected to a different terminal
+     * hence we can have as many NUM_SYNAPSES * NUM_NEURONS different synapses
      */
 
-    synapseInputBufferSize =  maxMultiplications * (NUM_SYNAPSES + NUM_NEURONS)  * sizeof(cl_uchar);
-    presynFiringRatesBufferSize = (NUM_SYNAPSES + NUM_NEURONS) * sizeof(cl_float);
+    // TODO: Put a limit to how small populations can be on the server side to diminish the memory
+    // TODO: footprints
+
+    synapseInputBufferSize =  maxMultiplications * (NUM_SYNAPSES * NUM_NEURONS)  * sizeof(cl_uchar);
+    presynFiringRatesBufferSize = (NUM_SYNAPSES * NUM_NEURONS) * sizeof(cl_float);
 
     synapseIndexesBufferSize = NUM_SYNAPSES * NUM_NEURONS * sizeof(cl_ushort);
     synapseWeightsBufferSize = NUM_SYNAPSES * NUM_NEURONS * sizeof(cl_float);
@@ -351,10 +353,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
      * therefore the respective memory buffers must be re-initialized with the new indexes
      */
 
-    LOGD("test 0");
-
     if (matrixDepth != 0) { // If the order of the matrix is 0 that means that no change has occurred
-        int maxNeuronIndex = 0; // The number of neurons of the current population
         neuronsOffset = synapsesOffset = 0;
 
         // Dynamic memory allocation
@@ -365,10 +364,10 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
         layersSynapses = new int[matrixDepth];
 
         // Map the memory buffers used to store the indexes
-        obj->synapseIndexes = (cl_ushort *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[8], CL_TRUE, CL_MAP_WRITE, 0, synapseIndexesBufferSize, 0, NULL, NULL, &obj->errorNumber);
+        obj->synapseIndexes = (cl_ushort *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[8], CL_TRUE, CL_MAP_WRITE | CL_MAP_READ, 0, synapseIndexesBufferSize, 0, NULL, NULL, &obj->errorNumber);
         mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-        obj->neuronsIndexes = (cl_ushort *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[4], CL_TRUE, CL_MAP_WRITE, 0, neuronsIndexesBufferSize, 0, NULL, NULL, &obj->errorNumber);
+        obj->neuronsIndexes = (cl_ushort *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[4], CL_TRUE, CL_MAP_WRITE | CL_MAP_READ, 0, neuronsIndexesBufferSize, 0, NULL, NULL, &obj->errorNumber);
         mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
         if (!mapMemoryObjectsSuccess)
@@ -383,7 +382,6 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
         // Iterate over the rows of the populations matrix
         for (int i = 0; i < matrixDepth; i++) {
-            layersNeurons[i] = 0;
 
             // Get the array containing the indexes of the synapses of the i-th row
             jobject indexesRow = env->GetObjectArrayElement(jIndexesMatrix, (jsize) i);
@@ -398,41 +396,40 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
             // Get how many input synapses this layer has
             layersSynapses[i] = env->GetArrayLength(jIndexesArray);
 
-            bool neuronsUpdated = false;
+            int lastNeuronIndex = 0;
+            layersNeurons[i] = 0;
 
             // Iterate over the synapses of all the populations of a given layer/row
             for (int j = 0; j < layersSynapses[i]; j++) {
 
-                // The number of neurons should be update at the beginning of a new population and at the
-                // end of the last one
-                bool mustUpdateNeurons = neuronsArray[j] == 0 | j == (layersSynapses[i] - 1);
-
-                if (mustUpdateNeurons & !neuronsUpdated) {
-                    LOGD("neuronsIndexes %d", obj->neuronsIndexes[synapsesOffset + j]);
-
-                    neuronsUpdated = true;
-
-                    // Add the number of neurons of the last population to be considered to the total for this layer
-                    layersNeurons[i] = neuronsArray[j] == 0 | j == (layersSynapses[i] - 1)?
-                                       layersNeurons[i] + maxNeuronIndex : layersNeurons[i];
-                } else if (!mustUpdateNeurons) {
-                    neuronsUpdated = false;
+                if (neuronsArray[j] != lastNeuronIndex) {
+                    lastNeuronIndex = neuronsArray[j];
+                    layersNeurons[i]++;
                 }
 
                 obj->synapseIndexes[synapsesOffset + j] = (cl_ushort)indexesArray[j];
-                //LOGD("synapsesIndexes %d %d %d", i, j, indexesArray[j]);
 
-                obj->neuronsIndexes[synapsesOffset + j] = (cl_ushort)(neuronsOffset + layersNeurons[i] + neuronsArray[j]);
+                obj->neuronsIndexes[synapsesOffset + j] = (cl_ushort)(neuronsOffset +
+                        layersNeurons[i]);
 
-                // Save the highest neurons index that has been find within the current population
-                maxNeuronIndex = neuronsArray[j] + 1;
+                /*
+                LOGD("neuronsIndexes %d layersNeurons[i] %d neuronsArray[j] %d j %d matrixDepth %d",
+                     obj->neuronsIndexes[synapsesOffset + j], layersNeurons[i],
+                     neuronsArray[j], j, matrixDepth);
+                     */
             }
+
+            // This last incrementation accounts for the last neuron, which otherwise is not considered as the counter
+            // is incremented only when the neuron index changes
+            layersNeurons[i]++;
 
             synapsesOffset += layersSynapses[i];
             neuronsOffset += layersNeurons[i];
             env->ReleaseIntArrayElements(jIndexesArray, indexesArray, 0);
+            env->ReleaseIntArrayElements(jNeuronsArray, neuronsArray, 0);
 
-            LOGD("synapsesOffset %d layerSynapses %d neuronsOffset %d layerNeurons %d i %d maxDepth %d",
+
+            LOGD("\n synapsesOffset %d layerSynapses %d neuronsOffset %d layerNeurons %d i %d matrixDepth %d \n",
                  synapsesOffset, layersSynapses[i], neuronsOffset, layersNeurons[i], i, matrixDepth);
         }
 
@@ -449,8 +446,6 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
             LOGE("Unmap memory objects failed");
         }
     }
-
-    LOGD("test 1");
 
     /*
      * The loop iterates over the layers that make up the organization of the populations. For each iteration the memory buffers are
@@ -476,28 +471,18 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
         obj->synapseInput = (cl_uchar *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[2], CL_TRUE, CL_MAP_WRITE, 0, synapseInputBufferSize, 0, NULL, NULL, &obj->errorNumber);
         mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-        LOGD(" %d", mapMemoryObjectsSuccess);
-
         obj->presynFiringRates = (cl_float *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[5], CL_TRUE, CL_MAP_WRITE, 0, presynFiringRatesBufferSize, 0, NULL, NULL, &obj->errorNumber);
         mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-        LOGD(" %d", mapMemoryObjectsSuccess);
-
         obj->current = (cl_int *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[3], CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, currentBufferSize, 0, NULL, NULL, &obj->errorNumber);
         mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
-
-        LOGD(" %d", mapMemoryObjectsSuccess);
 
         obj->postsynFiringRates = (cl_float *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[6],
                                                                  CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, postsynFiringRatesBufferSize, 0, NULL, NULL, &obj->errorNumber);
         mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
-        LOGD(" %d", mapMemoryObjectsSuccess);
-
         obj->globalIdOffset = (cl_int *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[9], CL_TRUE, CL_MAP_WRITE, 0, sizeof(cl_uint), 0, NULL, NULL, &obj->errorNumber);
         mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
-
-        LOGD(" %d", mapMemoryObjectsSuccess);
 
         if (!mapMemoryObjectsSuccess)
         {
@@ -508,48 +493,36 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
         /* Map the buffers */
 
         if (i != 0) {
-            LOGD("a");
-            obj->globalIdOffset[0] += (cl_uint) layersSynapses[i - 1] / maxMultiplications;
-
-            LOGD("b %d %d", neuronsComputed, layersNeurons[i - 1]);
 
             // Call function that compute the neuronal dynamics
             computeNeuronalDynamics(neuronsComputed, layersNeurons[i - 1], obj->current,
                                     simulationParameters, obj->neuronalDynVar,
                                     obj->postsynFiringRates, actionPotentials);
 
-            LOGD("d");
+            if (i != numOfLayers) {
+                obj->globalIdOffset[0] += (cl_uint) layersSynapses[i - 1] / maxMultiplications;
 
-            // TODO: Theoretically the last 2 steps shouldn't be done in the last iteration
+                // Build the synaptic input from the last action potentials. inputNeurons is passed because
+                // the synapseInput buffer also contains the inputs coming from the presynaptic terminals
+                buildSynapticInput(inputNeurons + neuronsComputed, actionPotentials,
+                                   layersNeurons[i - 1], maxMultiplications, obj->synapseInput);
 
-            // Build the synaptic input from the last action potentials. inputNeurons is passed because
-            // the synapseInput buffer also contains the inputs coming from the presynaptic terminals
-            buildSynapticInput(inputNeurons + neuronsComputed, actionPotentials,
-                               layersNeurons[i - 1], maxMultiplications, obj->synapseInput);
+                // Copy the postsynaptic firing rates to the presynaptic buffer
+                for (int j = neuronsComputed; j < neuronsComputed + layersNeurons[i - 1]; j++) {
+                    obj->presynFiringRates[inputNeurons + j] = obj->postsynFiringRates[j];
+                }
 
-            LOGD("e");
-
-            // Copy the postsynaptic firing rates to the presynaptic buffer
-            for (int j = neuronsComputed; j < neuronsComputed + layersNeurons[i - 1]; j++) {
-                obj->presynFiringRates[inputNeurons + j] = obj->postsynFiringRates[j];
+                neuronsComputed += layersNeurons[i - 1];
             }
-
-            LOGD("f");
-
-            neuronsComputed += layersNeurons[i - 1];
-
-            LOGD("g");
         } else {
             obj->globalIdOffset[0] = (cl_uint) 0;
 
-            for (int j = 0; j < inputNeurons; j++) {
+            //LOGD("inputNeurons %d", inputNeurons);
 
-                //LOGD("0a");
+            for (int j = 0; j < inputNeurons; j++) {
 
                 // Load the presynaptic firing rates
                 obj->presynFiringRates[j] = (cl_float) presynFiringRates[j];
-
-                //LOGD("01");
 
                 // Load the inputs of the synapses - the operation must be repeated for each multiplication/time step
 
@@ -558,12 +531,8 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
                                       k] = (cl_uchar) synapseInput[j * maxMultiplications + k];
                 }
 
-
-                //LOGD("02");
             }
         }
-
-        LOGD("test 2");
 
         /* Un-map the buffers */
 
@@ -596,8 +565,6 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
             cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
             LOGE("Unmap memory objects failed");
         }
-
-        LOGD("test 21");
 
         /* Execute the kernels */
 
@@ -633,14 +600,10 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
                 LOGE("Failed to set OpenCL kernel arguments");
             }
 
-            LOGD("test 22 %d", layersSynapses[i]);
-
             // Number of kernel instances.
             size_t globalWorksize[1] = {(size_t) layersSynapses[i] / obj->floatVectorWidth};
 
             bool openCLFailed = false;
-
-            LOGD("test 23");
 
             // Enqueue the kernel
             if (!checkSuccess(
@@ -652,8 +615,6 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
                 openCLFailed = true;
             }
 
-            LOGD("test 24");
-
             // Wait for kernel execution completion
             if (!checkSuccess(clFinish(obj->commandQueue))) {
                 cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel,
@@ -662,23 +623,18 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
                 openCLFailed = true;
             }
 
-            LOGD("test 25");
-
             // If an error occurred return an empty byte array
             if (openCLFailed) {
                 jbyteArray errorByte = env->NewByteArray(0);
                 return errorByte;
             }
 
-            LOGD("test 26");
         }
     }
 
     // The array used to move data from the java side to the native one can be released
     env->ReleaseByteArrayElements(jSynapseInput, synapseInput, 0);
     env->ReleaseFloatArrayElements(jPresynFiringRates, presynFiringRates, 0);
-
-    LOGD("test 3");
 
     //counter = printSynapticMaps(counter, obj, synapseWeightsBufferSize, NUM_SYNAPSES);
 

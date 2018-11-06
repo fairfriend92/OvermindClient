@@ -63,6 +63,8 @@ void computeNeuronalDynamics(int neuronsComputed, int numOfNeurons, cl_int curre
         float unsignedCurrentFloat = (float)(current[i]) / 32768000.0f;
         float currentFloat = current[i] > 0 ? unsignedCurrentFloat : (-unsignedCurrentFloat);
 
+        LOGD("Current %f neuron %d", currentFloat, i);
+
         // Compute the potential and the recovery variable using Euler integration and Izhikevich model
         potentialVar += 0.04f * pow(potentialVar, 2) + 5.0f * potentialVar + 140.0f - recoveryVar + currentFloat + IPar;
         recoveryVar += aPar * (bPar * potentialVar - recoveryVar);
@@ -70,7 +72,6 @@ void computeNeuronalDynamics(int neuronsComputed, int numOfNeurons, cl_int curre
         // Set the bits corresponding to the neurons that have fired and update the moving average of the firing rates
         if (potentialVar >= 30.0f)
         {
-            LOGD("bat");
             actionPotentials[(short)(i / 8)] |= (1 << (i - (short)(i / 8) * 8));
             recoveryVar += dPar;
             potentialVar = cPar;
@@ -78,7 +79,6 @@ void computeNeuronalDynamics(int neuronsComputed, int numOfNeurons, cl_int curre
         }
         else
         {
-            LOGD("man");
             actionPotentials[(short)(i / 8)] &= ~(1 << (i - (short)(i / 8) * 8));
             postsynFiringRates[i] -= (cl_float)(MEAN_RATE_INCREMENT * postsynFiringRates[i]);
         }

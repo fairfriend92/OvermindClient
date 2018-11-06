@@ -307,6 +307,8 @@ public class SimulationService extends IntentService {
                 InetAddress presynapticTerminalAddr = inputSpikesPacket.getAddress();
                 receiveTimedOut = false;
 
+                //Log.d("SimulationService", "Submitting kernelInitializer instance");
+
                 // Put the workload in the queue
                 Future<?> future = kernelInitExecutor.submit(new KernelInitializer(kernelInitQueue, presynapticTerminalAddr.toString().substring(1),
                         inputSpikesPacket.getPort(), inputSpikesBuffer, thisTerminal, clockSignalsQueue));
@@ -438,12 +440,18 @@ public class SimulationService extends IntentService {
                     Object obj = MainActivity.thisClient.objectInputStream.readObject();
                     if (obj instanceof Terminal) {
                         thisTerminal = ((Terminal) obj);
-                        Log.d("TerminalUpdater", " " + thisTerminal.newWeights.length);
-                        updatedTerminal.clear(); // The last terminal that is received is only one that matters, thus the queue can be cleared
+
+                        // TODO: Probably having two different queues is not necessary.
+                        // The last terminal that is received is the only one that matters, thus the queue can be cleared
+                        updatedTerminal.clear();
                         updatedTerminal.offer(thisTerminal);
-                        newWeights.offer(thisTerminal); // Vice versa, it may be important to conserve more than one weights array if the simulation has not updated them yet
+
+                        // Vice versa, it may be important to conserve more than one weights array if the simulation has not updated them yet
+                        newWeights.offer(thisTerminal);
+
                         for (Terminal presynConn : thisTerminal.presynapticTerminals) {
-                            Log.d("TerminalUpdater", "KernelInitializer " + presynConn.ip);
+                            Log.d("TerminalUpdater", "ip of presynConn "
+                                    + presynConn.ip);
                         }
                     }
                 } catch (IOException | ClassNotFoundException e) {
@@ -453,7 +461,7 @@ public class SimulationService extends IntentService {
                     Log.e("TerminalUpdater", stackTrace);
                     shutDown();
                     if (!errorRaised) {
-                        errornumber = 3;
+                        errornumber = 3; // TODO: Use constant variables with appropriate names
                         errorRaised = true;
                     }
                 }
@@ -506,6 +514,8 @@ public class SimulationService extends IntentService {
                         new int[0][0], new int[0][0]);
 
                 if (newTerminal != null) {
+                    Log.d("KernelExecutor", "New terminal present");
+
                     weights = newTerminal.newWeights;
                     weightsIndexes = newTerminal.newWeightsIndexes;
                     updateWeightsFlags = newTerminal.updateWeightsFlags;
@@ -513,9 +523,18 @@ public class SimulationService extends IntentService {
                     // If the matrix of populations has been created, it should be used to generate the indexes for the
                     // synapses
                     if (newTerminal.popsMatrix != null) {
+                        Log.d("KernelExecutor", "New terminal has popsMatrix != null");
+
                         indexesMatrices = indexesMatrixBuilder.buildIndexesMatrix(newTerminal);
-                        if (newTerminal.popsMatrix.length != 0)
+                        if (newTerminal.popsMatrix.length != 0) {
+                            Log.d("KernelExecutor", "popsMatrix has length " +
+                                    newTerminal.popsMatrix.length);
+
                             populationPresent = true;
+                        }
+                        else {
+                            populationPresent = false;
+                        }
                     }
                 }
 
@@ -573,7 +592,7 @@ public class SimulationService extends IntentService {
                 byte[] outputSpikes;
 
                 try {
-                    outputSpikes = kernelExcQueue.poll(5, TimeUnit.SECONDS);
+                    outputSpikes = kernelExcQueue.poll(1, TimeUnit.SECONDS);
                 } catch (InterruptedException e) {
                     String stackTrace = Log.getStackTraceString(e);
                     Log.e("DataSender", stackTrace);

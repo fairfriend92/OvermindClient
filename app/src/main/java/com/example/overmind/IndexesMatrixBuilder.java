@@ -85,19 +85,20 @@ class IndexesMatrixBuilder {
 
         // For debugging purposes print on the terminal all the indexes sequentially
         //printMatrix(indexesMatrix);
+        //printMatrix(neuronsMatrix);
 
         return new IndexesMatrices(indexesMatrix, neuronsMatrix);
     }
 
     /**
      * Prints on the terminal all the indexes sequentially. For debugging purposes.
-     * @param indexesMatrix The collections of all the indexes
+     * @param matrix The collections of all the indexes
      */
 
-    private void printMatrix(int[][] indexesMatrix) {
-        for (int i = 0; i < indexesMatrix.length; i++) {
-            for (int j = 0; j < indexesMatrix[i].length; j++) {
-                Log.d("IndexesMatrixBuilder", indexesMatrix[i][j] + " " + i + " " + j);
+    private void printMatrix(int[][] matrix) {
+        for (int i = 0; i < matrix.length; i++) {
+            for (int j = 0; j < matrix[i].length; j++) {
+                Log.d("IndexesMatrixBuilder", "Element " + matrix[i][j] + " layer " + i + " synapse " + j);
             }
             Log.d(" IndexesMatrixBuilder", " ");
         }
@@ -187,9 +188,9 @@ class IndexesMatrixBuilder {
             int[] tmpIndexes = new int[numOfSynapses];
 
             // Populate the array for the current input
-            for (int i = offset; i < offset + numOfSynapses; i++, j++) {
-                tmpIndexes[i - offset] = i;
-            }
+            for (int i = 0; i < numOfSynapses; i++) { tmpIndexes[i] = i + offset; }
+
+            j += numOfSynapses;
 
             /*
             Put together all the arrays that have been built up until this point for the population

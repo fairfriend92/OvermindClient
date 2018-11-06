@@ -10,17 +10,19 @@ import java.util.HashMap;
  *
  */
 
-public class Terminal implements Serializable {
+public class Terminal implements Serializable, Comparable<Terminal> {
     public static final int INPUT_TO_POPULATION = 0, POPULATION_TO_OUTPUT = 1;
 
     // These are total numbers for all the populations
     public short numOfNeurons, numOfDendrites, numOfSynapses;
 
     // Populations that live on this terminal
-    public HashMap<Integer, Population> populations = new HashMap<>();
+    public ArrayList<Population> populations = new ArrayList<>();
 
     // Matrix that organizes populations based on their connections
     public Population[][] popsMatrix = null;
+
+    // TODO: The following two maps are not strictly necessary
 
     // Map that connects a presynpatic terminal to the populations it stimulates that live on this terminal
     public HashMap<Integer, ArrayList<Integer>> inputsToPopulations = new HashMap<>();
@@ -38,17 +40,12 @@ public class Terminal implements Serializable {
     public int[] newWeightsIndexes = new int[0];
     public byte[] updateWeightsFlags = new byte[0];
 
-    // TODO: Use customHashCode() for the comparison
     @Override
     public boolean equals(Object obj) {
         if (obj == null || obj.getClass() != this.getClass()) { return false; }
         Terminal compare = (Terminal) obj;
-        if (!compare.ip.equals(serverIP))
-            return (compare.ip.equals(this.ip) & compare.natPort == this.natPort);
-        else
-            return compare.ip.equals(this.ip);
+        return compare.id == this.id;
     }
-
 
     /**
      * Generate a hash code base on the physical information of the connection
@@ -70,6 +67,30 @@ public class Terminal implements Serializable {
             hash *= 16777619;
         }
         return hash;
+    }
+
+    /**
+     * This method thoroughly remove any reference to a terminal from this object. More
+     * specifically it updates the mapping from input terminals to populations a from
+     * populations to output terminals
+     *
+     * @param terminal The terminal to be removed
+     */
+
+    public void removeTerminal(Terminal terminal) {
+        presynapticTerminals.remove(terminal);
+
+        ArrayList<Integer> terminalToPops = inputsToPopulations.get(Integer.valueOf(terminal.id));
+        if (terminalToPops != null) {
+            for (Integer popId : terminalToPops) {
+                Population pop = populations.get(popId);
+                pop.inputIndexes.remove(Integer.valueOf(terminal.id));
+                if (pop.inputIndexes.size() == 0) {populations.remove(popId);}
+            }
+            inputsToPopulations.remove(Integer.valueOf(terminal.id));
+        }
+
+        // TODO: Remove indexes in case terminal is a postsynapticTerminal
     }
 
     /**
@@ -142,10 +163,16 @@ public class Terminal implements Serializable {
      */
 
     public void addPopulation(Population pop) {
-        populations.put(pop.id, pop);
+        populations.add(pop);
 
         for (Integer inputId : pop.inputIndexes) {
-            Population input = populations.get(inputId);
+            Population input = null;
+            for (Population inputPop : populations)
+                if (inputPop.id == inputId) {
+                    input = inputPop;
+                    break;
+                }
+            assert input != null;
 
             if (input != null) {
                 input.outputIndexes.add(pop.id);
@@ -161,7 +188,14 @@ public class Terminal implements Serializable {
         }
 
         for (Integer outputId : pop.outputIndexes) {
-            Population output = populations.get(outputId);
+            Population output = null;
+            for (Population outputPop : populations)
+                if (outputPop.id == outputId) {
+                    output = outputPop;
+                    break;
+                }
+            assert output != null;
+
             if (output != null) {
                 output.inputIndexes.add(pop.id);
             } else {
@@ -185,9 +219,10 @@ public class Terminal implements Serializable {
         this.numOfSynapses = terminal.numOfSynapses;
         this.ip = terminal.ip;
         this.natPort = terminal.natPort;
+        this.id = terminal.id;
         this.presynapticTerminals = new ArrayList<>(terminal.presynapticTerminals);
         this.postsynapticTerminals = new ArrayList<>(terminal.postsynapticTerminals);
-        this.populations = new HashMap<>(terminal.populations);
+        this.populations = new ArrayList<>(terminal.populations);
         this.inputsToPopulations = new HashMap<>(terminal.inputsToPopulations);
         this.populationsToOutputs = new HashMap<>(terminal.populationsToOutputs);
         this.newWeights = new byte[terminal.newWeights.length];
@@ -204,5 +239,10 @@ public class Terminal implements Serializable {
                 System.arraycopy(terminal.popsMatrix[i], 0, this.popsMatrix[i], 0, terminal.popsMatrix[i].length);
             }
         }
+    }
+
+    @Override
+    public int compareTo(Terminal o) {
+        return Integer.compare(o.natPort, this.natPort);
     }
 }
