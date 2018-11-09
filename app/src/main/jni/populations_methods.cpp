@@ -60,14 +60,14 @@ void computeNeuronalDynamics(int neuronsComputed, int numOfNeurons, cl_int curre
                              float neuronalDynVar[], cl_float postsynFiringRates[], char actionPotentials[]) {
     for (int i = neuronsComputed; i < neuronsComputed + numOfNeurons; i++) {
         // Convert back from int to float
-        float unsignedCurrentFloat = (float)(current[i]) / 32768000.0f;
-        float currentFloat = current[i] > 0 ? unsignedCurrentFloat : (-unsignedCurrentFloat);
-
-        LOGD("Current %f neuron %d", currentFloat, i);
+        float currentFloat = (float)(current[i]) / 1000.0f;
 
         // Compute the potential and the recovery variable using Euler integration and Izhikevich model
         potentialVar += 0.04f * pow(potentialVar, 2) + 5.0f * potentialVar + 140.0f - recoveryVar + currentFloat + IPar;
         recoveryVar += aPar * (bPar * potentialVar - recoveryVar);
+
+        //if (i == 0) LOGD("currentFloat %f current %d", currentFloat, current[i]);
+
 
         // Set the bits corresponding to the neurons that have fired and update the moving average of the firing rates
         if (potentialVar >= 30.0f)
@@ -85,6 +85,7 @@ void computeNeuronalDynamics(int neuronsComputed, int numOfNeurons, cl_int curre
 
         current[i] = (cl_int)0;
     }
+
 }
 
 /**
@@ -101,8 +102,8 @@ void computeNeuronalDynamics(int neuronsComputed, int numOfNeurons, cl_int curre
 int printSynapticMaps(int counter, OpenCLObject *obj, size_t synapseWeightsBufferSize, int NUM_SYNAPSES) {
     bool mapMemoryObjectsSuccess = true;
 
-    if (counter == 400) {
-        obj->synapseWeights = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    if (counter == 1000) {
+        obj->synapseWeights = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_READ, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
         mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
         if (!mapMemoryObjectsSuccess)
@@ -111,11 +112,11 @@ int printSynapticMaps(int counter, OpenCLObject *obj, size_t synapseWeightsBuffe
             LOGE("Failed to map buffer");
         }
 
-        int offset = NUM_SYNAPSES - 1024 + NUM_SYNAPSES * 15; // TODO: This is probably not correct anymore in light of the subdivision of the terminal in populations
-
-        for (int weightIndex = 0; weightIndex < 1024; weightIndex++) {
-            LOGE("%lf", obj->synapseWeights[offset + weightIndex]);
+        /*
+        for (int weightIndex = 576; weightIndex < 640; weightIndex++) {
+            LOGE("%lf", obj->synapseWeights[weightIndex]);
         }
+        */
 
 
         if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[1], obj->synapseWeights, 0, NULL, NULL)))
@@ -123,10 +124,30 @@ int printSynapticMaps(int counter, OpenCLObject *obj, size_t synapseWeightsBuffe
             cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
             LOGE("Unmap memory objects failed");
         }
+
+        obj->updateWeightsFlags = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[7], CL_TRUE, CL_MAP_READ, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
+        mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
+        if (!mapMemoryObjectsSuccess)
+        {
+            cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+            LOGE("Failed to map buffer");
+        }
+
+        for (int i = 640; i < 1424; i++) {
+            LOGE("%f ", obj->updateWeightsFlags[i]);
+        }
+
+        if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[7], obj->updateWeightsFlags, 0, NULL, NULL)))
+        {
+            cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+            LOGE("Unmap memory objects failed");
+        }
+
     }
 
     // Decrease counter and reset it when it becomes zero
-    counter = counter == 0 ? 400 : counter - 1;
+    counter = counter == 0 ? 1000 : counter - 1;
 
     return counter;
 }

@@ -3,7 +3,7 @@
 
 #define SYN_X_WI 4 // Synapses per work item
 #define SYNAPSE_FILTER_ORDER 16
-#define LEARNING_RATE 0.1f
+#define LEARNING_RATE 1.0f
  
 __kernel __attribute__((vec_type_hint(float4)))
 void simulate_dynamics(__constant float* restrict coeff, __global float* restrict weights, // TODO: Coalesce some of the buffers into one?
@@ -54,12 +54,12 @@ void simulate_dynamics(__constant float* restrict coeff, __global float* restric
 			     coeff[synInput.s8 + offset.z] + coeff[synInput.s9 + offset.z] + coeff[synInput.sa + offset.z] + coeff[synInput.sb + offset.z],
 			     coeff[synInput.sc + offset.w] + coeff[synInput.sd + offset.w] + coeff[synInput.se + offset.w] + coeff[synInput.sf + offset.w]);
 
-  float result = dot(coeffVec, weightsVec) * 32768.0f;
-
+  float result = dot(coeffVec, weightsVec);
+  
   // OpenCL 1.1 doesn't support atomic operations on float, so we cast
   // the result to long
   int resultInt = convert_int(result);
-  int increment = result > 0 ? resultInt : (-resultInt);
+  //resultInt = result > 0 ? resultInt : (-resultInt);
 
   // Update the weights using the rate based STDP learning rule
   weightsVec += weightsFlagsVec * LEARNING_RATE * postsynFiringRates[neuronIndex] * 
@@ -68,5 +68,5 @@ void simulate_dynamics(__constant float* restrict coeff, __global float* restric
   vstore4(weightsVec, globalId, weights);
 
   // Increment the synaptic current
-  atomic_add(&current[neuronIndex], increment);
+  atomic_add(&current[neuronIndex], resultInt);
 }

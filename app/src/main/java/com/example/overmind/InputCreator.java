@@ -76,7 +76,7 @@ class InputCreator implements Runnable {
             connectionsServed[firstInput.presynTerminalIndex] = true;
             numOfConnectionsServed++;
 
-            Log.d("InputCreator", "firstInput " + firstInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
+            //Log.d("InputCreator", "firstInput " + firstInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
 
             Iterator<Input> iterator = kernelInitQueue.iterator();
 
@@ -96,7 +96,9 @@ class InputCreator implements Runnable {
 
                     // Proceed if the current input comes from a connection that has not been served
                     if (!connectionsServed[currentInput.presynTerminalIndex]) {
-                        Log.d("InputCreator", "currentInput " + currentInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
+
+                        //Log.d("InputCreator", "currentInput " + currentInput.presynTerminalIndex + " " + kernelInitQueue.remainingCapacity());
+
                         inputs.set(currentInput.presynTerminalIndex, currentInput);
                         lateralConnFired = lateralConnFired | currentInput.presynTerminalIndex == Constants.INDEX_OF_LATERAL_CONN;
                         connectionsServed[currentInput.presynTerminalIndex] = true;

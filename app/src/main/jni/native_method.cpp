@@ -28,7 +28,7 @@ size_t presynFiringRatesBufferSize;
 size_t postsynFiringRatesBufferSize;
 
 // Debug variables
-int counter = 400;
+int counter = 100;
 
 extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
         JNIEnv *env, jobject thiz, jstring jKernel, jshort jNumOfNeurons, jint jFilterOrder, jshort jNumOfSynapses) {
@@ -294,11 +294,20 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     // Proceed inside if the flags that tell which weights must be updated have changed.
     if (weightsFlagLength != 0) {
 
-        obj->updateWeightsFlags = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[7], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
+        //LOGD("Updating weightsFLags");
+
+        obj->updateWeightsFlags = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[7], CL_TRUE, CL_MAP_WRITE | CL_MAP_READ, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
         mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
+        if (!mapMemoryObjectsSuccess)
+        {
+            cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+            LOGE("Failed to map buffer");
+        }
 
         for (int i = 0; i < weightsFlagLength; i++) {
             obj->updateWeightsFlags[i] = (cl_float) updateWeightsFlags[i];
+            //LOGD("updateWeightsFlags %f i %d", (float) updateWeightsFlags[i], i);
         }
 
         if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[7], obj->updateWeightsFlags, 0, NULL, NULL)))
@@ -314,9 +323,10 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     // Proceed only if some weights have been changed.
     if (numOfNewWeights != 0) {
 
-        obj->synapseWeights = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
+        obj->synapseWeights = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_WRITE | CL_MAP_READ, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
         mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
+        //LOGD("Updating weights");
 
         if (!mapMemoryObjectsSuccess)
         {
@@ -327,13 +337,19 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
         // Enter the block if the weights array is sparse.
         if (env->GetArrayLength(jWeightsIndexes) == numOfNewWeights) // The two numbers are equal if for each index there is a corresponding weight
         {
-            for (int i = 0; i < numOfNewWeights; i++)
+            for (int i = 0; i < numOfNewWeights; i++) {
                 obj->synapseWeights[weightsIndexes[i]] = (cl_float) (MIN_WEIGHT * weights[i]);
+                //obj->synapseWeights[weightsIndexes[i]] = (cl_float) (-0.1);
+                //LOGD("synapticWeight %d is %f ", weightsIndexes[i], obj->synapseWeights[weightsIndexes[i]]);
+            }
+
         }
         else // Enter the block if the weights array is filled completely.
         {
             for (int i = 0; i < numOfNewWeights; i++) {
                 obj->synapseWeights[i] = (cl_float) (MIN_WEIGHT * weights[i]);
+                //obj->synapseWeights[i] = (cl_float) (-0.1);
+                //LOGD("synapticWeight %d is %f ",i, obj->synapseWeights[i]);
             }
         }
 
@@ -429,8 +445,8 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
             env->ReleaseIntArrayElements(jNeuronsArray, neuronsArray, 0);
 
 
-            LOGD("\n synapsesOffset %d layerSynapses %d neuronsOffset %d layerNeurons %d i %d matrixDepth %d \n",
-                 synapsesOffset, layersSynapses[i], neuronsOffset, layersNeurons[i], i, matrixDepth);
+            //LOGD("\n synapsesOffset %d layerSynapses %d neuronsOffset %d layerNeurons %d i %d matrixDepth %d \n",
+                 //synapsesOffset, layersSynapses[i], neuronsOffset, layersNeurons[i], i, matrixDepth);
         }
 
         // Now that the initialization is complete the buffers can be unmapped
@@ -468,7 +484,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
         /* Open the buffers */
 
-        obj->synapseInput = (cl_uchar *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[2], CL_TRUE, CL_MAP_WRITE, 0, synapseInputBufferSize, 0, NULL, NULL, &obj->errorNumber);
+        obj->synapseInput = (cl_uchar *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[2], CL_TRUE, CL_MAP_READ| CL_MAP_WRITE, 0, synapseInputBufferSize, 0, NULL, NULL, &obj->errorNumber);
         mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
         obj->presynFiringRates = (cl_float *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[5], CL_TRUE, CL_MAP_WRITE, 0, presynFiringRatesBufferSize, 0, NULL, NULL, &obj->errorNumber);
@@ -640,8 +656,6 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
     // Release the array storing the simulation parameters
     env->ReleaseFloatArrayElements(jSimulationParameters, simulationParameters, 0);
-
-    LOGD("databytes %d", dataBytes);
 
     // Create the array where to store the output
     jbyteArray outputSpikes = env->NewByteArray(dataBytes);
