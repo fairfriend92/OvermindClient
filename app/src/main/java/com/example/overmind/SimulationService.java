@@ -105,6 +105,13 @@ public class SimulationService extends IntentService {
     BlockingQueue<Terminal> updatedTerminal = new ArrayBlockingQueue<>(1);
     BlockingQueue<Terminal> newWeights = new ArrayBlockingQueue<>(16);
 
+    /*
+    Miscellanea
+     */
+
+
+    int postsynTerminalsInfo[][][] = null;
+
     public SimulationService() {
         super("SimulationService");
     }
@@ -266,6 +273,7 @@ public class SimulationService extends IntentService {
                     thisTerminal = updatedTerminal.poll();
 
                 // If the terminal info have been updated
+                // TODO: Move the update of the terminal to info to separate method/class
                 if (thisTerminal != null) {
 
                     // Update the variable holding the terminal info
@@ -296,6 +304,52 @@ public class SimulationService extends IntentService {
                     for (Future<?> future : kernelInitFutures)
                         future.get();
                     kernelInitFutures = new ArrayList<>(kernelInitExecutor.getMaximumPoolSize());
+
+                    /*
+                    Collect the information about the populations that are connected to the postsynaptic terminals
+                    so that dataSender can send to the right terminals their respective portions of the output
+                    of the native side
+                     */
+
+                    // TODO: Maybe offsets for the populations should be built server side by partitionTool?
+
+                    postsynTerminalsInfo = new int[thisTerminal.postsynapticTerminals.size()][][];
+
+                    // Iterate over the postsynaptic terminals
+                    for (int i = 0; i < thisTerminal.postsynapticTerminals.size(); i ++) {
+                        Terminal postTerminal = thisTerminal.postsynapticTerminals.get(i);
+
+                        // Get the list of the indexes of the populations connected to this terminal
+                        ArrayList<Integer> popsIdxs =
+                                thisTerminal.outputsToPopulations.get(postTerminal.id);
+
+                        // Create the array that will hold the information about this population
+                        // The last element of the array holds information about the buffer that dataSender
+                        // will need to create
+                        int info[][] = new int[popsIdxs.size() + 1][2];
+
+                        int matrixSize = thisTerminal.popsMatrix.length;
+                        int offset = 0, // Offset of population from the beginning of the last layer
+                                totalNeurons = 0,
+                                k = 0; // Index used to access the info array
+
+                        // Iterate over the populations of the last layer
+                        for (int j = 0; j < thisTerminal.popsMatrix[matrixSize - 1].length; j++) {
+                            Population pop = thisTerminal.popsMatrix[matrixSize - 1][j];
+
+                            // If the population is connected to the i-th postsynaptic terminal...
+                            if (popsIdxs.contains(pop.id)) {
+                                info[k][0] = offset;
+                                info[k][1] = pop.numOfNeurons;
+                                info[info.length - 1][0] += pop.numOfNeurons;
+                                k++;
+                            }
+
+                            offset += pop.numOfNeurons;
+                        }
+
+                        postsynTerminalsInfo[i] = info;
+                    }
 
                 }
 
@@ -610,7 +664,24 @@ public class SimulationService extends IntentService {
 
                 if (outputSpikes != null) {
 
-                    for (Terminal postsynapticTerminal : thisTerminal.postsynapticTerminals) {
+                    for (int i = 0; i < thisTerminal.postsynapticTerminals.size(); i++) {
+                        Terminal postsynapticTerminal = thisTerminal.postsynapticTerminals.get(i);
+
+                        // Get the info needed to locate the data to send to this terminal
+                        int[][] info = postsynTerminalsInfo[i];
+
+                        // Get the size of buffer that will hold the data
+                        int size = info[info.length - 1][0];
+                        size = size % 8 == 0 ? size : size + 1;
+                        byte[] buffer = new byte[size];
+                        int offset = 0;
+
+                        // Iterate over the populations that are connected to this postsynaptic terminal
+                        for (int j = 0; j < info.length - 1; j++) { // The last element of info contains info unrelated to the populations
+                            // Copy the relevant data from the total array into the buffer for this specific terminal
+                            System.arraycopy(outputSpikes, info[j][0], buffer, offset, info[j][1]);
+                            offset += info[j][1];
+                        }
 
                         try {
                             InetAddress postsynapticTerminalAddr = InetAddress.getByName(postsynapticTerminal.ip);

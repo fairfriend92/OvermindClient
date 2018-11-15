@@ -19,19 +19,15 @@
     <list default="true" id="ca50b962-a988-47d9-97ce-c78b82bfa005" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.gradle/4.4/fileHashes/fileHashes.bin" afterPath="$PROJECT_DIR$/.gradle/4.4/fileHashes/fileHashes.bin" />
       <change beforePath="$PROJECT_DIR$/.gradle/4.4/fileHashes/fileHashes.lock" afterPath="$PROJECT_DIR$/.gradle/4.4/fileHashes/fileHashes.lock" />
-      <change beforePath="$PROJECT_DIR$/.gradle/4.4/javaCompile/classAnalysis.bin" afterPath="$PROJECT_DIR$/.gradle/4.4/javaCompile/classAnalysis.bin" />
-      <change beforePath="$PROJECT_DIR$/.gradle/4.4/javaCompile/javaCompile.lock" afterPath="$PROJECT_DIR$/.gradle/4.4/javaCompile/javaCompile.lock" />
-      <change beforePath="$PROJECT_DIR$/.gradle/4.4/javaCompile/taskHistory.bin" afterPath="$PROJECT_DIR$/.gradle/4.4/javaCompile/taskHistory.bin" />
       <change beforePath="$PROJECT_DIR$/.gradle/4.4/taskHistory/taskHistory.bin" afterPath="$PROJECT_DIR$/.gradle/4.4/taskHistory/taskHistory.bin" />
       <change beforePath="$PROJECT_DIR$/.gradle/4.4/taskHistory/taskHistory.lock" afterPath="$PROJECT_DIR$/.gradle/4.4/taskHistory/taskHistory.lock" />
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change beforePath="$PROJECT_DIR$/app/.externalNativeBuild/cmake/debug/arm64-v8a/.ninja_deps" afterPath="$PROJECT_DIR$/app/.externalNativeBuild/cmake/debug/arm64-v8a/.ninja_deps" />
       <change beforePath="$PROJECT_DIR$/app/.externalNativeBuild/cmake/debug/arm64-v8a/.ninja_log" afterPath="$PROJECT_DIR$/app/.externalNativeBuild/cmake/debug/arm64-v8a/.ninja_log" />
-      <change beforePath="$PROJECT_DIR$/app/.externalNativeBuild/cmake/debug/arm64-v8a/CMakeFiles/ARM.dir/src/main/jni/native_method.cpp.o" afterPath="$PROJECT_DIR$/app/.externalNativeBuild/cmake/debug/arm64-v8a/CMakeFiles/ARM.dir/src/main/jni/native_method.cpp.o" />
       <change beforePath="$PROJECT_DIR$/app/src/main/assets/kernel_vec4.cl" afterPath="$PROJECT_DIR$/app/src/main/assets/kernel_vec4.cl" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/overmind/InputCreator.java" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/overmind/InputCreator.java" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/jni/native_method.cpp" afterPath="$PROJECT_DIR$/app/src/main/jni/native_method.cpp" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/overmind/SimulationService.java" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/overmind/SimulationService.java" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/overmind/Terminal.java" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/overmind/Terminal.java" />
       <change beforePath="$PROJECT_DIR$/app/src/main/jni/populations_methods.cpp" afterPath="$PROJECT_DIR$/app/src/main/jni/populations_methods.cpp" />
     </list>
     <ignored path="MyApplication.iws" />
@@ -71,13 +67,15 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="SimulationService.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="SimulationService.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/SimulationService.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="0">
-              <caret line="339" column="13" lean-forward="false" selection-start-line="339" selection-start-column="13" selection-end-line="339" selection-end-column="13" />
+            <state relative-caret-position="442">
+              <caret line="687" column="95" lean-forward="false" selection-start-line="687" selection-start-column="83" selection-end-line="687" selection-end-column="95" />
               <folding>
                 <element signature="imports" expanded="true" />
+                <element signature="e#4763#4764#0" expanded="true" />
+                <element signature="e#4805#4806#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -86,7 +84,7 @@
       <file leaf-file-name="InputCreator.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/InputCreator.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="557">
+            <state relative-caret-position="577">
               <caret line="99" column="24" lean-forward="false" selection-start-line="99" selection-start-column="24" selection-end-line="99" selection-end-column="24" />
               <folding />
             </state>
@@ -103,11 +101,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="populations_methods.cpp" pinned="false" current-in-tab="true">
+      <file leaf-file-name="populations_methods.cpp" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/src/main/jni/populations_methods.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="308">
-              <caret line="68" column="10" lean-forward="false" selection-start-line="68" selection-start-column="10" selection-end-line="68" selection-end-column="10" />
+            <state relative-caret-position="331">
+              <caret line="77" column="12" lean-forward="false" selection-start-line="77" selection-start-column="12" selection-end-line="77" selection-end-column="12" />
               <folding />
             </state>
           </provider>
@@ -116,7 +114,7 @@
       <file leaf-file-name="IndexesMatrixBuilder.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/IndexesMatrixBuilder.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="604">
+            <state relative-caret-position="-1333">
               <caret line="86" column="10" lean-forward="false" selection-start-line="86" selection-start-column="10" selection-end-line="86" selection-end-column="10" />
               <folding />
             </state>
@@ -126,7 +124,7 @@
       <file leaf-file-name="native_method.cpp" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/src/main/jni/native_method.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="425">
+            <state relative-caret-position="2244">
               <caret line="340" column="16" lean-forward="false" selection-start-line="340" selection-start-column="16" selection-end-line="340" selection-end-column="16" />
               <folding />
             </state>
@@ -136,7 +134,7 @@
       <file leaf-file-name="native_method.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/src/main/jni/native_method.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="56">
+            <state relative-caret-position="180">
               <caret line="12" column="32" lean-forward="false" selection-start-line="12" selection-start-column="32" selection-end-line="12" selection-end-column="32" />
               <folding />
             </state>
@@ -146,11 +144,11 @@
       <file leaf-file-name="Terminal.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/Terminal.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3660">
-              <caret line="248" column="0" lean-forward="false" selection-start-line="248" selection-start-column="0" selection-end-line="248" selection-end-column="0" />
+            <state relative-caret-position="662">
+              <caret line="250" column="0" lean-forward="true" selection-start-line="250" selection-start-column="0" selection-end-line="250" selection-end-column="0" />
               <folding>
-                <element signature="e#9857#9858#0" expanded="true" />
-                <element signature="e#9920#9921#0" expanded="true" />
+                <element signature="e#9879#9880#0" expanded="true" />
+                <element signature="e#9942#9943#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -161,16 +159,6 @@
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="1950">
               <caret line="138" column="54" lean-forward="false" selection-start-line="138" selection-start-column="54" selection-end-line="138" selection-end-column="54" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Constants.java" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/Constants.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="240">
-              <caret line="16" column="22" lean-forward="false" selection-start-line="16" selection-start-column="22" selection-end-line="16" selection-end-column="22" />
               <folding />
             </state>
           </provider>
@@ -2180,14 +2168,14 @@
         <option value="$PROJECT_DIR$/app/src/main/jni/populations_methods.h" />
         <option value="$PROJECT_DIR$/app/build.gradle" />
         <option value="$PROJECT_DIR$/app/src/main/java/com/example/overmind/Population.java" />
-        <option value="$PROJECT_DIR$/app/src/main/java/com/example/overmind/Terminal.java" />
-        <option value="$PROJECT_DIR$/app/src/main/java/com/example/overmind/SimulationService.java" />
         <option value="$PROJECT_DIR$/app/src/main/java/com/example/overmind/IndexesMatrixBuilder.java" />
         <option value="$PROJECT_DIR$/app/src/main/java/com/example/overmind/KernelInitializer.java" />
         <option value="$PROJECT_DIR$/app/src/main/java/com/example/overmind/InputCreator.java" />
         <option value="$PROJECT_DIR$/app/src/main/jni/native_method.h" />
         <option value="$PROJECT_DIR$/app/src/main/jni/native_method.cpp" />
         <option value="$PROJECT_DIR$/app/src/main/jni/populations_methods.cpp" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/example/overmind/Terminal.java" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/example/overmind/SimulationService.java" />
       </list>
     </option>
   </component>
@@ -2215,41 +2203,13 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
+      <pane id="Scratches" />
       <pane id="ProjectPane" />
+      <pane id="PackagesPane" />
       <pane id="AndroidView">
         <subPane>
           <expand>
-            <path>
-              <item name="OvermindClient" type="1abcf292:AndroidViewProjectNode" />
-              <item name="app" type="feadf853:AndroidModuleNode" />
-            </path>
-            <path>
-              <item name="OvermindClient" type="1abcf292:AndroidViewProjectNode" />
-              <item name="app" type="feadf853:AndroidModuleNode" />
-              <item name="java" type="edd41e36:AndroidSourceTypeNode" />
-            </path>
-            <path>
-              <item name="OvermindClient" type="1abcf292:AndroidViewProjectNode" />
-              <item name="app" type="feadf853:AndroidModuleNode" />
-              <item name="java" type="edd41e36:AndroidSourceTypeNode" />
-              <item name="overmind" type="cbb59c9e:AndroidPsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="OvermindClient" type="1abcf292:AndroidViewProjectNode" />
-              <item name="app" type="feadf853:AndroidModuleNode" />
-              <item name="cpp" type="9a30073f:AndroidJniFolderNode" />
-            </path>
-            <path>
-              <item name="OvermindClient" type="1abcf292:AndroidViewProjectNode" />
-              <item name="app" type="feadf853:AndroidModuleNode" />
-              <item name="cpp" type="9a30073f:AndroidJniFolderNode" />
-              <item name="" type="e12020bf:NdkLibraryNode" />
-            </path>
-            <path>
-              <item name="OvermindClient" type="1abcf292:AndroidViewProjectNode" />
-              <item name="app" type="feadf853:AndroidModuleNode" />
-              <item name="assets" type="edd41e36:AndroidSourceTypeNode" />
-            </path>
             <path>
               <item name="OvermindClient" type="1abcf292:AndroidViewProjectNode" />
               <item name="Gradle Scripts" type="ae0cef3a:AndroidBuildScriptsGroupNode" />
@@ -2258,14 +2218,11 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
-      <pane id="Scratches" />
-      <pane id="PackagesPane" />
     </panes>
   </component>
   <component name="PropertiesComponent">
     <property name="android.sdk.path" value="$USER_HOME$/Android/Sdk" />
-    <property name="settings.editor.selected.configurable" value="Console" />
+    <property name="settings.editor.selected.configurable" value="vcs.Git" />
     <property name="last_opened_file_path" value="$USER_HOME$/tesi/code/dynamics.c" />
     <property name="device.picker.selection" value="X602D1ZH68261903" />
     <property name="UI_DESIGNER_EDITOR_MODE.NlPaletteManager-NlPreviewForm.SHOW" value="false" />
@@ -2638,13 +2595,6 @@
       <option name="presentableId" value="Default" />
       <updated>1481823723005</updated>
     </task>
-    <task id="LOCAL-00031" summary="Seconda versione di InputCreator">
-      <created>1499626606616</created>
-      <option name="number" value="00031" />
-      <option name="presentableId" value="LOCAL-00031" />
-      <option name="project" value="LOCAL" />
-      <updated>1499626606616</updated>
-    </task>
     <task id="LOCAL-00032" summary="Primo tentativo per sincronizzare la rete con il clock del server">
       <created>1499717823720</created>
       <option name="number" value="00032" />
@@ -2981,7 +2931,14 @@
       <option name="project" value="LOCAL" />
       <updated>1541519349197</updated>
     </task>
-    <option name="localTasksCounter" value="80" />
+    <task id="LOCAL-00080" summary="Overflow and sign problem of current solved">
+      <created>1541778605206</created>
+      <option name="number" value="00080" />
+      <option name="presentableId" value="LOCAL-00080" />
+      <option name="project" value="LOCAL" />
+      <updated>1541778605207</updated>
+    </task>
+    <option name="localTasksCounter" value="81" />
     <servers />
   </component>
   <component name="TodoView" selected-index="4">
@@ -3007,11 +2964,11 @@
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.27010924" sideWeight="0.5178827" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32928178" sideWeight="0.20673077" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32889965" sideWeight="0.491453" order="10" side_tool="false" content_ui="tabs" />
-      <window_info id="Logcat" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32373387" sideWeight="0.5410011" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Logcat" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.26613703" sideWeight="0.5410011" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Captures" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Capture Tool" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.15228967" sideWeight="0.47790506" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.11288605" sideWeight="0.47790506" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Build" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33366436" sideWeight="0.52768904" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Gradle" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32959402" sideWeight="0.49346405" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
@@ -3104,7 +3061,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="risolto problema di lettura dei pesi sinaptici nel kernel" />
     <MESSAGE value="corretto invio del segnale dummy per le connessioni laterali" />
     <MESSAGE value="risolto problema connessioni laterali ed errore nel kernel" />
     <MESSAGE value="Corretto problema inizializzazione pesi sinaptici" />
@@ -3129,7 +3085,8 @@
     <MESSAGE value="Very early implementation of the populations system" />
     <MESSAGE value="Beta version of the population systems" />
     <MESSAGE value="Population systems working" />
-    <option name="LAST_COMMIT_MESSAGE" value="Population systems working" />
+    <MESSAGE value="Overflow and sign problem of current solved" />
+    <option name="LAST_COMMIT_MESSAGE" value="Overflow and sign problem of current solved" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -3138,13 +3095,6 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/app/proguard-rules.pro">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/settings.gradle">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
@@ -3358,17 +3308,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/Terminal.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3660">
-          <caret line="248" column="0" lean-forward="false" selection-start-line="248" selection-start-column="0" selection-end-line="248" selection-end-column="0" />
-          <folding>
-            <element signature="e#9857#9858#0" expanded="true" />
-            <element signature="e#9920#9921#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/KernelInitializer.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1950">
@@ -3384,24 +3323,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/IndexesMatrixBuilder.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="604">
-          <caret line="86" column="10" lean-forward="false" selection-start-line="86" selection-start-column="10" selection-end-line="86" selection-end-column="10" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/SimulationService.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="339" column="13" lean-forward="false" selection-start-line="339" selection-start-column="13" selection-end-line="339" selection-end-column="13" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/Population.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="540">
@@ -3410,17 +3331,9 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/InputCreator.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="557">
-          <caret line="99" column="24" lean-forward="false" selection-start-line="99" selection-start-column="24" selection-end-line="99" selection-end-column="24" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/jni/native_method.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="56">
+        <state relative-caret-position="180">
           <caret line="12" column="32" lean-forward="false" selection-start-line="12" selection-start-column="32" selection-end-line="12" selection-end-column="32" />
           <folding />
         </state>
@@ -3428,7 +3341,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/jni/native_method.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="425">
+        <state relative-caret-position="2244">
           <caret line="340" column="16" lean-forward="false" selection-start-line="340" selection-start-column="16" selection-end-line="340" selection-end-column="16" />
           <folding />
         </state>
@@ -3436,9 +3349,56 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/jni/populations_methods.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="308">
-          <caret line="68" column="10" lean-forward="false" selection-start-line="68" selection-start-column="10" selection-end-line="68" selection-end-column="10" />
+        <state relative-caret-position="331">
+          <caret line="77" column="12" lean-forward="false" selection-start-line="77" selection-start-column="12" selection-end-line="77" selection-end-column="12" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/InputCreator.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="577">
+          <caret line="99" column="24" lean-forward="false" selection-start-line="99" selection-start-column="24" selection-end-line="99" selection-end-column="24" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$USER_HOME$/Library/Android/sdk/platforms/android-24/android.jar!/android/telephony/TelephonyManager.class">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-273">
+          <caret line="40" column="28" lean-forward="false" selection-start-line="40" selection-start-column="28" selection-end-line="40" selection-end-column="28" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/Terminal.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="662">
+          <caret line="250" column="0" lean-forward="true" selection-start-line="250" selection-start-column="0" selection-end-line="250" selection-end-column="0" />
+          <folding>
+            <element signature="e#9879#9880#0" expanded="true" />
+            <element signature="e#9942#9943#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/IndexesMatrixBuilder.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1333">
+          <caret line="86" column="10" lean-forward="false" selection-start-line="86" selection-start-column="10" selection-end-line="86" selection-end-column="10" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/example/overmind/SimulationService.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="442">
+          <caret line="687" column="95" lean-forward="false" selection-start-line="687" selection-start-column="83" selection-end-line="687" selection-end-column="95" />
+          <folding>
+            <element signature="imports" expanded="true" />
+            <element signature="e#4763#4764#0" expanded="true" />
+            <element signature="e#4805#4806#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

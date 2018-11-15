@@ -83,6 +83,8 @@ void computeNeuronalDynamics(int neuronsComputed, int numOfNeurons, cl_int curre
             postsynFiringRates[i] -= (cl_float)(MEAN_RATE_INCREMENT * postsynFiringRates[i]);
         }
 
+        //postsynFiringRates[i] += (cl_float)(MEAN_RATE_INCREMENT * (currentFloat - postsynFiringRates[i]));
+
         current[i] = (cl_int)0;
     }
 
