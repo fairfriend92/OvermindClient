@@ -7,7 +7,7 @@
 
 #endif //MYAPPLICATION_COMMON_H
 
-#include "CL/cl.h"
+#include "cl.h"
 #include <android/log.h>
 #include <string>
 #include <iostream>

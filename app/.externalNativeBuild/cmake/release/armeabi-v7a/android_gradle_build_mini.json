@@ -1,21 +1,18 @@
 {
   "buildFiles": [
-    "/Users/rodolforocco/Android projects/OvermindClient/app/CMakeLists.txt"
+    "/Users/rodolforocco/AndroidProjects/OvermindClient/app/../../../Library/Android/sdk/ndk-bundle/build/cmake/android.toolchain.cmake",
+    "/Users/rodolforocco/AndroidProjects/OvermindClient/app/CMakeLists.txt",
+    "/Users/rodolforocco/AndroidProjects/OvermindClient/app/../../../Library/Android/sdk/ndk-bundle/build/cmake/platforms.cmake"
   ],
   "cleanCommands": [
-    "/Users/rodolforocco/Library/Android/sdk/cmake/3.6.4111459/bin/cmake --build /Users/rodolforocco/Android\\ projects/OvermindClient/app/.externalNativeBuild/cmake/release/armeabi-v7a --target clean"
+    "/Users/rodolforocco/Library/Android/sdk/cmake/3.10.2.4988404/bin/cmake --build /Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/release/armeabi-v7a --target clean"
   ],
   "libraries": {
-    "GLES_mali-Release-armeabi-v7a": {
-      "artifactName": "GLES_mali",
-      "abi": "armeabi-v7a",
-      "output": "../../../../src/main/jniLibs/armeabi-v7a/libGLES_mali.so"
-    },
     "ARM-Release-armeabi-v7a": {
       "artifactName": "ARM",
-      "buildCommand": "/Users/rodolforocco/Library/Android/sdk/cmake/3.6.4111459/bin/cmake --build /Users/rodolforocco/Android\\ projects/OvermindClient/app/.externalNativeBuild/cmake/release/armeabi-v7a --target ARM",
+      "buildCommand": "/Users/rodolforocco/Library/Android/sdk/cmake/3.10.2.4988404/bin/cmake --build /Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/release/armeabi-v7a --target ARM",
       "abi": "armeabi-v7a",
-      "output": "/Users/rodolforocco/Android projects/OvermindClient/app/build/intermediates/cmake/release/obj/armeabi-v7a/libARM.so"
+      "output": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/build/intermediates/cmake/release/obj/armeabi-v7a/libARM.so"
     }
   }
 }

@@ -35,7 +35,8 @@ add_library( GLES_mali
 set_target_properties( GLES_mali
              PROPERTIES IMPORTED_LOCATION
              ../../../../src/main/jniLibs/${ANDROID_ABI}/libGLES_mali.so )
-include_directories( OpenCL/include/ )
+
+include_directories( include/ )
 
 #add_library( OpenCL_adreno
 #             SHARED

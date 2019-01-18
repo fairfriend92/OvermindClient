@@ -72,8 +72,7 @@ public class SimulationService extends IntentService {
     // should proceed to send the spikes.
     BlockingQueue<Object> clockSignalsQueue = new ArrayBlockingQueue<>(32);
 
-    // Policy for KernelInitializer that creates an exception whenever a packet is dropped due
-    // to the buffers' being full
+
     ThreadPoolExecutor.AbortPolicy rejectedExecutionHandler = new ThreadPoolExecutor.AbortPolicy();
 
     // Custom executor for KernelInitializer which allows to change the number of threads in the
@@ -324,28 +323,32 @@ public class SimulationService extends IntentService {
                                 thisTerminal.outputsToPopulations.get(postTerminal.id);
 
                         // Create the array that will hold the information about this population
-                        // The last element of the array holds information about the buffer that dataSender
-                        // will need to create
-                        int info[][] = new int[popsIdxs.size() + 1][2];
+                        int info[][] = null;
 
-                        int matrixSize = thisTerminal.popsMatrix.length;
-                        int offset = 0, // Offset of population from the beginning of the last layer
-                                totalNeurons = 0,
-                                k = 0; // Index used to access the info array
+                        // Proceed only if the terminal is connected to a population
+                        if (popsIdxs != null) {
+                            // The last element of the array holds information about the buffer that dataSender
+                            // will need to create
+                            info = new int[popsIdxs.size() + 1][2];
 
-                        // Iterate over the populations of the last layer
-                        for (int j = 0; j < thisTerminal.popsMatrix[matrixSize - 1].length; j++) {
-                            Population pop = thisTerminal.popsMatrix[matrixSize - 1][j];
+                            int matrixSize = thisTerminal.popsMatrix.length;
+                            int offset = 0, // Offset of population from the beginning of the last layer
+                                    k = 0; // Index used to access the info array
 
-                            // If the population is connected to the i-th postsynaptic terminal...
-                            if (popsIdxs.contains(pop.id)) {
-                                info[k][0] = offset;
-                                info[k][1] = pop.numOfNeurons;
-                                info[info.length - 1][0] += pop.numOfNeurons;
-                                k++;
+                            // Iterate over the populations of the last layer
+                            for (int j = 0; j < thisTerminal.popsMatrix[matrixSize - 1].length; j++) {
+                                Population pop = thisTerminal.popsMatrix[matrixSize - 1][j];
+
+                                // If the population is connected to the i-th postsynaptic terminal...
+                                if (popsIdxs.contains(pop.id)) {
+                                    info[k][0] = offset / 8;
+                                    info[k][1] = pop.numOfNeurons / 8;
+                                    info[info.length - 1][0] += pop.numOfNeurons;
+                                    k++;
+                                }
+
+                                offset += pop.numOfNeurons;
                             }
-
-                            offset += pop.numOfNeurons;
                         }
 
                         postsynTerminalsInfo[i] = info;
@@ -364,10 +367,22 @@ public class SimulationService extends IntentService {
                 //Log.d("SimulationService", "Submitting kernelInitializer instance");
 
                 // Put the workload in the queue
-                Future<?> future = kernelInitExecutor.submit(new KernelInitializer(kernelInitQueue, presynapticTerminalAddr.toString().substring(1),
-                        inputSpikesPacket.getPort(), inputSpikesBuffer, thisTerminal, clockSignalsQueue));
+                try {
+                    Future<?> future = kernelInitExecutor.submit(new KernelInitializer(kernelInitQueue, presynapticTerminalAddr.toString().substring(1),
+                            inputSpikesPacket.getPort(), inputSpikesBuffer, thisTerminal, clockSignalsQueue));
 
-                kernelInitFutures.add(future);
+                    kernelInitFutures.add(future);
+                } catch (RejectedExecutionException e) {
+                    Log.e("SimulationService", "Queue of kernelInitializer is full therefore is going to be cleared");
+
+                    // TODO: The flow blocks somewhere else too because this is not enough to keep things going. Investigate.
+
+                    int corePoolSize = kernelInitExecutor.getCorePoolSize();
+                    kernelInitExecutor.getQueue().clear();
+                    kernelInitExecutor.shutdownNow();
+                    kernelInitExecutor =
+                            new ThreadPoolExecutor(corePoolSize, corePoolSize, 3, TimeUnit.MILLISECONDS, kernelInitWorkerThreadsQueue, rejectedExecutionHandler);
+                }
 
             } catch (SocketTimeoutException e) {
                 receiveTimedOut = true;
@@ -380,8 +395,8 @@ public class SimulationService extends IntentService {
                         errorRaised = true;
                     }
                 }
-            } catch (IOException | RejectedExecutionException |
-                    InterruptedException | ExecutionException | IllegalArgumentException e) {
+            } catch (IOException | InterruptedException | ExecutionException |
+                    IllegalArgumentException e) {
                 String stackTrace = Log.getStackTraceString(e);
                 Log.e("SimulationService", stackTrace);
             }
@@ -670,18 +685,26 @@ public class SimulationService extends IntentService {
                         // Get the info needed to locate the data to send to this terminal
                         int[][] info = postsynTerminalsInfo[i];
 
-                        // Get the size of buffer that will hold the data
-                        int size = info[info.length - 1][0];
-                        size = size % 8 == 0 ? size : size + 1;
-                        byte[] buffer = new byte[size];
-                        int offset = 0;
+                        /*
+                        // Proceed only if the postsynTerminal is connected to some populations
+                        if (info != null) {
+                            // Get the size of buffer that will hold the data
+                            int size = info[info.length - 1][0];
+                            size = size % 8 == 0 ? size : size + 1;
+                            byte[] buffer = new byte[size];
+                            int offset = 0;
 
-                        // Iterate over the populations that are connected to this postsynaptic terminal
-                        for (int j = 0; j < info.length - 1; j++) { // The last element of info contains info unrelated to the populations
-                            // Copy the relevant data from the total array into the buffer for this specific terminal
-                            System.arraycopy(outputSpikes, info[j][0], buffer, offset, info[j][1]);
-                            offset += info[j][1];
+                            // Iterate over the populations that are connected to this postsynaptic terminal
+                            for (int j = 0; j < info.length - 1; j++) { // The last element of info contains info unrelated to the populations
+                                // Copy the relevant data from the total array into the buffer for this specific terminal
+                                System.arraycopy(outputSpikes, info[j][0], buffer, offset, info[j][1]);
+                                offset += info[j][1];
+                            }
+
+                            // TODO: When sending only portions of outputspikes move the try block in here and send
+                            // TODO: buffer instead of outputspikes
                         }
+                        */
 
                         try {
                             InetAddress postsynapticTerminalAddr = InetAddress.getByName(postsynapticTerminal.ip);

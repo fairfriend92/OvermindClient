@@ -21,5 +21,5 @@
 void buildSynapticInput(int neuronsComputed, char actionPotentials[], int numOfNeurons,
                         int maxMultiplications, cl_uchar synapticInput[]);
 void computeNeuronalDynamics(int neuronsComputed, int numOfNeurons, cl_int current[], jfloat simulationParameters[],
-                             float neuronalDynVar[], cl_float postsynFiringRates[], char actionPotentials[]);
+                             double neuronalDynVar[], cl_float postsynFiringRates[], char actionPotentials[]);
 int printSynapticMaps(int counter, OpenCLObject *obj, size_t synapseWeightsBufferSize, int NUM_SYNAPSES);

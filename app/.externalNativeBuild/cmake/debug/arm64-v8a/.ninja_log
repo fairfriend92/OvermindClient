@@ -1,21 +1,5 @@
 # ninja log v5
-2	1213	0	CMakeFiles/ARM.dir/src/main/jni/populations_methods.cpp.o	c490928e2f82365b
-2	1458	0	CMakeFiles/ARM.dir/src/main/jni/native_method.cpp.o	bb1335c2844ff0d5
-1215	1480	0	../../../../build/intermediates/cmake/debug/obj/arm64-v8a/libARM.so	4f62a38a1e9c62eb
-1	1577	0	CMakeFiles/ARM.dir/src/main/jni/common.cpp.o	1296a1f9023bf423
-3	4518	0	CMakeFiles/ARM.dir/src/main/jni/populations_methods.cpp.o	c490928e2f82365b
-4518	4893	0	../../../../build/intermediates/cmake/debug/obj/arm64-v8a/libARM.so	4f62a38a1e9c62eb
-2	3314	0	CMakeFiles/ARM.dir/src/main/jni/native_method.cpp.o	bb1335c2844ff0d5
-3314	3608	0	../../../../build/intermediates/cmake/debug/obj/arm64-v8a/libARM.so	4f62a38a1e9c62eb
-1	1227	0	CMakeFiles/ARM.dir/src/main/jni/populations_methods.cpp.o	c490928e2f82365b
-1227	1484	0	../../../../build/intermediates/cmake/debug/obj/arm64-v8a/libARM.so	4f62a38a1e9c62eb
-3	1813	0	CMakeFiles/ARM.dir/src/main/jni/populations_methods.cpp.o	c490928e2f82365b
-1813	2114	0	../../../../build/intermediates/cmake/debug/obj/arm64-v8a/libARM.so	4f62a38a1e9c62eb
-2	3434	0	CMakeFiles/ARM.dir/src/main/jni/populations_methods.cpp.o	c490928e2f82365b
-3434	3795	0	../../../../build/intermediates/cmake/debug/obj/arm64-v8a/libARM.so	4f62a38a1e9c62eb
-8	1355	0	CMakeFiles/ARM.dir/src/main/jni/populations_methods.cpp.o	c490928e2f82365b
-1355	1584	0	../../../../build/intermediates/cmake/debug/obj/arm64-v8a/libARM.so	4f62a38a1e9c62eb
-52	1426	0	CMakeFiles/ARM.dir/src/main/jni/populations_methods.cpp.o	c490928e2f82365b
-1426	1691	0	../../../../build/intermediates/cmake/debug/obj/arm64-v8a/libARM.so	4f62a38a1e9c62eb
-15	1214	0	CMakeFiles/ARM.dir/src/main/jni/populations_methods.cpp.o	c490928e2f82365b
-1214	1446	0	../../../../build/intermediates/cmake/debug/obj/arm64-v8a/libARM.so	4f62a38a1e9c62eb
+5	1569	1547805453	CMakeFiles/ARM.dir/src/main/jni/populations_methods.cpp.o	f65b222b1fd67b0
+1	1649	1547805454	CMakeFiles/ARM.dir/src/main/jni/common.cpp.o	8224ac5f8007d0d4
+0	1652	1547805454	CMakeFiles/ARM.dir/src/main/jni/native_method.cpp.o	ab2892c65cdbcc3b
+1653	2011	1547805454	../../../../build/intermediates/cmake/debug/obj/arm64-v8a/libARM.so	686cd9f5389059ce

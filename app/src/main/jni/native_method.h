@@ -8,12 +8,16 @@
 #endif //MYAPPLICATION_NATIVE_METHOD_H_H
 
 // Constants
-#define SAMPLING_RATE 0.5
-#define EXC_SYNAPSE_TIME_SCALE 1
+#define SAMPLING_RATE 0.5 // milliSeconds
+
+// See https://www.frontiersin.org/articles/10.3389/neuro.10.009.2009/full for the values below
+// For alternative values see http://invibe.net/biblio_database_dyva/woda/data/att/7ba3.file.01518.pdf
+#define EXC_SYNAPSE_TIME_SCALE 1 // milliSeconds
 #define INH_SYNAPSE_TIME_SCALE 3
+
 #define ABSOLUTE_REFRACTORY_PERIOD 2
-#define MIN_WEIGHT 0.0078f
-#define MEAN_RATE_INCREMENT 0.01f
+#define DELTA_WEIGHT 0.0078f
+#define MEAN_RATE_INCREMENT 0.02f
 #define SYNAPSE_FILTER_ORDER 16
 
 #include <android/log.h>
@@ -21,7 +25,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "CL/cl.h"
+#include "cl.h"
 #include "common.h"
 
 struct OpenCLObject {
@@ -48,6 +52,6 @@ struct OpenCLObject {
     cl_float *postsynFiringRates;
     cl_float *updateWeightsFlags;
     cl_int *globalIdOffset;
-    float *neuronalDynVar;
+    double *neuronalDynVar;
 };
 

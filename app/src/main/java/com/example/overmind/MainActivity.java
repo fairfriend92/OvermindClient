@@ -5,6 +5,8 @@
 
 package com.example.overmind;
 
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -28,9 +30,6 @@ import android.widget.TextView;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
 
@@ -209,7 +208,7 @@ public class MainActivity extends AppCompatActivity {
             // Display error message and bring back the home layout if the connection with the
             // Overmind server fails
             if (serverConnectFailed) {
-                // Show the appropriate error message
+
                 android.support.v4.app.DialogFragment dialogFragment = new ErrorDialogFragment();
                 Bundle args = new Bundle();
                 args.putInt("ErrorNumber", serverConnectErrorNumber);
@@ -218,6 +217,7 @@ public class MainActivity extends AppCompatActivity {
 
                 // When going back to the home menu the default settings must be restored
                 RestoreHomeMenu();
+
             } else {
 
                 /*
@@ -453,14 +453,14 @@ public class MainActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
 
             setContentView(R.layout.pre_connection);
-
             Button button = (Button)findViewById(R.id.startSimulationButton);
-
             button.performClick();
+            /*
             button.setPressed(true);
             button.invalidate();
             button.setPressed(false);
             button.invalidate();
+            */
 
         }
 
@@ -482,8 +482,12 @@ public class MainActivity extends AppCompatActivity {
             Intent connectionServiceIntent = new Intent(MainActivity.this, CountdownToConnectionService.class);
 
             // Start the service that periodically attempts to connect with the server after a
-            // disconnection
-            MainActivity.this.startService(connectionServiceIntent);
+            // disconnection if on mobile connection, otherwise return to the main menu
+            if (Constants.USE_LOCAL_CONNECTION) {
+                MainActivity.this.startService(connectionServiceIntent);
+            } else {
+                RestoreHomeMenu();
+            }
 
             int errorNumber = 0;
 

@@ -172,10 +172,12 @@ class InputCreator implements Runnable {
                 if (waitTime.get() != 0) {
                     boolean inputSent = inputCreatorQueue.offer(new InputCreatorOutput(totalSynapticInput, totalFiringRates), waitTime.get() * waitFactor, TimeUnit.NANOSECONDS);
 
+                    /*
                     if (inputSent)
                         Log.d("InputCreator", "input sent ");
                     else
                         Log.d("InputCreator", "input NOT sent");
+                        */
                 } else {
                     Log.d("InputCreator", "clock null input NOT sent");
                 }

@@ -57,17 +57,29 @@ void buildSynapticInput(int neuronsComputed, char actionPotentials[], int numOfN
  */
 
 void computeNeuronalDynamics(int neuronsComputed, int numOfNeurons, cl_int current[], jfloat simulationParameters[],
-                             float neuronalDynVar[], cl_float postsynFiringRates[], char actionPotentials[]) {
+                             double neuronalDynVar[], cl_float postsynFiringRates[], char actionPotentials[]) {
     for (int i = neuronsComputed; i < neuronsComputed + numOfNeurons; i++) {
-        // Convert back from int to float
-        float currentFloat = (float)(current[i]) / 1000.0f;
+
+        // TODO: Exc and inh currents are kept separated in case we want to switch to a conductance model
+        // TODO: and multiply them for the potential. Otherwise in the current model they can be unified.
+
+        float currentExc = (float)(current[2 * i]);
+        float currentInh = (float)(current[2 * i + 1]);
+
+        float currentFloat = (currentExc + currentInh) * 0.01f;
 
         // Compute the potential and the recovery variable using Euler integration and Izhikevich model
-        potentialVar += 0.04f * pow(potentialVar, 2) + 5.0f * potentialVar + 140.0f - recoveryVar + currentFloat + IPar;
-        recoveryVar += aPar * (bPar * potentialVar - recoveryVar);
+        double deltaV = 0.04f * pow(potentialVar, 2) + 5.0f * potentialVar + 140.0f - recoveryVar + currentFloat + IPar;
+        double deltaU = aPar * (bPar * potentialVar - recoveryVar);
 
-        //if (i == 0) LOGD("currentFloat %f current %d", currentFloat, current[i]);
+        potentialVar += deltaV * SAMPLING_RATE;
+        recoveryVar += deltaU * SAMPLING_RATE;
 
+        // Guards against underflow of potentialVar.
+        // TODO: Eliminate cause of underflow.
+        potentialVar = potentialVar < 2.5f * cPar ? 2.5f * cPar : potentialVar;
+
+        if (i == 0) LOGD("currentExc %f currentInh %f potentialVar %lf recoveryVar %lf", currentExc, currentInh, potentialVar, recoveryVar);
 
         // Set the bits corresponding to the neurons that have fired and update the moving average of the firing rates
         if (potentialVar >= 30.0f)
@@ -83,9 +95,9 @@ void computeNeuronalDynamics(int neuronsComputed, int numOfNeurons, cl_int curre
             postsynFiringRates[i] -= (cl_float)(MEAN_RATE_INCREMENT * postsynFiringRates[i]);
         }
 
-        //postsynFiringRates[i] += (cl_float)(MEAN_RATE_INCREMENT * (currentFloat - postsynFiringRates[i]));
+        //postsynFiringRates[i] = (cl_float)currentFloat;
 
-        current[i] = (cl_int)0;
+        current[2 * i] = current[2 * i + 1] = (cl_int)0;
     }
 
 }
@@ -104,28 +116,9 @@ void computeNeuronalDynamics(int neuronsComputed, int numOfNeurons, cl_int curre
 int printSynapticMaps(int counter, OpenCLObject *obj, size_t synapseWeightsBufferSize, int NUM_SYNAPSES) {
     bool mapMemoryObjectsSuccess = true;
 
-    if (counter == 1000) {
+    if (counter == 500) {
         obj->synapseWeights = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_READ, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
         mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
-
-        if (!mapMemoryObjectsSuccess)
-        {
-            cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-            LOGE("Failed to map buffer");
-        }
-
-        /*
-        for (int weightIndex = 576; weightIndex < 640; weightIndex++) {
-            LOGE("%lf", obj->synapseWeights[weightIndex]);
-        }
-        */
-
-
-        if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[1], obj->synapseWeights, 0, NULL, NULL)))
-        {
-            cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
-            LOGE("Unmap memory objects failed");
-        }
 
         obj->updateWeightsFlags = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[7], CL_TRUE, CL_MAP_READ, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
         mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
@@ -136,8 +129,14 @@ int printSynapticMaps(int counter, OpenCLObject *obj, size_t synapseWeightsBuffe
             LOGE("Failed to map buffer");
         }
 
-        for (int i = 640; i < 1424; i++) {
-            LOGE("%f ", obj->updateWeightsFlags[i]);
+        // Debug variables
+        int neuronsPerPop = 8,
+                synapses = neuronsPerPop * 10 + 784,
+                population = 8,
+                start = synapses * neuronsPerPop * population + neuronsPerPop * 10;
+
+        for (int i = start; i < start + 784; i++) {
+            LOGE("%f ", obj->synapseWeights[i]);
         }
 
         if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[7], obj->updateWeightsFlags, 0, NULL, NULL)))
@@ -146,10 +145,15 @@ int printSynapticMaps(int counter, OpenCLObject *obj, size_t synapseWeightsBuffe
             LOGE("Unmap memory objects failed");
         }
 
+        if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[1], obj->synapseWeights, 0, NULL, NULL)))
+        {
+            cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+            LOGE("Unmap memory objects failed");
+        }
     }
 
     // Decrease counter and reset it when it becomes zero
-    counter = counter == 0 ? 1000 : counter - 1;
+    counter = counter == 0 ? 500 : counter - 1;
 
     return counter;
 }

@@ -28,7 +28,7 @@ size_t presynFiringRatesBufferSize;
 size_t postsynFiringRatesBufferSize;
 
 // Debug variables
-int counter = 100;
+int counter = 500;
 
 extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
         JNIEnv *env, jobject thiz, jstring jKernel, jshort jNumOfNeurons, jint jFilterOrder, jshort jNumOfSynapses) {
@@ -62,7 +62,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
 
     synapseIndexesBufferSize = NUM_SYNAPSES * NUM_NEURONS * sizeof(cl_ushort);
     synapseWeightsBufferSize = NUM_SYNAPSES * NUM_NEURONS * sizeof(cl_float);
-    currentBufferSize = NUM_NEURONS * sizeof(cl_int);
+    currentBufferSize = 2 * NUM_NEURONS * sizeof(cl_int); // We store separately the current from the excitatory synapses and from the inh ones
     postsynFiringRatesBufferSize = NUM_NEURONS * sizeof(cl_float);
     neuronsIndexesBufferSize = synapseIndexesBufferSize;
 
@@ -139,7 +139,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     obj->numberOfMemoryObjects = 10;
 
     // Allocate memory from the host
-    float *neuronalDynVar = new float[2 * NUM_NEURONS];
+    double *neuronalDynVar = new double[2 * NUM_NEURONS];
     obj->neuronalDynVar = neuronalDynVar;
 
     // Ask the OpenCL implementation to allocate buffers to pass data to and from the kernels
@@ -205,13 +205,14 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     }
 
     // Initialize the coefficients array by sampling the exponential kernel of the synapse filter
+    // The model for the currents come from https://www.frontiersin.org/articles/10.3389/neuro.10.009.2009/full
     float tExc = (float) (SAMPLING_RATE / EXC_SYNAPSE_TIME_SCALE);
     float tInh = (float) (SAMPLING_RATE / INH_SYNAPSE_TIME_SCALE);
     for (int index = 0; index < SYNAPSE_FILTER_ORDER * 2; index++)
     {
         obj->synapseCoeff[index] = index < SYNAPSE_FILTER_ORDER ?
-                                   (cl_float)(100.0f * index * tExc * expf( - index * tExc)) :
-                                   (cl_float)(100.0f * (index - SYNAPSE_FILTER_ORDER) * tInh * expf( - (index - SYNAPSE_FILTER_ORDER) * tInh));
+                                   (cl_float)(100 * index * tExc * expf( - index * tExc)) :
+                                   (cl_float)(100 * (index - SYNAPSE_FILTER_ORDER) * tInh * expf( - (index - SYNAPSE_FILTER_ORDER) * tInh));
         //LOGD("The synapse coefficients are: \tcoefficient %d \tvalue %f", index, (float) (obj->synapseCoeff[index]));
     }
 
@@ -227,8 +228,9 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     for (int index = 0; index < NUM_NEURONS; index++)
     {
         obj->neuronalDynVar[2 * index] = -65.0f;
-        obj->neuronalDynVar[2 * index + 1] = -13.0f;
-        obj->current[index] = (cl_int)0;
+        obj->neuronalDynVar[2 * index + 1] = 8.0f;
+        obj->current[2 * index] = (cl_int)0;
+        obj->current[2 * index + 1] = (cl_int)0;
         obj->postsynFiringRates[index] = (cl_float)0.0f;
     }
 
@@ -334,12 +336,21 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
             LOGE("Failed to map buffer");
         }
 
+        /*
+         * Weights arrive from the server in the range [0, 1], spaced by a value DELTA_WEIGHT. The variable
+         * maxWeight is used to restrict the values in the range [0, maxWeight].
+         */
+
+        float maxWeight = 1.0f,
+        factor = DELTA_WEIGHT * maxWeight;
+
+        //LOGD("jWeightsIndexes length %d numOfNewWeights %d ", env->GetArrayLength(jWeightsIndexes), numOfNewWeights);
+
         // Enter the block if the weights array is sparse.
         if (env->GetArrayLength(jWeightsIndexes) == numOfNewWeights) // The two numbers are equal if for each index there is a corresponding weight
         {
             for (int i = 0; i < numOfNewWeights; i++) {
-                obj->synapseWeights[weightsIndexes[i]] = (cl_float) (MIN_WEIGHT * weights[i]);
-                //obj->synapseWeights[weightsIndexes[i]] = (cl_float) (-0.1);
+                obj->synapseWeights[weightsIndexes[i]] = (cl_float) (factor * weights[i]);
                 //LOGD("synapticWeight %d is %f ", weightsIndexes[i], obj->synapseWeights[weightsIndexes[i]]);
             }
 
@@ -347,8 +358,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
         else // Enter the block if the weights array is filled completely.
         {
             for (int i = 0; i < numOfNewWeights; i++) {
-                obj->synapseWeights[i] = (cl_float) (MIN_WEIGHT * weights[i]);
-                //obj->synapseWeights[i] = (cl_float) (-0.1);
+                obj->synapseWeights[i] = (cl_float) (factor * weights[i]);
                 //LOGD("synapticWeight %d is %f ",i, obj->synapseWeights[i]);
             }
         }
@@ -427,12 +437,6 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
 
                 obj->neuronsIndexes[synapsesOffset + j] = (cl_ushort)(neuronsOffset +
                         layersNeurons[i]);
-
-                /*
-                LOGD("neuronsIndexes %d layersNeurons[i] %d neuronsArray[j] %d j %d matrixDepth %d",
-                     obj->neuronsIndexes[synapsesOffset + j], layersNeurons[i],
-                     neuronsArray[j], j, matrixDepth);
-                     */
             }
 
             // This last incrementation accounts for the last neuron, which otherwise is not considered as the counter
@@ -652,7 +656,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     env->ReleaseByteArrayElements(jSynapseInput, synapseInput, 0);
     env->ReleaseFloatArrayElements(jPresynFiringRates, presynFiringRates, 0);
 
-    //counter = printSynapticMaps(counter, obj, synapseWeightsBufferSize, NUM_SYNAPSES);
+    counter = printSynapticMaps(counter, obj, synapseWeightsBufferSize, NUM_SYNAPSES);
 
     // Release the array storing the simulation parameters
     env->ReleaseFloatArrayElements(jSimulationParameters, simulationParameters, 0);

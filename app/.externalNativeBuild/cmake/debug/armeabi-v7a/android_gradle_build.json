@@ -1,61 +1,58 @@
-
 {
-	"buildFiles" : 
-	[
-		"/Users/rodolforocco/Android projects/OvermindClient/app/CMakeLists.txt"
-	],
-	"cleanCommands" : 
-	[
-		"/Users/rodolforocco/Library/Android/sdk/cmake/3.6.4111459/bin/cmake --build /Users/rodolforocco/Android\\ projects/OvermindClient/app/.externalNativeBuild/cmake/debug/armeabi-v7a --target clean"
-	],
-	"cppFileExtensions" : [ "cpp" ],
-	"libraries" : 
-	{
-		"ARM-Debug-armeabi-v7a" : 
-		{
-			"abi" : "armeabi-v7a",
-			"artifactName" : "ARM",
-			"buildCommand" : "/Users/rodolforocco/Library/Android/sdk/cmake/3.6.4111459/bin/cmake --build /Users/rodolforocco/Android\\ projects/OvermindClient/app/.externalNativeBuild/cmake/debug/armeabi-v7a --target ARM",
-			"buildType" : "debug",
-			"files" : 
-			[
-				
-				{
-					"flags" : "  --target=armv7-none-linux-androideabi --gcc-toolchain=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/darwin-x86_64 --sysroot=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot  -DARM_EXPORTS -I../../../../src/main/assets -I../../../../OpenCL/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/cxx-stl/llvm-libc++/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/android/support/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/cxx-stl/llvm-libc++abi/include  -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot/usr/include/arm-linux-androideabi -D__ANDROID_API__=22 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11 -std=c++11 -mfloat-abi=softfp  -mfpu=neon -O0 -fno-limit-debug-info  -fPIC    -c ",
-					"src" : "/Users/rodolforocco/Android projects/OvermindClient/app/src/main/jni/native_method.cpp",
-					"workingDirectory" : "/Users/rodolforocco/Android projects/OvermindClient/app/.externalNativeBuild/cmake/debug/armeabi-v7a"
-				},
-				
-				{
-					"flags" : "  --target=armv7-none-linux-androideabi --gcc-toolchain=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/darwin-x86_64 --sysroot=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot  -DARM_EXPORTS -I../../../../src/main/assets -I../../../../OpenCL/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/cxx-stl/llvm-libc++/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/android/support/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/cxx-stl/llvm-libc++abi/include  -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot/usr/include/arm-linux-androideabi -D__ANDROID_API__=22 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11 -std=c++11 -mfloat-abi=softfp  -mfpu=neon -O0 -fno-limit-debug-info  -fPIC    -c ",
-					"src" : "/Users/rodolforocco/Android projects/OvermindClient/app/src/main/jni/common.cpp",
-					"workingDirectory" : "/Users/rodolforocco/Android projects/OvermindClient/app/.externalNativeBuild/cmake/debug/armeabi-v7a"
-				},
-				
-				{
-					"flags" : "  --target=armv7-none-linux-androideabi --gcc-toolchain=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/darwin-x86_64 --sysroot=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot  -DARM_EXPORTS -I../../../../src/main/assets -I../../../../OpenCL/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/cxx-stl/llvm-libc++/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/android/support/include -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/cxx-stl/llvm-libc++abi/include  -isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot/usr/include/arm-linux-androideabi -D__ANDROID_API__=22 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11 -std=c++11 -mfloat-abi=softfp  -mfpu=neon -O0 -fno-limit-debug-info  -fPIC    -c ",
-					"src" : "/Users/rodolforocco/Android projects/OvermindClient/app/src/main/jni/populations_methods.cpp",
-					"workingDirectory" : "/Users/rodolforocco/Android projects/OvermindClient/app/.externalNativeBuild/cmake/debug/armeabi-v7a"
-				}
-			],
-			"output" : "/Users/rodolforocco/Android projects/OvermindClient/app/build/intermediates/cmake/debug/obj/armeabi-v7a/libARM.so",
-			"toolchain" : "17883089153795610479"
-		},
-		"GLES_mali-Debug-armeabi-v7a" : 
-		{
-			"abi" : "armeabi-v7a",
-			"artifactName" : "GLES_mali",
-			"buildType" : "debug",
-			"output" : "../../../../src/main/jniLibs/armeabi-v7a/libGLES_mali.so",
-			"toolchain" : "17883089153795610479"
-		}
-	},
-	"toolchains" : 
-	{
-		"17883089153795610479" : 
-		{
-			"cCompilerExecutable" : "/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang",
-			"cppCompilerExecutable" : "/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang++"
-		}
-	}
+  "buildFiles": [
+    "/Users/rodolforocco/AndroidProjects/OvermindClient/app/../../../Library/Android/sdk/ndk-bundle/build/cmake/android.toolchain.cmake",
+    "/Users/rodolforocco/AndroidProjects/OvermindClient/app/CMakeLists.txt",
+    "/Users/rodolforocco/AndroidProjects/OvermindClient/app/../../../Library/Android/sdk/ndk-bundle/build/cmake/platforms.cmake"
+  ],
+  "cleanCommands": [
+    "/Users/rodolforocco/Library/Android/sdk/cmake/3.10.2.4988404/bin/cmake --build /Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/debug/armeabi-v7a --target clean"
+  ],
+  "libraries": {
+    "ARM-Debug-armeabi-v7a": {
+      "buildCommand": "/Users/rodolforocco/Library/Android/sdk/cmake/3.10.2.4988404/bin/cmake --build /Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/debug/armeabi-v7a --target ARM",
+      "buildType": "debug",
+      "toolchain": "3556510530",
+      "abi": "armeabi-v7a",
+      "artifactName": "ARM",
+      "files": [
+        {
+          "src": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/src/main/jni/native_method.h",
+          "workingDirectory": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/debug/armeabi-v7a"
+        },
+        {
+          "src": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/src/main/jni/common.h",
+          "workingDirectory": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/debug/armeabi-v7a"
+        },
+        {
+          "src": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/src/main/jni/populations_methods.h",
+          "workingDirectory": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/debug/armeabi-v7a"
+        },
+        {
+          "src": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/src/main/jni/native_method.cpp",
+          "flags": "-isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot/usr/include/arm-linux-androideabi -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11 -std=c++11 -mfloat-abi=softfp  -mfpu=neon -O0 -fno-limit-debug-info  -fPIC  ",
+          "workingDirectory": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/debug/armeabi-v7a"
+        },
+        {
+          "src": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/src/main/jni/common.cpp",
+          "flags": "-isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot/usr/include/arm-linux-androideabi -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11 -std=c++11 -mfloat-abi=softfp  -mfpu=neon -O0 -fno-limit-debug-info  -fPIC  ",
+          "workingDirectory": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/debug/armeabi-v7a"
+        },
+        {
+          "src": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/src/main/jni/populations_methods.cpp",
+          "flags": "-isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot/usr/include/arm-linux-androideabi -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11 -std=c++11 -mfloat-abi=softfp  -mfpu=neon -O0 -fno-limit-debug-info  -fPIC  ",
+          "workingDirectory": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/debug/armeabi-v7a"
+        }
+      ],
+      "output": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/build/intermediates/cmake/debug/obj/armeabi-v7a/libARM.so"
+    }
+  },
+  "toolchains": {
+    "3556510530": {
+      "cppCompilerExecutable": "/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang++"
+    }
+  },
+  "cFileExtensions": [],
+  "cppFileExtensions": [
+    "cpp"
+  ]
 }
