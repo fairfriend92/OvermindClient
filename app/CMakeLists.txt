@@ -9,41 +9,27 @@ cmake_minimum_required(VERSION 3.4.1)
 # You can define multiple libraries, and CMake builds it for you.
 # Gradle automatically packages shared libraries with your APK.
 
-add_library( ARM
+add_library( overmind
              SHARED
              src/main/jni/native_method.cpp
-             src/main/jni/native_method.h
              src/main/jni/common.cpp
-             src/main/jni/common.h
-             src/main/jni/populations_methods.cpp
-             src/main/jni/populations_methods.h)
+             src/main/jni/populations_methods.cpp)
+include_directories( src/main/jni/include/ )
 include_directories( src/main/assets/ )
-
-#add_library( Qualcomm
-#             SHARED
-#             src/main/jni/native_method.cpp
-#             src/main/jni/native_method.h
-#             src/main/jni/common.cpp
-#             src/main/jni/common.h
-#             src/main/jni/populations_methods.cpp
-#             src/main/jni/populations_methods.h)
-
 
 add_library( GLES_mali
              SHARED
              IMPORTED )
 set_target_properties( GLES_mali
              PROPERTIES IMPORTED_LOCATION
-             ../../../../src/main/jniLibs/${ANDROID_ABI}/libGLES_mali.so )
+             ${PROJECT_SOURCE_DIR}/src/main/jniLibs/${ANDROID_ABI}/libGLES_mali.so )
 
-include_directories( include/ )
-
-#add_library( OpenCL_adreno
-#             SHARED
-#             IMPORTED )
-#set_target_properties( OpenCL_adreno
-#             PROPERTIES IMPORTED_LOCATION
-#             ../../../../src/main/jniLibs/libOpenCL.so )
+add_library( foo
+             SHARED
+             IMPORTED )
+set_target_properties( foo
+             PROPERTIES IMPORTED_LOCATION
+             ${PROJECT_SOURCE_DIR}/src/main/jniLibs/${ANDROID_ABI}/libfoo.so )
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because system libraries are included in the search path by
@@ -56,12 +42,11 @@ find_library( # Sets the name of the path variable.
 
               # Specifies the name of the NDK library that
               # you want CMake to locate.
-              log )
+              log)
 
 # Specifies libraries CMake should link to your target library. You
 # can link multiple libraries, such as libraries you define in the
 # build script, prebuilt third-party libraries, or system libraries.
 
-target_link_libraries ( ARM log GLES_mali )
-#target_link_libraries ( Qualcomm log OpenCL_adreno )
+target_link_libraries (overmind GLES_mali foo ${log-lib} ${dl-lib})
 

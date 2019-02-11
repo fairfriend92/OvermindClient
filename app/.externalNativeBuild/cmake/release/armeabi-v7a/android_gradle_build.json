@@ -16,18 +16,6 @@
       "artifactName": "ARM",
       "files": [
         {
-          "src": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/src/main/jni/native_method.h",
-          "workingDirectory": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/release/armeabi-v7a"
-        },
-        {
-          "src": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/src/main/jni/common.h",
-          "workingDirectory": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/release/armeabi-v7a"
-        },
-        {
-          "src": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/src/main/jni/populations_methods.h",
-          "workingDirectory": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/release/armeabi-v7a"
-        },
-        {
           "src": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/src/main/jni/native_method.cpp",
           "flags": "-isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot/usr/include/arm-linux-androideabi -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11 -std=c++11 -mfloat-abi=softfp  -mfpu=neon -Oz -DNDEBUG  -fPIC  ",
           "workingDirectory": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/release/armeabi-v7a"

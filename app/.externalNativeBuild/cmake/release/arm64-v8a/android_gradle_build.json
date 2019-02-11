@@ -1,4 +1,8 @@
 {
+  "stringTable": {
+    "0": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/release/arm64-v8a",
+    "1": "--target=aarch64-none-linux-android23 --gcc-toolchain=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/llvm/prebuilt/darwin-x86_64 -Dovermind_EXPORTS -I../../../../src/main/jni/include -I../../../../src/main/assets --sysroot /Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/llvm/prebuilt/darwin-x86_64/sysroot -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -fno-addrsig -Wa,--noexecstack -Wformat -Werror=format-security -stdlib=libc++ -std=c++11 -O0 -fno-limit-debug-info -fPIC"
+  },
   "buildFiles": [
     "/Users/rodolforocco/AndroidProjects/OvermindClient/app/../../../Library/Android/sdk/ndk-bundle/build/cmake/android.toolchain.cmake",
     "/Users/rodolforocco/AndroidProjects/OvermindClient/app/CMakeLists.txt",
@@ -8,42 +12,30 @@
     "/Users/rodolforocco/Library/Android/sdk/cmake/3.10.2.4988404/bin/cmake --build /Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/release/arm64-v8a --target clean"
   ],
   "libraries": {
-    "ARM-Release-arm64-v8a": {
-      "buildCommand": "/Users/rodolforocco/Library/Android/sdk/cmake/3.10.2.4988404/bin/cmake --build /Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/release/arm64-v8a --target ARM",
-      "buildType": "release",
+    "overmind-Debug-arm64-v8a": {
+      "buildCommand": "/Users/rodolforocco/Library/Android/sdk/cmake/3.10.2.4988404/bin/cmake --build /Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/release/arm64-v8a --target overmind",
+      "buildType": "debug",
       "toolchain": "3556510530",
       "abi": "arm64-v8a",
-      "artifactName": "ARM",
+      "artifactName": "overmind",
       "files": [
         {
-          "src": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/src/main/jni/native_method.h",
-          "workingDirectory": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/release/arm64-v8a"
-        },
-        {
-          "src": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/src/main/jni/common.h",
-          "workingDirectory": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/release/arm64-v8a"
-        },
-        {
-          "src": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/src/main/jni/populations_methods.h",
-          "workingDirectory": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/release/arm64-v8a"
-        },
-        {
           "src": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/src/main/jni/native_method.cpp",
-          "flags": "-isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot/usr/include/aarch64-linux-android -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11 -std=c++11 -mfloat-abi=softfp  -mfpu=neon -O2 -DNDEBUG  -fPIC  ",
-          "workingDirectory": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/release/arm64-v8a"
+          "flagsOrdinal": 1,
+          "workingDirectoryOrdinal": 0
         },
         {
           "src": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/src/main/jni/common.cpp",
-          "flags": "-isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot/usr/include/aarch64-linux-android -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11 -std=c++11 -mfloat-abi=softfp  -mfpu=neon -O2 -DNDEBUG  -fPIC  ",
-          "workingDirectory": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/release/arm64-v8a"
+          "flagsOrdinal": 1,
+          "workingDirectoryOrdinal": 0
         },
         {
           "src": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/src/main/jni/populations_methods.cpp",
-          "flags": "-isystem /Users/rodolforocco/Library/Android/sdk/ndk-bundle/sysroot/usr/include/aarch64-linux-android -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11 -std=c++11 -mfloat-abi=softfp  -mfpu=neon -O2 -DNDEBUG  -fPIC  ",
-          "workingDirectory": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/release/arm64-v8a"
+          "flagsOrdinal": 1,
+          "workingDirectoryOrdinal": 0
         }
       ],
-      "output": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/build/intermediates/cmake/release/obj/arm64-v8a/libARM.so"
+      "output": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/build/intermediates/cmake/release/obj/arm64-v8a/libovermind.so"
     }
   },
   "toolchains": {

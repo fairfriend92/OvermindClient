@@ -81,6 +81,7 @@ class KernelInitializer implements Runnable {
 
     KernelInitializer(BlockingQueue<Input> b, String s, int i, byte[] b1, Terminal t,
                       BlockingQueue<Object> b2) {
+        Log.d("KernelInitializer", "Constructor of KernelInitializer: Argument t is null? " + (t == null));
         this.kernelInitQueue = b;
         this.presynTerminalIP = s;
         this.presynTerminalNatPort = i;
@@ -98,11 +99,13 @@ class KernelInitializer implements Runnable {
 
         if (thisTerminal != null) {
 
+            Log.d("KernelInitializer", "New terminal means new initialization...");
+
             // If the information of the terminal have been updated...
             synchronized (lock) {
 
-                // This ArrayList can't be a simple reference because we want the connections to
-                // be updated only when threadsCounter == 0
+                // We build a new arraylist using that contained in thisTerinal because thisTerminal
+                // is usually null but we want to be able to reference the arraylist at each iteration.
                 presynapticTerminals = new ArrayList<>(thisTerminal.presynapticTerminals);
 
                 /* Point the Objects to new memory space */
@@ -158,35 +161,51 @@ class KernelInitializer implements Runnable {
         presynTerminal.id = presynTerminal.customHashCode();
         int presynTerminalIndex = presynapticTerminals.indexOf(presynTerminal);
 
-        // If the presynaptic terminal was not found and its mapping is null
-        if (presynTerminalIndex == -1 && connectionsMap.get(presynTerminalNatPort) == null) {
+        synchronized (lock) {
 
-            if (!unknownPorts.contains(presynTerminalNatPort)) { unknownPorts.add(presynTerminalNatPort); }
+            // If the presynaptic terminal was not found and its mapping is null
+            if (presynTerminalIndex == -1 && connectionsMap.get(presynTerminalNatPort) == null) {
 
-            // Order the ports which we could not map to a presynaptic terminal in ascending order
-            Collections.sort(unknownPorts);
+                if (!unknownPorts.contains(presynTerminalNatPort)) {
+                    unknownPorts.add(presynTerminalNatPort);
+                }
 
-            Log.d("KernelInitializer", "unknownPorts " + unknownPorts.size() + " numOfConnections " + numOfConnections + " knownPorts " + knownPorts.size());
+                if (numOfConnections < knownPorts.size() + unknownPorts.size()) {
+                    Log.e("KernelInitializer",
+                            "Inbound connections are more than expected: This should not happen!");
+                    return;
+                }
 
-            // If the number of collected ports is equal to that of the presyn terminals that have not been mapped
-            if (unknownPorts.size() == numOfConnections - knownPorts.size()) {
+                // Order the ports which we could not map to a presynaptic terminal in ascending order
+                Collections.sort(unknownPorts);
 
-                Log.d("KernelInitializer", "Found all missing connections");
+                Log.d("KernelInitializer", "unknownPorts " + unknownPorts.size() + " numOfConnections " + numOfConnections + " knownPorts " + knownPorts.size());
+                for (Integer unknownPort : unknownPorts) {
+                    Log.d("KernelInitializer", "unknownPort " + unknownPort);
+                }
+                for (Integer knownPort : knownPorts) {
+                    Log.d("KernelInitializer", "knownPort " + knownPort);
+                }
 
-                for (int i = 0; i < numOfConnections; i++) {
-                    // Lowest available port number
-                    int natPort = unknownPorts.get(0);
+                // If the number of collected ports is equal to that of the presyn terminals that have not been mapped
+                if (unknownPorts.size() == numOfConnections - knownPorts.size()) {
 
-                    /*
-                    The block is synchronized as multiple threads might access it simultaneously and thus
-                    add/remove ports to the respective arraylists more than once
-                     */
+                    Log.d("KernelInitializer", "Found all missing connections");
 
-                    synchronized (lock) {
+                    for (int i = 0; i < numOfConnections; i++) {
+                        // Lowest available port number
+                        int natPort = unknownPorts.get(0);
+
+                        /*
+                        The block is synchronized as multiple threads might access it simultaneously and thus
+                        add/remove ports to the respective arraylists more than once
+                         */
 
                         int index = i;
                         // Find the right index for the connection
-                        while (connectionsMap.containsValue(index)) { index++; }
+                        while (connectionsMap.containsValue(index)) {
+                            index++;
+                        }
 
                         // Skip the iteration if the corresponding map has already been found
                         if (connectionsMap.get(natPort) == null) {
@@ -203,35 +222,40 @@ class KernelInitializer implements Runnable {
                         }
                         /* [End of if] */
                     }
-                    /* [End of synchronized] */
+                    /* [End of for] */
                 }
-                /* [End of for] */
+                /* [End of if] */
+
+                return;
+            } else if (presynTerminalIndex == -1 && connectionsMap.get(presynTerminalNatPort) != null) {
+
+                // If the presynaptic terminal was not found but its nat port has already been mapped to an index
+                presynTerminalIndex = connectionsMap.get(presynTerminalNatPort);
+
+            } else if (presynTerminalIndex != -1 && connectionsMap.get(presynTerminalNatPort) == null) {
+
+                // If the presynaptic terminal was found for the first time, update its entry in the connectionsMap
+                connectionsMap.put(presynTerminalNatPort, presynTerminalIndex);
+
+                // Increase the number of connections maps that have been discovered
+                if (!knownPorts.contains(presynTerminalNatPort)) {
+                    knownPorts.add(presynTerminalNatPort);
+                }
             }
-            /* [End of if] */
 
-            return;
-        } else if (presynTerminalIndex == -1 && connectionsMap.get(presynTerminalNatPort) != null) {
-
-            // If the presynaptic terminal was not found but its nat port has already been mapped to an index
-            presynTerminalIndex = connectionsMap.get(presynTerminalNatPort);
-
-        } else if (presynTerminalIndex != -1 && connectionsMap.get(presynTerminalNatPort) == null) {
-
-            // If the presynaptic terminal was found for the first time, update its entry in the connectionsMap
-            connectionsMap.put(presynTerminalNatPort, presynTerminalIndex);
-
-            // Increase the number of connections maps that have been discovered
-            if (!knownPorts.contains(presynTerminalNatPort)) { knownPorts.add(presynTerminalNatPort); }
         }
 
         // Put in the buffer of the connection that is being served by this thread the packet just
         // received
+        presynTerminalQueue.get(presynTerminalIndex).offer(inputSpikesBuffer);
+        /*
         try {
             presynTerminalQueue.get(presynTerminalIndex).put(inputSpikesBuffer);
         } catch (InterruptedException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("KernelInitializer", stackTrace);
         }
+        */
 
         // Local flag that signals when this thread can proceed to serve its connection
         boolean threadIsFree = false;
@@ -362,8 +386,10 @@ class KernelInitializer implements Runnable {
 
             }
 
+            /*
             Log.d("KernelInitializer", presynTerminalIndex + " " + presynTerminalNatPort + " " +
                     knownPorts.size() + " " + unknownPorts.size() +  " " + InputCreator.waitTime.get());
+                    */
 
             boolean mustChangeIndex = shortestTInterIndex.get() == Constants.INDEX_OF_LATERAL_CONN | (
                     System.nanoTime() - lastFiringTimes[shortestTInterIndex.get()] > 8 * meanTimeIntervals[shortestTInterIndex.get()] &

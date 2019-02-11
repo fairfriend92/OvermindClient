@@ -28,15 +28,21 @@ import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.TextView;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Scanner;
+import java.util.Timer;
 import java.util.concurrent.ExecutionException;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 public class MainActivity extends AppCompatActivity {
+    private boolean appIsInBackground = false;
 
     // Flag that signals eventual errors occurred while connecting to the server, including
     // out of range errors for the number of neurons and synapses
@@ -51,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView currentView = null; // Field displaying the value of the current injected by the user
 
     private float current = 0.0f; // Current injected by the user
-    private String vendor; // Holds the name of the GPU vendor
+    public static String vendor; // Holds the name of the GPU vendor
 
     private static SharedPreferences prefs; // Used to store GPU info by the renderer class
     static SocketInfo thisClient; // Socket used for TCP communications with the Overmind server
@@ -185,12 +191,11 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onFinish() {
 
-            // Get the GPU model to set the number of neurons of the local network
+            // Get the GPU info
             SharedPreferences prefs = getSharedPreferences("GPUinfo", Context.MODE_PRIVATE);
             renderer = prefs.getString("RENDERER", null);
-
-            // Load the appropriate OpenCL library based on the GPU vendor
-            loadGLLibrary();
+            vendor = prefs.getString("VENDOR", null);
+            Log.d("MainActivity", "Native library dir. is " + getApplicationInfo().nativeLibraryDir);
 
             // Create and launch the AsyncTask to retrieve the global IP of the terminal and to send the info
             // of the terminal to the Overmind server
@@ -489,12 +494,10 @@ public class MainActivity extends AppCompatActivity {
                 RestoreHomeMenu();
             }
 
-            int errorNumber = 0;
-
             // Get data included in the Intent about the kind of error that has occurred
+            int errorNumber = 0;
             errorNumber = intent.getIntExtra("ErrorNumber", errorNumber);
 
-            /*
             // Use the bundle to pass to the class that displays the error message its error code
             Bundle args = new Bundle();
 
@@ -505,64 +508,71 @@ public class MainActivity extends AppCompatActivity {
             args.putInt("ErrorNumber", errorNumber);
             dialogFragment.setArguments(args);
 
-            // Display the error message and bring back the home layout
-            dialogFragment.show(getSupportFragmentManager(), "Connection failed");
-            */
+            if (!appIsInBackground) {
+                // Display the error message
+                dialogFragment.show(getSupportFragmentManager(), "Connection failed");
+            }
 
             setContentView(R.layout.establish_connection);
 
             Resources res = getResources();
 
-            // The field which displays the details about the disconnection error
-            TextView errorTextView = new TextView(MainActivity.this);
-
             // The field containing the diagnostics
             TextView diagnosticsView = new TextView(MainActivity.this);
 
-            String errorString = "Undefined error with errornumber " + errorNumber;
-
-            switch (errorNumber) {
-                case 2:
-                    errorString = String.format(res.getString(R.string.error_text),
-                            res.getString(R.string.udp_socket_timeout_message));
-                    break;
-                case 3:
-                    errorString = String.format(res.getString(R.string.error_text),
-                            res.getString(R.string.stream_error_message));
-                    break;
-                case 6:
-                    errorString = String.format(res.getString(R.string.error_text),
-                            res.getString(R.string.opencl_failure_message));
-                    break;
-            }
-
             String diagnosticsString = String.format(res.getString(R.string.diagnostics_info), numfOfDisconnections);
-
-            // Put the text about the error in the field
-            errorTextView.setText(errorString);
 
             // Put the various info in the diagnostics view
             diagnosticsView.setText(diagnosticsString);
 
-            ViewGroup errorTextLayout = (ViewGroup) findViewById(R.id.error_text);
+            //ViewGroup errorTextLayout = (ViewGroup) findViewById(R.id.error_text);
 
             ViewGroup diagnosticsTextLayout = (ViewGroup) findViewById(R.id.diagnostics_info);
 
-            assert errorTextLayout != null;
+            //assert errorTextLayout != null;
             assert diagnosticsTextLayout != null;
-
-            // Add the view about the error to the layout
-            errorTextLayout.addView(errorTextView);
 
             // Append the diagnostics info to the proper layout
             diagnosticsTextLayout.addView(diagnosticsView);
-
         }
 
     };
 
+    public static void copy(File src, File dst) throws IOException {
+        try (InputStream in = new FileInputStream(src)) {
+            try (OutputStream out = new FileOutputStream(dst)) {
+                // Transfer bytes from in to out
+                byte[] buf = new byte[1024];
+                int len;
+                while ((len = in.read(buf)) > 0) {
+                    out.write(buf, 0, len);
+                }
+            }
+        }
+    }
+
+    private static void loadLibrary() {
+        System.loadLibrary("foo");
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        appIsInBackground = true;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        appIsInBackground = false;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        loadLibrary();
 
         super.onCreate(savedInstanceState);
 
@@ -605,38 +615,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Load the proper OpenGL library based on GPU vendor info provided by the OpenGL renderer
-     */
-
-
-    public void loadGLLibrary() {
-
-        SharedPreferences prefs = getSharedPreferences("GPUinfo", Context.MODE_PRIVATE);
-        vendor = prefs.getString("VENDOR", null);
-        assert vendor != null;
-        switch (vendor) {
-            case "ARM":try {
-                    System.loadLibrary("ARM");
-                } catch (UnsatisfiedLinkError linkError) {
-                    Log.e("Unsatisfied link", "libGLES_mali.so not found");
-                }
-                break;
-            case "Qualcomm":
-                try {
-                    System.loadLibrary("Qualcomm");
-                } catch (UnsatisfiedLinkError linkError) {
-                    Log.e("Unsatisfied link", "libOpenCL.so not found");
-                }
-                break;
-            default:
-                Intent broadcastError = new Intent("ErrorMessage");
-                broadcastError.putExtra("ErrorNumber", 4);
-                LocalBroadcastManager.getInstance(this).sendBroadcast(broadcastError);
-        }
-
-    }
-
-    /**
      * Get an input stream from the .cl file
      */
 
@@ -668,6 +646,7 @@ public class MainActivity extends AppCompatActivity {
         switch (renderer) {
             case "Mali-T880":
             case "Mali-T720":
+            case "Mali-G51":
                 // The string used to hold the .cl kernel file
                 kernel = loadKernelFromAsset(getInputStream("kernel_vec4.cl"));
                 break;

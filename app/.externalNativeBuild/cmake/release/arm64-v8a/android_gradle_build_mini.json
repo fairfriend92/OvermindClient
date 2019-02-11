@@ -8,11 +8,11 @@
     "/Users/rodolforocco/Library/Android/sdk/cmake/3.10.2.4988404/bin/cmake --build /Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/release/arm64-v8a --target clean"
   ],
   "libraries": {
-    "ARM-Release-arm64-v8a": {
-      "artifactName": "ARM",
-      "buildCommand": "/Users/rodolforocco/Library/Android/sdk/cmake/3.10.2.4988404/bin/cmake --build /Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/release/arm64-v8a --target ARM",
+    "overmind-Debug-arm64-v8a": {
+      "artifactName": "overmind",
+      "buildCommand": "/Users/rodolforocco/Library/Android/sdk/cmake/3.10.2.4988404/bin/cmake --build /Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/release/arm64-v8a --target overmind",
       "abi": "arm64-v8a",
-      "output": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/build/intermediates/cmake/release/obj/arm64-v8a/libARM.so"
+      "output": "/Users/rodolforocco/AndroidProjects/OvermindClient/app/build/intermediates/cmake/release/obj/arm64-v8a/libovermind.so"
     }
   }
 }

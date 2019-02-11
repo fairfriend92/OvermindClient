@@ -24,10 +24,10 @@ ANDROID_ARM_NEON:UNINITIALIZED=TRUE
 ANDROID_NDK:UNINITIALIZED=/Users/rodolforocco/Library/Android/sdk/ndk-bundle
 
 //No help, variable specified on the command line.
-ANDROID_PLATFORM:UNINITIALIZED=android-22
+ANDROID_PLATFORM:UNINITIALIZED=android-23
 
-//Dependencies for the target
-ARM_LIB_DEPENDS:STATIC=general;log;general;GLES_mali;
+//No help, variable specified on the command line.
+ANDROID_STL:UNINITIALIZED=c++_shared
 
 //No help, variable specified on the command line.
 CMAKE_ANDROID_ARCH_ABI:UNINITIALIZED=arm64-v8a
@@ -36,7 +36,7 @@ CMAKE_ANDROID_ARCH_ABI:UNINITIALIZED=arm64-v8a
 CMAKE_ANDROID_NDK:UNINITIALIZED=/Users/rodolforocco/Library/Android/sdk/ndk-bundle
 
 //Archiver
-CMAKE_AR:FILEPATH=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/aarch64-linux-android-4.9/prebuilt/darwin-x86_64/bin/aarch64-linux-android-ar
+CMAKE_AR:FILEPATH=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android-ar
 
 //Flags used by the compiler during all build types.
 CMAKE_ASM_FLAGS:STRING=
@@ -58,7 +58,7 @@ CMAKE_CXX_COMPILER_AR:FILEPATH=CMAKE_CXX_COMPILER_AR-NOTFOUND
 CMAKE_CXX_COMPILER_RANLIB:FILEPATH=CMAKE_CXX_COMPILER_RANLIB-NOTFOUND
 
 //Flags used by the compiler during all build types.
-CMAKE_CXX_FLAGS:STRING=-std=c++11 -mfloat-abi=softfp  -mfpu=neon
+CMAKE_CXX_FLAGS:STRING=-std=c++11
 
 //Flags used by the compiler during debug builds.
 CMAKE_CXX_FLAGS_DEBUG:STRING=
@@ -74,7 +74,7 @@ CMAKE_CXX_FLAGS_RELEASE:STRING=
 CMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=-O2 -g -DNDEBUG
 
 //Libraries linked by default with all C++ applications.
-CMAKE_CXX_STANDARD_LIBRARIES:STRING=-latomic -lm "/Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/cxx-stl/llvm-libc++/libs/arm64-v8a/libc++_static.a" "/Users/rodolforocco/Library/Android/sdk/ndk-bundle/sources/cxx-stl/llvm-libc++/libs/arm64-v8a/libc++abi.a"
+CMAKE_CXX_STANDARD_LIBRARIES:STRING=-latomic -lm
 
 //LLVM archiver
 CMAKE_C_COMPILER_AR:FILEPATH=CMAKE_C_COMPILER_AR-NOTFOUND
@@ -126,10 +126,10 @@ CMAKE_INSTALL_PREFIX:PATH=/usr/local
 CMAKE_LIBRARY_OUTPUT_DIRECTORY:UNINITIALIZED=/Users/rodolforocco/AndroidProjects/OvermindClient/app/build/intermediates/cmake/debug/obj/arm64-v8a
 
 //Path to a program.
-CMAKE_LINKER:FILEPATH=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/aarch64-linux-android-4.9/prebuilt/darwin-x86_64/bin/aarch64-linux-android-ld
+CMAKE_LINKER:FILEPATH=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android-ld
 
-//Program used to build from build.ninja files.
-CMAKE_MAKE_PROGRAM:FILEPATH=/usr/local/bin/ninja
+//No help, variable specified on the command line.
+CMAKE_MAKE_PROGRAM:UNINITIALIZED=/Users/rodolforocco/Library/Android/sdk/cmake/3.10.2.4988404/bin/ninja
 
 //Flags used by the linker during the creation of modules.
 CMAKE_MODULE_LINKER_FLAGS:STRING=
@@ -147,19 +147,19 @@ CMAKE_MODULE_LINKER_FLAGS_RELEASE:STRING=
 CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO:STRING=
 
 //Path to a program.
-CMAKE_NM:FILEPATH=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/aarch64-linux-android-4.9/prebuilt/darwin-x86_64/bin/aarch64-linux-android-nm
+CMAKE_NM:FILEPATH=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android-nm
 
 //Path to a program.
-CMAKE_OBJCOPY:FILEPATH=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/aarch64-linux-android-4.9/prebuilt/darwin-x86_64/bin/aarch64-linux-android-objcopy
+CMAKE_OBJCOPY:FILEPATH=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android-objcopy
 
 //Path to a program.
-CMAKE_OBJDUMP:FILEPATH=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/aarch64-linux-android-4.9/prebuilt/darwin-x86_64/bin/aarch64-linux-android-objdump
+CMAKE_OBJDUMP:FILEPATH=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android-objdump
 
 //Value Computed by CMake
 CMAKE_PROJECT_NAME:STATIC=Project
 
 //Ranlib
-CMAKE_RANLIB:FILEPATH=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/aarch64-linux-android-4.9/prebuilt/darwin-x86_64/bin/aarch64-linux-android-ranlib
+CMAKE_RANLIB:FILEPATH=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android-ranlib
 
 //Flags used by the linker during the creation of dll's.
 CMAKE_SHARED_LINKER_FLAGS:STRING=
@@ -199,16 +199,16 @@ CMAKE_STATIC_LINKER_FLAGS_RELEASE:STRING=
 CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO:STRING=
 
 //Path to a program.
-CMAKE_STRIP:FILEPATH=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/aarch64-linux-android-4.9/prebuilt/darwin-x86_64/bin/aarch64-linux-android-strip
+CMAKE_STRIP:FILEPATH=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android-strip
 
 //No help, variable specified on the command line.
 CMAKE_SYSTEM_NAME:UNINITIALIZED=Android
 
 //No help, variable specified on the command line.
-CMAKE_SYSTEM_VERSION:UNINITIALIZED=22
+CMAKE_SYSTEM_VERSION:UNINITIALIZED=23
 
-//The CMake toolchain file
-CMAKE_TOOLCHAIN_FILE:FILEPATH=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/build/cmake/android.toolchain.cmake
+//No help, variable specified on the command line.
+CMAKE_TOOLCHAIN_FILE:UNINITIALIZED=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/build/cmake/android.toolchain.cmake
 
 //If this value is on, makefiles will be generated without the
 // .SILENT directive, and all commands will be echoed to the console
@@ -223,7 +223,19 @@ Project_BINARY_DIR:STATIC=/Users/rodolforocco/AndroidProjects/OvermindClient/app
 Project_SOURCE_DIR:STATIC=/Users/rodolforocco/AndroidProjects/OvermindClient/app
 
 //Path to a library.
-log-lib:FILEPATH=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/platforms/android-22/arch-arm64/usr/lib/liblog.so
+dl-lib:FILEPATH=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/lib/aarch64-linux-android/23/libdl.so
+
+//Path to a library.
+log-lib:FILEPATH=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/lib/aarch64-linux-android/23/liblog.so
+
+//Dependencies for the target
+overmind2_LIB_DEPENDS:STATIC=general;/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/lib/aarch64-linux-android/23/liblog.so;
+
+//Dependencies for the target
+overmind_LIB_DEPENDS:STATIC=general;GLES_mali;general;foo;general;/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/lib/aarch64-linux-android/23/liblog.so;general;/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/lib/aarch64-linux-android/23/libdl.so;
+
+//Dependencies for the target
+overmind_mali_LIB_DEPENDS:STATIC=general;overmind;general;GLES_mali;
 
 
 ########################
@@ -305,8 +317,6 @@ CMAKE_HOME_DIRECTORY:INTERNAL=/Users/rodolforocco/AndroidProjects/OvermindClient
 CMAKE_INSTALL_SO_NO_EXE:INTERNAL=0
 //ADVANCED property for variable: CMAKE_LINKER
 CMAKE_LINKER-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: CMAKE_MAKE_PROGRAM
-CMAKE_MAKE_PROGRAM-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_MODULE_LINKER_FLAGS
 CMAKE_MODULE_LINKER_FLAGS-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_MODULE_LINKER_FLAGS_DEBUG

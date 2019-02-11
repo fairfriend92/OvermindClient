@@ -24,10 +24,10 @@ ANDROID_ARM_NEON:UNINITIALIZED=TRUE
 ANDROID_NDK:UNINITIALIZED=/Users/rodolforocco/Library/Android/sdk/ndk-bundle
 
 //No help, variable specified on the command line.
-ANDROID_PLATFORM:UNINITIALIZED=android-22
+ANDROID_PLATFORM:UNINITIALIZED=android-23
 
 //Dependencies for the target
-ARM_LIB_DEPENDS:STATIC=general;log;general;GLES_mali;
+ARM_LIB_DEPENDS:STATIC=general;GLES_mali;general;/Users/rodolforocco/Library/Android/sdk/ndk-bundle/platforms/android-23/arch-arm/usr/lib/liblog.so;
 
 //No help, variable specified on the command line.
 CMAKE_ANDROID_ARCH_ABI:UNINITIALIZED=armeabi-v7a
@@ -205,10 +205,10 @@ CMAKE_STRIP:FILEPATH=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/toolchai
 CMAKE_SYSTEM_NAME:UNINITIALIZED=Android
 
 //No help, variable specified on the command line.
-CMAKE_SYSTEM_VERSION:UNINITIALIZED=22
+CMAKE_SYSTEM_VERSION:UNINITIALIZED=23
 
-//The CMake toolchain file
-CMAKE_TOOLCHAIN_FILE:FILEPATH=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/build/cmake/android.toolchain.cmake
+//No help, variable specified on the command line.
+CMAKE_TOOLCHAIN_FILE:UNINITIALIZED=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/build/cmake/android.toolchain.cmake
 
 //If this value is on, makefiles will be generated without the
 // .SILENT directive, and all commands will be echoed to the console
@@ -223,7 +223,7 @@ Project_BINARY_DIR:STATIC=/Users/rodolforocco/AndroidProjects/OvermindClient/app
 Project_SOURCE_DIR:STATIC=/Users/rodolforocco/AndroidProjects/OvermindClient/app
 
 //Path to a library.
-log-lib:FILEPATH=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/platforms/android-22/arch-arm/usr/lib/liblog.so
+log-lib:FILEPATH=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/platforms/android-23/arch-arm/usr/lib/liblog.so
 
 
 ########################

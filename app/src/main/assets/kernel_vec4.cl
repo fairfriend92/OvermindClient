@@ -5,18 +5,18 @@
 #define SYNAPSE_FILTER_ORDER 16
 #define LEARNING_RATE 0.05f
 #define NEURONS_X_POP 8
+#define PLASTIC_SYNAPSES 784
 #define MAX_WEIGHT 10.0f
-#define A 2
-#define B 0 
-#define C 4
-#define REFERENCE_RATE 1.0f
+#define MAX_RATE 1.0f
+#define REFERENCE_RATE 1.25f
+#define CONVERSION_FACTOR 100.0f / LEARNING_RATE
  
 __kernel __attribute__((vec_type_hint(float4)))
 void simulate_dynamics(__constant float* restrict coeff, __global float* restrict weights, // TODO: Coalesce some of the buffers into one?
 		       __global uchar* restrict input,  __global int* restrict current,
 		       __global ushort* restrict neuronsIndexes, __global float* restrict presynFiringRates,
 		       __global float* restrict postsynFiringRates, __global float* restrict updateWeightsFlags,
-		       __global ushort* restrict synIndexes, __constant uint* restrict globalIdOffset)
+		       __global ushort* restrict synIndexes, __constant uint* restrict globalIdOffset, __global int* restrict weightsReservoir)
 // TODO: input, presynFiringRates, postsynFiringRates and updateWeightsFlags could be __constant...
 {
   // Id of the work item
@@ -54,7 +54,7 @@ void simulate_dynamics(__constant float* restrict coeff, __global float* restric
 
   // Vector whose elements are 1 if the corresponding synapses are inhibitory, otherwise zero.
   // The nature of the synapse is determined by the sign of its weight
-  float4 offset = step(-0.01f, -weightsVec);
+  float4 offset = step(0.0f, - weightsVec);
   
   // Offsets to access the coefficients buffer
   uchar4 synInOffset = convert_uchar4(offset * SYNAPSE_FILTER_ORDER);
@@ -67,45 +67,33 @@ void simulate_dynamics(__constant float* restrict coeff, __global float* restric
 
   /*
    * Excitatory and inhibitory currents are computed separately since they must be stored in two different
-   * portions of the same memory buffer
+   * portions of the same memory buffer 
    */
 
   /* Inhibitory currents */
-
-  float result = dot(coeffVec * offset, weightsVec);
-  
-  // OpenCL 1.1 doesn't support atomic operations on float, so we cast the result to int
-  int resultInt = convert_int(result);
+  float result = dot(coeffVec, weightsVec * offset);
 
   // Increment the synaptic current
-  atomic_add(&current[2 * neuronIndex + 1], resultInt);
+  atomic_add(&current[2 * neuronIndex + 1], convert_int(result));
 
   /* Excitatory currents */
 
-  // Switching synapses the offset must be inverted 1 -> 0, 0 -> 1
-  float4 excCoeff = coeffVec * (1 - offset);
-  excCoeff = excCoeff - step(-0.01f, - excCoeff) * (1 - offset);  
-  
-  result = dot(excCoeff, weightsVec);
-  resultInt = convert_int(result);
-  atomic_add(&current[2 * neuronIndex], resultInt);
+  // Switching synapses the offset must be inverted 1 -> 0, 0 -> 1  
+  result = dot(coeffVec * (1 - offset), weightsVec);
+  atomic_add(&current[2 * neuronIndex], convert_int(result));
 
   // Update the weights
 
-  float4 f_w = weightsVec / MAX_WEIGHT;
-  //float4 f_w = native_exp(A * (weightsVec / MAX_WEIGHT - 1));
-  //float4 f_w = 0.5f * (weightsVec / MAX_WEIGHT + 1);
-  weightsVec += weightsFlagsVec *  LEARNING_RATE * 
-    (preFiringRatesVec * (REFERENCE_RATE - postsynFiringRates[neuronIndex]) -
-     postsynFiringRates[neuronIndex] * f_w);  
-
-  /*
-  weightsVec += weightsFlagsVec *  LEARNING_RATE *
-    (preFiringRatesVec * (REFERENCE_RATE - postsynFiringRates[neuronIndex]) -
-     pown(postsynFiringRates[neuronIndex], 2) * (1.0f - 0.5f * (MAX_WEIGHT - fabs(weightsVec)) / MAX_WEIGHT));
-  */
-  
-  weightsVec = clamp(weightsVec, -MAX_WEIGHT, MAX_WEIGHT);
+  float4 maxDw = (float) weightsReservoir[neuronIndex] / (PLASTIC_SYNAPSES * CONVERSION_FACTOR);
+  float4 a = (REFERENCE_RATE - 0.5f * (fabs(weightsVec) + weightsVec) / (weightsVec + maxDw)) / REFERENCE_RATE;
+  float4 dw = weightsFlagsVec * LEARNING_RATE *
+    (preFiringRatesVec * a - (1 - preFiringRatesVec) * pow(postsynFiringRates[neuronIndex], 1.65f)); 
+    
+  dw = clamp(dw, - MAXFLOAT, maxDw);  
+  weightsVec += dw;
+  dw = dw * (1.0f - offset);  
+  atomic_sub(&weightsReservoir[neuronIndex],
+	     convert_int(CONVERSION_FACTOR * (dw.x + dw.y + dw.z + dw.w)));  
   
   vstore4(weightsVec, globalId, weights);
 }

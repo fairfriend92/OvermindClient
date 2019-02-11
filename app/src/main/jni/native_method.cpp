@@ -1,4 +1,4 @@
-#include "populations_methods.h"
+#include <native_method.h>
 
 short NUM_SYNAPSES = 1024;
 short NUM_NEURONS = 1024;
@@ -32,6 +32,7 @@ int counter = 500;
 
 extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
         JNIEnv *env, jobject thiz, jstring jKernel, jshort jNumOfNeurons, jint jFilterOrder, jshort jNumOfSynapses) {
+
     // Reset sensible fields
     numOfLayers = 0;
 
@@ -174,6 +175,9 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
                                            sizeof(cl_uint), NULL, &obj->errorNumber);
     createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
+    obj->memoryObjects[10] = clCreateBuffer(obj->context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, postsynFiringRatesBufferSize, NULL, &obj->errorNumber);
+    createMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
     if (!createMemoryObjectsSuccess)
     {
         cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
@@ -198,6 +202,9 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     obj->updateWeightsFlags = (cl_float *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[7], CL_TRUE, CL_MAP_WRITE, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
     mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
+    obj->weightsReservoir = (cl_int *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[10], CL_TRUE, CL_MAP_WRITE, 0, postsynFiringRatesBufferSize, 0, NULL, NULL, &obj->errorNumber);
+    mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
     if (!mapMemoryObjectsSuccess)
     {
         cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
@@ -220,7 +227,7 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     for (int index = 0; index < NUM_SYNAPSES * NUM_NEURONS; index++) {
         obj->synapseWeights[index] = index % 2 == 0 ? (cl_float)1.0f : (cl_float)(- 0.33f);
         obj->updateWeightsFlags[index] = (cl_float)0.0f;
-        //obj->synapseWeights[index] = 0.0f;
+        //obj->synapseWeights[index] = 0.5f;
     }
 
     // Initialization of dynamic variables, of the buffer which will hold the total synaptic
@@ -232,6 +239,13 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
         obj->current[2 * index] = (cl_int)0;
         obj->current[2 * index + 1] = (cl_int)0;
         obj->postsynFiringRates[index] = (cl_float)0.0f;
+
+        // TODO: Initialization of the weights reservoir should happen in the simulateDynamics function,
+        // TODO: using a value passed by the server. Moreover, the conversion factor should be computed
+        // TODO: using the same variables that are then passed to the OpenCL kernel (the variables being
+        // TODO: the learning rate, an arbitrary multiplicative factor and the number of plastic synapses
+        // TODO: per neuron).
+        obj->weightsReservoir[index] = 500 * 2000;
     }
 
     // Un-map the pointers used to initialize the memory buffers
@@ -260,6 +274,12 @@ extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
     }
 
     if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[7], obj->updateWeightsFlags, 0, NULL, NULL)))
+    {
+        cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+        LOGE("Unmap memory objects failed");
+    }
+
+    if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[10], obj->weightsReservoir, 0, NULL, NULL)))
     {
         cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
         LOGE("Unmap memory objects failed");
@@ -504,6 +524,9 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
         obj->globalIdOffset = (cl_int *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[9], CL_TRUE, CL_MAP_WRITE, 0, sizeof(cl_uint), 0, NULL, NULL, &obj->errorNumber);
         mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
+        obj->weightsReservoir = (cl_int *)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[10], CL_TRUE, CL_MAP_READ, 0, sizeof(cl_int), 0, NULL, NULL, &obj->errorNumber);
+        mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
+
         if (!mapMemoryObjectsSuccess)
         {
             cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
@@ -517,7 +540,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
             // Call function that compute the neuronal dynamics
             computeNeuronalDynamics(neuronsComputed, layersNeurons[i - 1], obj->current,
                                     simulationParameters, obj->neuronalDynVar,
-                                    obj->postsynFiringRates, actionPotentials);
+                                    obj->postsynFiringRates, actionPotentials, obj->weightsReservoir);
 
             if (i != numOfLayers) {
                 obj->globalIdOffset[0] += (cl_uint) layersSynapses[i - 1] / maxMultiplications;
@@ -586,6 +609,12 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
             LOGE("Unmap memory objects failed");
         }
 
+        if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[10], obj->weightsReservoir, 0, NULL, NULL)))
+        {
+            cleanUpOpenCL(obj->context, obj->commandQueue, obj->program, obj->kernel, obj->memoryObjects, obj->numberOfMemoryObjects);
+            LOGE("Unmap memory objects failed");
+        }
+
         /* Execute the kernels */
 
         if (i < numOfLayers) {
@@ -612,6 +641,8 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
                     clSetKernelArg(obj->kernel, 8, sizeof(cl_mem), &obj->memoryObjects[8]));
             setKernelArgumentSuccess &= checkSuccess(
                     clSetKernelArg(obj->kernel, 9, sizeof(cl_mem), &obj->memoryObjects[9]));
+            setKernelArgumentSuccess &= checkSuccess(
+                    clSetKernelArg(obj->kernel, 10, sizeof(cl_mem), &obj->memoryObjects[10]));
 
             // Catch eventual errors
             if (!setKernelArgumentSuccess) {

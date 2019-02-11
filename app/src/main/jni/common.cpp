@@ -2,7 +2,7 @@
 // Created by rodolfo on 01/12/16.
 //
 
-#include "common.h"
+#include <common.h>
 
 bool printProfilingInfo(cl_event event)
 {
@@ -187,7 +187,7 @@ bool createProgram(cl_context context, cl_device_id device, const char* kernelSt
     return true;
 }
 
-inline bool checkSuccess(cl_int errorNumber)
+bool checkSuccess(cl_int errorNumber)
 {
     if (errorNumber != CL_SUCCESS)
     {

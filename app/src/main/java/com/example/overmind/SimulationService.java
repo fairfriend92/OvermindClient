@@ -8,6 +8,7 @@ package com.example.overmind;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.support.v4.content.LocalBroadcastManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
@@ -45,8 +46,25 @@ public class SimulationService extends IntentService {
 
     // TODO TCP and UDP socket can live on the same port
     private static final int IPTOS_THROUGHPUT = 0x08;
-    private boolean errorRaised = false;
+    private static boolean errorRaised = false;
     private static int errornumber = 0;
+
+    static {
+
+        switch (MainActivity.vendor) {
+            case "ARM":try {
+                System.loadLibrary("overmind");
+            } catch (UnsatisfiedLinkError e) {
+                String stackTrace = Log.getStackTraceString(e);
+                Log.e("SimulationService", stackTrace);
+            }
+                break;
+            default:
+                errornumber = 4;
+                errorRaised = true;
+        }
+
+    }
 
     // Object used to hold all the relevant info pertaining this terminal
     static volatile Terminal thisTerminal = new Terminal();
@@ -72,13 +90,13 @@ public class SimulationService extends IntentService {
     // should proceed to send the spikes.
     BlockingQueue<Object> clockSignalsQueue = new ArrayBlockingQueue<>(32);
 
-
     ThreadPoolExecutor.AbortPolicy rejectedExecutionHandler = new ThreadPoolExecutor.AbortPolicy();
 
     // Custom executor for KernelInitializer which allows to change the number of threads in the
     // pools dynamically. Moreover, it allows to specify the time to wait if the workitems
     // buffer is full before creating an exception
-    ThreadPoolExecutor kernelInitExecutor = new ThreadPoolExecutor(2, 2, 3, TimeUnit.MILLISECONDS, kernelInitWorkerThreadsQueue, rejectedExecutionHandler);
+    ThreadPoolExecutor kernelInitExecutor = new ThreadPoolExecutor(1, 1, 3,
+            TimeUnit.MILLISECONDS, kernelInitWorkerThreadsQueue, rejectedExecutionHandler);
 
     // Buffer where to put the array of spikes produced by the local network
     BlockingQueue<byte[]> kernelExcQueue = new ArrayBlockingQueue<>(128);
@@ -107,7 +125,6 @@ public class SimulationService extends IntentService {
     /*
     Miscellanea
      */
-
 
     int postsynTerminalsInfo[][][] = null;
 
@@ -230,8 +247,10 @@ public class SimulationService extends IntentService {
         Get the string holding the kernel and initialize the OpenCL implementation.
          */
 
+        Log.d("SimulationService", "Initializing OpenCL...");
         String kernel = workIntent.getStringExtra("Kernel");
         long openCLObject = initializeOpenCL(kernel, NUMBER_OF_NEURONS, Constants.SYNAPSE_FILTER_ORDER, Constants.NUMBER_OF_SYNAPSES);
+        Log.d("SimulationService", "OpenCL initialization complete.");
 
         // Launch those threads that are persistent
         inputCreatorExecutor.execute(new InputCreator(kernelInitQueue, inputCreatorQueue, clockSignalsQueue));
@@ -253,10 +272,13 @@ public class SimulationService extends IntentService {
         // a packet was received.
         boolean receiveTimedOut = false;
 
-        while (!shutdown) {
+        while (!shutdown & !errorRaised) {
 
             try {
 
+                // TODO: When inspecting the future we should take notice of which connections are being
+                // TODO: served so that no other packets coming from the same connections are sent to the
+                // TODO: the executor.
                 // Iterate over the list of futures to remove those that signal that the respective
                 // threads are done
                 Iterator iterator = kernelInitFutures.iterator();
@@ -297,6 +319,7 @@ public class SimulationService extends IntentService {
                     // Determine if the lateral connections option has been changed by the server
                     Constants.INDEX_OF_LATERAL_CONN = thisTerminal.presynapticTerminals.indexOf(thisTerminal);
                     Constants.LATERAL_CONNECTIONS = Constants.INDEX_OF_LATERAL_CONN != -1;
+                    Log.d("SimualtionService", "Index of lateral connection is " + Constants.INDEX_OF_LATERAL_CONN);
 
                     // If the info about the terminal have been updated, wait for the threads to finish
                     // before dispatching new ones
@@ -386,8 +409,8 @@ public class SimulationService extends IntentService {
 
             } catch (SocketTimeoutException e) {
                 receiveTimedOut = true;
-                String stackTrace = Log.getStackTraceString(e);
-                Log.e("SimulationService", stackTrace);
+                Log.d("SimulationService", "Timeout of the datagram socket: " +
+                        "This is normal if the client is not being stimulated.");
                 if (!getNetworkClass(this).equals("4G") & !Constants.USE_LOCAL_CONNECTION) {
                     shutDown();
                     if (!errorRaised) {
@@ -675,7 +698,7 @@ public class SimulationService extends IntentService {
                 If clock signal is different from null, then the terminal is being stimulated and the
                 spikes should be sent to the postsynaptic terminals. If no spikes have been produced yet
                 (outputSpikes = null), don't do anything at all.
-                 */
+                */
 
                 if (outputSpikes != null) {
 

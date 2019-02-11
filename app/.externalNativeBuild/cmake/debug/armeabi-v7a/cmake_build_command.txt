@@ -3,14 +3,14 @@ arguments :
 -H/Users/rodolforocco/AndroidProjects/OvermindClient/app
 -B/Users/rodolforocco/AndroidProjects/OvermindClient/app/.externalNativeBuild/cmake/debug/armeabi-v7a
 -DANDROID_ABI=armeabi-v7a
--DANDROID_PLATFORM=android-22
+-DANDROID_PLATFORM=android-23
 -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/Users/rodolforocco/AndroidProjects/OvermindClient/app/build/intermediates/cmake/debug/obj/armeabi-v7a
 -DCMAKE_BUILD_TYPE=Debug
 -DANDROID_NDK=/Users/rodolforocco/Library/Android/sdk/ndk-bundle
 -DCMAKE_CXX_FLAGS=-std=c++11 -mfloat-abi=softfp  -mfpu=neon
 -DCMAKE_SYSTEM_NAME=Android
 -DCMAKE_ANDROID_ARCH_ABI=armeabi-v7a
--DCMAKE_SYSTEM_VERSION=22
+-DCMAKE_SYSTEM_VERSION=23
 -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 -DCMAKE_ANDROID_NDK=/Users/rodolforocco/Library/Android/sdk/ndk-bundle
 -DCMAKE_TOOLCHAIN_FILE=/Users/rodolforocco/Library/Android/sdk/ndk-bundle/build/cmake/android.toolchain.cmake
