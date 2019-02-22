@@ -71,7 +71,7 @@ public class SimulationService extends IntentService {
 
     // List of Futures related to the instances of kernelInitExecutor, used to check if the
     // relative thread has finished its computation
-    List<Future<?>> kernelInitFutures = new ArrayList<Future<?>>();
+    List<Future<Integer>> kernelInitFutures = new ArrayList<Future<Integer>>();
 
     /*
     Queues and Thread executors used to parallelize the computation.
@@ -323,7 +323,7 @@ public class SimulationService extends IntentService {
 
                     // If the info about the terminal have been updated, wait for the threads to finish
                     // before dispatching new ones
-                    for (Future<?> future : kernelInitFutures)
+                    for (Future<Integer> future : kernelInitFutures)
                         future.get();
                     kernelInitFutures = new ArrayList<>(kernelInitExecutor.getMaximumPoolSize());
 
@@ -387,12 +387,13 @@ public class SimulationService extends IntentService {
                 InetAddress presynapticTerminalAddr = inputSpikesPacket.getAddress();
                 receiveTimedOut = false;
 
-                //Log.d("SimulationService", "Submitting kernelInitializer instance");
-
                 // Put the workload in the queue
                 try {
-                    Future<?> future = kernelInitExecutor.submit(new KernelInitializer(kernelInitQueue, presynapticTerminalAddr.toString().substring(1),
+                    Future<Integer> future = kernelInitExecutor.submit(new KernelInitializer(kernelInitQueue, presynapticTerminalAddr.toString().substring(1),
                             inputSpikesPacket.getPort(), inputSpikesBuffer, thisTerminal, clockSignalsQueue));
+
+                    // TODO: Use final variables with meaningful name for the content of the Future object.
+                    if (future.get().equals(1)) { throw new RejectedExecutionException(); }
 
                     kernelInitFutures.add(future);
                 } catch (RejectedExecutionException e) {
@@ -400,9 +401,9 @@ public class SimulationService extends IntentService {
 
                     // TODO: The flow blocks somewhere else too because this is not enough to keep things going. Investigate.
 
+                    kernelInitExecutor.shutdown();
                     int corePoolSize = kernelInitExecutor.getCorePoolSize();
                     kernelInitExecutor.getQueue().clear();
-                    kernelInitExecutor.shutdownNow();
                     kernelInitExecutor =
                             new ThreadPoolExecutor(corePoolSize, corePoolSize, 3, TimeUnit.MILLISECONDS, kernelInitWorkerThreadsQueue, rejectedExecutionHandler);
                 }
@@ -475,27 +476,34 @@ public class SimulationService extends IntentService {
 
         closeOpenCL(openCLObject);
 
+        /* Reset some static variables for further use */
+
+        shutdown = false;
+        //thisTerminal = null;
+
         try {
-            MainActivity.thisClient.objectInputStream.close();
-            MainActivity.thisClient.objectOutputStream.close();
-            MainActivity.thisClient.socket.close();
+            if (MainActivity.thisClient.objectInputStream != null) {
+                MainActivity.thisClient.objectInputStream.close();
+                MainActivity.thisClient.objectInputStream = null;
+            }
+            if (MainActivity.thisClient.objectOutputStream != null) {
+                MainActivity.thisClient.objectOutputStream.close();
+                MainActivity.thisClient.objectOutputStream = null;
+            }
+            if (MainActivity.thisClient.socket != null) {
+                MainActivity.thisClient.socket.close();
+                MainActivity.thisClient.socket = null;
+            }
         } catch (IOException e) {
             String stackTrace = Log.getStackTraceString(e);
             Log.e("SimulationService", stackTrace);
         }
-
-        /* Reset some static variables for further use */
-
-        shutdown = false;
-        thisTerminal = null;
 
         // The field needs to be reset since the next time the terminal connects with the server
         // some settings, like num of synapses, may have changed. Since it takes some time for the
         // Terminal object with the new info to arrive from the server, in the meanwhile all
         // incoming udp packets must be discarded to prevent errors.
         KernelInitializer.numOfConnections = 0;
-
-        Log.d("SimulationService", "Closing SimulationService");
 
         stopSelf();
 

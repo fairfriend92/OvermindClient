@@ -28,7 +28,7 @@ size_t presynFiringRatesBufferSize;
 size_t postsynFiringRatesBufferSize;
 
 // Debug variables
-int counter = 500;
+int counter = 100;
 
 extern "C" jlong Java_com_example_overmind_SimulationService_initializeOpenCL (
         JNIEnv *env, jobject thiz, jstring jKernel, jshort jNumOfNeurons, jint jFilterOrder, jshort jNumOfSynapses) {

@@ -80,7 +80,7 @@ void computeNeuronalDynamics(int neuronsComputed, int numOfNeurons, cl_int curre
         // TODO: Eliminate cause of underflow.
         potentialVar = potentialVar < 2.5f * cPar ? 2.5f * cPar : potentialVar;
 
-        if (i == 0)
+        if (i == 9 * 8)
         {
             // TODO: The conversion factor should be passed by the calling function.
             LOGD("Weights reservoir for neuron %d is %f", i, (float)(weightsReservoir[i] / 2000));
@@ -122,7 +122,7 @@ void computeNeuronalDynamics(int neuronsComputed, int numOfNeurons, cl_int curre
 int printSynapticMaps(int counter, OpenCLObject *obj, size_t synapseWeightsBufferSize, int NUM_SYNAPSES) {
     bool mapMemoryObjectsSuccess = true;
 
-    if (counter == 500) {
+    if (counter == 100) {
         obj->synapseWeights = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_READ, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
         mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
@@ -135,11 +135,11 @@ int printSynapticMaps(int counter, OpenCLObject *obj, size_t synapseWeightsBuffe
         // Debug variables
         int neuronsPerPop = 8,
                 synapses = 784,
-                population = 8,
+                population = 3,
                 start = synapses * neuronsPerPop * population;
 
         for (int i = start; i < start + 784; i++) {
-            LOGE("%f ", obj->synapseWeights[i]);
+            LOGE("%f", obj->synapseWeights[i]);
         }
 
         if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[1], obj->synapseWeights, 0, NULL, NULL)))
@@ -150,7 +150,7 @@ int printSynapticMaps(int counter, OpenCLObject *obj, size_t synapseWeightsBuffe
     }
 
     // Decrease counter and reset it when it becomes zero
-    counter = counter == 0 ? 500 : counter - 1;
+    counter = counter == 0 ? 100 : counter - 1;
 
     return counter;
 }

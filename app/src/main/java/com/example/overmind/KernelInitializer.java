@@ -7,10 +7,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-class KernelInitializer implements Runnable {
+// TODO: For the returned Integer used final variables with meaningful names.
+
+class KernelInitializer implements Callable<Integer> {
 
     // Queue that stores the inputs to be sent to the KernelExecutor thread
     private BlockingQueue<Input> kernelInitQueue;
@@ -81,7 +84,6 @@ class KernelInitializer implements Runnable {
 
     KernelInitializer(BlockingQueue<Input> b, String s, int i, byte[] b1, Terminal t,
                       BlockingQueue<Object> b2) {
-        Log.d("KernelInitializer", "Constructor of KernelInitializer: Argument t is null? " + (t == null));
         this.kernelInitQueue = b;
         this.presynTerminalIP = s;
         this.presynTerminalNatPort = i;
@@ -91,7 +93,7 @@ class KernelInitializer implements Runnable {
     }
 
     @Override
-    public void run () {
+    public Integer call () {
 
         /*
         When we are putting together a new input there is some initialization to do...
@@ -150,7 +152,7 @@ class KernelInitializer implements Runnable {
 
         if (numOfConnections == 0) {
             Log.e("KernelInitializer", "No presynaptic connection has been established: exiting KernelInitializer");
-            return;
+            return 0;
         }
 
         // Identify the presynaptic terminal using the IP contained in the header of the datagram
@@ -163,17 +165,17 @@ class KernelInitializer implements Runnable {
 
         synchronized (lock) {
 
-            // If the presynaptic terminal was not found and its mapping is null
+            // If the presynaptic terminal was not found and its mapping is null.
             if (presynTerminalIndex == -1 && connectionsMap.get(presynTerminalNatPort) == null) {
-
                 if (!unknownPorts.contains(presynTerminalNatPort)) {
-                    unknownPorts.add(presynTerminalNatPort);
-                }
+                    if (numOfConnections < knownPorts.size() + 1 + unknownPorts.size()) {
+                        Log.e("KernelInitializer",
+                                "Inbound connections are more than expected: This should not happen!");
 
-                if (numOfConnections < knownPorts.size() + unknownPorts.size()) {
-                    Log.e("KernelInitializer",
-                            "Inbound connections are more than expected: This should not happen!");
-                    return;
+                        return 1;
+                    } else {
+                        unknownPorts.add(presynTerminalNatPort);
+                    }
                 }
 
                 // Order the ports which we could not map to a presynaptic terminal in ascending order
@@ -226,7 +228,7 @@ class KernelInitializer implements Runnable {
                 }
                 /* [End of if] */
 
-                return;
+                return 0;
             } else if (presynTerminalIndex == -1 && connectionsMap.get(presynTerminalNatPort) != null) {
 
                 // If the presynaptic terminal was not found but its nat port has already been mapped to an index
@@ -407,6 +409,7 @@ class KernelInitializer implements Runnable {
 
         KernelInitializer.threadIsFree.set(presynTerminalIndex, false);
 
+        return 0;
     }
     /* [End of run() method] */
 

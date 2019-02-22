@@ -113,20 +113,16 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
          * Establish connection with the Overmind and send terminal info.
          */
 
-        if (!MainActivity.serverConnectFailed) {
-
-            try {
-                clientSocket = new Socket(Constants.SERVER_IP, Constants.SERVER_PORT_TCP);
-                clientSocket.setTrafficClass(Constants.IPTOS_RELIABILITY);
-                clientSocket.setKeepAlive(true);
-                //clientSocket.setTcpNoDelay(true);
-            } catch (IOException e) {
-                String stackTrace = Log.getStackTraceString(e);
-                Log.e("ServerConnect", stackTrace);
-                MainActivity.serverConnectFailed = true;
-                MainActivity.serverConnectErrorNumber = 0;
-            }
-
+        try {
+            clientSocket = new Socket(Constants.SERVER_IP, Constants.SERVER_PORT_TCP);
+            clientSocket.setTrafficClass(Constants.IPTOS_RELIABILITY);
+            clientSocket.setKeepAlive(true);
+            //clientSocket.setTcpNoDelay(true);
+        } catch (IOException e) {
+            String stackTrace = Log.getStackTraceString(e);
+            Log.e("ServerConnect", stackTrace);
+            MainActivity.serverConnectFailed = true;
+            MainActivity.serverConnectErrorNumber = 0;
         }
 
         /*
@@ -135,16 +131,14 @@ class ServerConnect extends AsyncTask<Context, Integer, SocketInfo> {
 
         ObjectOutputStream output = null;
 
-        if (clientSocket != null && !MainActivity.serverConnectFailed) {
-            try {
-                output = new ObjectOutputStream(clientSocket.getOutputStream());
-                output.writeObject(thisTerminal);
-                output.flush();
-                publishProgress(0);
-            } catch (IOException | NullPointerException e) {
-                String stackTrace = Log.getStackTraceString(e);
-                Log.e("ServerConnect", stackTrace);
-            }
+        try {
+            output = new ObjectOutputStream(clientSocket.getOutputStream());
+            output.writeObject(thisTerminal);
+            output.flush();
+            publishProgress(0);
+        } catch (IOException | NullPointerException e) {
+            String stackTrace = Log.getStackTraceString(e);
+            Log.e("ServerConnect", stackTrace);
         }
 
         assert ip != null;

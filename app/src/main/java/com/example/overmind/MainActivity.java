@@ -202,7 +202,7 @@ public class MainActivity extends AppCompatActivity {
             ServerConnect serverConnect = new ServerConnect();
             serverConnect.execute(getApplicationContext());
 
-            // Get from the AsyncTask the struct holding all the info regarding the terminal
+            // Get from the AsyncTask the struct holding all the info regarding the
             try {
                 thisClient = serverConnect.get();
             } catch (InterruptedException | ExecutionException e) {
@@ -218,7 +218,9 @@ public class MainActivity extends AppCompatActivity {
                 Bundle args = new Bundle();
                 args.putInt("ErrorNumber", serverConnectErrorNumber);
                 dialogFragment.setArguments(args);
-                dialogFragment.show(getSupportFragmentManager(), "Connection failed");
+                if (!appIsInBackground) {
+                    dialogFragment.show(getSupportFragmentManager(), "Connection failed");
+                }
 
                 // When going back to the home menu the default settings must be restored
                 RestoreHomeMenu();
@@ -602,7 +604,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onDestroy() {
-
         // Unregister the receivers since the services are about to be closed
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(attemptConnectionReceiver);

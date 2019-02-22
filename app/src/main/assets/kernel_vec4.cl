@@ -3,13 +3,13 @@
 
 #define SYN_X_WI 4 // Synapses per work item
 #define SYNAPSE_FILTER_ORDER 16
-#define LEARNING_RATE 0.05f
+#define LEARNING_RATE 0.01f
 #define NEURONS_X_POP 8
 #define PLASTIC_SYNAPSES 784
+#define REFERENCE_RATE 1.00f
 #define MAX_WEIGHT 10.0f
-#define MAX_RATE 1.0f
-#define REFERENCE_RATE 1.25f
-#define CONVERSION_FACTOR 100.0f / LEARNING_RATE
+#define MIN_WEIGHT -MAXFLOAT
+#define CONVERSION_FACTOR 100.0f / 0.05f
  
 __kernel __attribute__((vec_type_hint(float4)))
 void simulate_dynamics(__constant float* restrict coeff, __global float* restrict weights, // TODO: Coalesce some of the buffers into one?
@@ -54,7 +54,8 @@ void simulate_dynamics(__constant float* restrict coeff, __global float* restric
 
   // Vector whose elements are 1 if the corresponding synapses are inhibitory, otherwise zero.
   // The nature of the synapse is determined by the sign of its weight
-  float4 offset = step(0.0f, - weightsVec);
+  //float4 offset = step(0.0f, - weightsVec);
+  float4 offset = 0.5f * (fabs(weightsVec) - weightsVec) / fabs(weightsVec);
   
   // Offsets to access the coefficients buffer
   uchar4 synInOffset = convert_uchar4(offset * SYNAPSE_FILTER_ORDER);
@@ -84,13 +85,15 @@ void simulate_dynamics(__constant float* restrict coeff, __global float* restric
 
   // Update the weights
 
-  float4 maxDw = (float) weightsReservoir[neuronIndex] / (PLASTIC_SYNAPSES * CONVERSION_FACTOR);
-  float4 a = (REFERENCE_RATE - 0.5f * (fabs(weightsVec) + weightsVec) / (weightsVec + maxDw)) / REFERENCE_RATE;
-  float4 dw = weightsFlagsVec * LEARNING_RATE *
-    (preFiringRatesVec * a - (1 - preFiringRatesVec) * pow(postsynFiringRates[neuronIndex], 1.65f)); 
+  float maxDw = (float) weightsReservoir[neuronIndex] / (PLASTIC_SYNAPSES * CONVERSION_FACTOR);
+  //float4 f_w = 0.5f * (weightsVec + fabs(weightsVec)) / (weightsVec + maxDw);
+  float4 dw = weightsFlagsVec * LEARNING_RATE
+    * (preFiringRatesVec * maxDw / (weightsVec + maxDw) -
+       (1.0f - preFiringRatesVec) * postsynFiringRates[neuronIndex]);
     
-  dw = clamp(dw, - MAXFLOAT, maxDw);  
+  //dw = clamp(dw, MIN_WEIGHT - weightsVec, MAX_WEIGHT - weightsVec);
   weightsVec += dw;
+  
   dw = dw * (1.0f - offset);  
   atomic_sub(&weightsReservoir[neuronIndex],
 	     convert_int(CONVERSION_FACTOR * (dw.x + dw.y + dw.z + dw.w)));  
