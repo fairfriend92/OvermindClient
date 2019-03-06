@@ -5,7 +5,6 @@
 #define SYNAPSE_FILTER_ORDER 16
 #define LEARNING_RATE 0.01f
 #define NEURONS_X_POP 8
-#define PLASTIC_SYNAPSES 784
 #define REFERENCE_RATE 1.00f
 #define MAX_WEIGHT 10.0f
 #define MIN_WEIGHT -MAXFLOAT
@@ -16,7 +15,8 @@ void simulate_dynamics(__constant float* restrict coeff, __global float* restric
 		       __global uchar* restrict input,  __global int* restrict current,
 		       __global ushort* restrict neuronsIndexes, __global float* restrict presynFiringRates,
 		       __global float* restrict postsynFiringRates, __global float* restrict updateWeightsFlags,
-		       __global ushort* restrict synIndexes, __constant uint* restrict globalIdOffset, __global int* restrict weightsReservoir)
+		       __global ushort* restrict synIndexes, __constant uint* restrict globalIdOffset, __global uint* restrict weightsReservoir,
+		       __global uint* restrict numOfExcWeights)
 // TODO: input, presynFiringRates, postsynFiringRates and updateWeightsFlags could be __constant...
 {
   // Id of the work item
@@ -79,24 +79,27 @@ void simulate_dynamics(__constant float* restrict coeff, __global float* restric
 
   /* Excitatory currents */
 
-  // Switching synapses the offset must be inverted 1 -> 0, 0 -> 1  
-  result = dot(coeffVec * (1 - offset), weightsVec);
+  // Switching synapses the offset must be inverted 1 -> 0, 0 -> 1
+  offset = (1.0f - offset);
+  result = dot(coeffVec, weightsVec * offset);
   atomic_add(&current[2 * neuronIndex], convert_int(result));
 
   // Update the weights
 
-  float maxDw = (float) weightsReservoir[neuronIndex] / (PLASTIC_SYNAPSES * CONVERSION_FACTOR);
-  //float4 f_w = 0.5f * (weightsVec + fabs(weightsVec)) / (weightsVec + maxDw);
-  float4 dw = weightsFlagsVec * LEARNING_RATE
-    * (preFiringRatesVec * maxDw / (weightsVec + maxDw) -
-       (1.0f - preFiringRatesVec) * postsynFiringRates[neuronIndex]);
+  float maxDw = weightsReservoir[neuronIndex] / (numOfExcWeights[neuronIndex] * CONVERSION_FACTOR);
+  
+  float4 dw = weightsFlagsVec * LEARNING_RATE *
+    (preFiringRatesVec * maxDw / (weightsVec + maxDw) - (1.0f - preFiringRatesVec) * postsynFiringRates[neuronIndex]);
     
-  //dw = clamp(dw, MIN_WEIGHT - weightsVec, MAX_WEIGHT - weightsVec);
   weightsVec += dw;
   
-  dw = dw * (1.0f - offset);  
+  dw = dw * offset;
   atomic_sub(&weightsReservoir[neuronIndex],
-	     convert_int(CONVERSION_FACTOR * (dw.x + dw.y + dw.z + dw.w)));  
+	     convert_uint(CONVERSION_FACTOR * (dw.x + dw.y + dw.z + dw.w)));
   
+  offset = 0.5f * (fabs(weightsVec) + weightsVec) / weightsVec - offset;
+  atomic_add(&numOfExcWeights[neuronIndex],
+	     convert_int(offset.x + offset.y + offset.z + offset.w)); 
+    
   vstore4(weightsVec, globalId, weights);
 }

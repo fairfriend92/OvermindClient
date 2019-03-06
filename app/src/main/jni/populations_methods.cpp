@@ -58,7 +58,7 @@ void buildSynapticInput(int neuronsComputed, char actionPotentials[], int numOfN
 
 void computeNeuronalDynamics(int neuronsComputed, int numOfNeurons, cl_int current[], jfloat simulationParameters[],
                              double neuronalDynVar[], cl_float postsynFiringRates[], char actionPotentials[],
-                             int weightsReservoir[]) {
+                             uint weightsReservoir[], uint numOfExcWeights[]) {
     for (int i = neuronsComputed; i < neuronsComputed + numOfNeurons; i++) {
 
         // TODO: Exc and inh currents are kept separated in case we want to switch to a conductance model
@@ -67,7 +67,7 @@ void computeNeuronalDynamics(int neuronsComputed, int numOfNeurons, cl_int curre
         float currentExc = (float)(current[2 * i]);
         float currentInh = (float)(current[2 * i + 1]);
 
-        float currentFloat = (currentExc + currentInh) * 0.01f;
+        float currentFloat = (currentExc + 4.0f * currentInh) * 0.01f;
 
         // Compute the potential and the recovery variable using Euler integration and Izhikevich model
         double deltaV = 0.04f * pow(potentialVar, 2) + 5.0f * potentialVar + 140.0f - recoveryVar + currentFloat + IPar;
@@ -83,7 +83,8 @@ void computeNeuronalDynamics(int neuronsComputed, int numOfNeurons, cl_int curre
         if (i == 9 * 8)
         {
             // TODO: The conversion factor should be passed by the calling function.
-            LOGD("Weights reservoir for neuron %d is %f", i, (float)(weightsReservoir[i] / 2000));
+            //LOGD("Weights reservoir for neuron %d is %f", i, (float)(weightsReservoir[i] / 2000));
+            //LOGD("Num of exc weights for neuron %d is %d", i, numOfExcWeights[i]);
             //LOGD("currentExc %f currentInh %f potentialVar %lf recoveryVar %lf", currentExc, currentInh, potentialVar, recoveryVar);
         }
 
@@ -122,7 +123,7 @@ void computeNeuronalDynamics(int neuronsComputed, int numOfNeurons, cl_int curre
 int printSynapticMaps(int counter, OpenCLObject *obj, size_t synapseWeightsBufferSize, int NUM_SYNAPSES) {
     bool mapMemoryObjectsSuccess = true;
 
-    if (counter == 100) {
+    if (counter == 400) {
         obj->synapseWeights = (cl_float*)clEnqueueMapBuffer(obj->commandQueue, obj->memoryObjects[1], CL_TRUE, CL_MAP_READ, 0, synapseWeightsBufferSize, 0, NULL, NULL, &obj->errorNumber);
         mapMemoryObjectsSuccess &= checkSuccess(obj->errorNumber);
 
@@ -139,7 +140,7 @@ int printSynapticMaps(int counter, OpenCLObject *obj, size_t synapseWeightsBuffe
                 start = synapses * neuronsPerPop * population;
 
         for (int i = start; i < start + 784; i++) {
-            LOGE("%f", obj->synapseWeights[i]);
+            LOGE("%f", obj->synapseWeights);
         }
 
         if (!checkSuccess(clEnqueueUnmapMemObject(obj->commandQueue, obj->memoryObjects[1], obj->synapseWeights, 0, NULL, NULL)))
@@ -150,7 +151,7 @@ int printSynapticMaps(int counter, OpenCLObject *obj, size_t synapseWeightsBuffe
     }
 
     // Decrease counter and reset it when it becomes zero
-    counter = counter == 0 ? 100 : counter - 1;
+    counter = counter == 0 ? 400 : counter - 1;
 
     return counter;
 }
