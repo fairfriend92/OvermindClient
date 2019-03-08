@@ -22,8 +22,8 @@ struct OpenCLObject {
     cl_device_id device = 0;
     cl_kernel kernel = 0;
     cl_int errorNumber = 0;
-    int numberOfMemoryObjects = 11;
-    cl_mem memoryObjects[11] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    int numberOfMemoryObjects = 12;
+    cl_mem memoryObjects[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     cl_uint floatVectorWidth;
     size_t maxWorkGroupSize;
 
@@ -38,14 +38,16 @@ struct OpenCLObject {
     cl_float *postsynFiringRates;
     cl_float *updateWeightsFlags;
     cl_int *globalIdOffset;
-    cl_int *weightsReservoir;
+    cl_uint *weightsReservoir;
+    cl_uint *numOfExcWeights;
     double *neuronalDynVar;
 };
 
 void buildSynapticInput(int neuronsComputed, char actionPotentials[], int numOfNeurons,
                         int maxMultiplications, cl_uchar synapticInput[]);
 void computeNeuronalDynamics(int neuronsComputed, int numOfNeurons, cl_int current[], jfloat simulationParameters[],
-                             double neuronalDynVar[], cl_float postsynFiringRates[], char actionPotentials[], int weightsReservoir[]);
+                             double neuronalDynVar[], cl_float postsynFiringRates[], char actionPotentials[], uint weightsReservoir[],
+                             uint numOfExcWeights[]);
 int printSynapticMaps(int counter, OpenCLObject *obj, size_t synapseWeightsBufferSize, int NUM_SYNAPSES);
 
 #define LOGE(x...) do { \

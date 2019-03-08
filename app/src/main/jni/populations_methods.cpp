@@ -59,6 +59,8 @@ void buildSynapticInput(int neuronsComputed, char actionPotentials[], int numOfN
 void computeNeuronalDynamics(int neuronsComputed, int numOfNeurons, cl_int current[], jfloat simulationParameters[],
                              double neuronalDynVar[], cl_float postsynFiringRates[], char actionPotentials[],
                              uint weightsReservoir[], uint numOfExcWeights[]) {
+    float averagePostsynFiringRate = 0.0f;
+
     for (int i = neuronsComputed; i < neuronsComputed + numOfNeurons; i++) {
 
         // TODO: Exc and inh currents are kept separated in case we want to switch to a conductance model
@@ -67,7 +69,11 @@ void computeNeuronalDynamics(int neuronsComputed, int numOfNeurons, cl_int curre
         float currentExc = (float)(current[2 * i]);
         float currentInh = (float)(current[2 * i + 1]);
 
-        float currentFloat = (currentExc + 4.0f * currentInh) * 0.01f;
+        // MNIST classic
+        float currentFloat = (1.0f * currentExc + 4.0f * currentInh) * 0.01f;
+
+        // MNIST rare events
+        //float currentFloat = (currentExc + 0.5f * currentInh) * 0.01f;
 
         // Compute the potential and the recovery variable using Euler integration and Izhikevich model
         double deltaV = 0.04f * pow(potentialVar, 2) + 5.0f * potentialVar + 140.0f - recoveryVar + currentFloat + IPar;
@@ -83,7 +89,7 @@ void computeNeuronalDynamics(int neuronsComputed, int numOfNeurons, cl_int curre
         if (i == 9 * 8)
         {
             // TODO: The conversion factor should be passed by the calling function.
-            //LOGD("Weights reservoir for neuron %d is %f", i, (float)(weightsReservoir[i] / 2000));
+            LOGD("Weights reservoir for neuron %d is %f", i, (float)(weightsReservoir[i] / 2000));
             //LOGD("Num of exc weights for neuron %d is %d", i, numOfExcWeights[i]);
             //LOGD("currentExc %f currentInh %f potentialVar %lf recoveryVar %lf", currentExc, currentInh, potentialVar, recoveryVar);
         }
@@ -101,12 +107,14 @@ void computeNeuronalDynamics(int neuronsComputed, int numOfNeurons, cl_int curre
             actionPotentials[(short)(i / 8)] &= ~(1 << (i - (short)(i / 8) * 8));
             postsynFiringRates[i] -= (cl_float)(MEAN_RATE_INCREMENT * postsynFiringRates[i]);
         }
-
-        //postsynFiringRates[i] = (cl_float)currentFloat;
+        averagePostsynFiringRate += postsynFiringRates[i];
 
         current[2 * i] = current[2 * i + 1] = (cl_int)0;
     }
+    averagePostsynFiringRate /= numOfNeurons;
 
+    // Uncomment only for MNIST rare events.
+    postsynFiringRates[0] = (cl_float) averagePostsynFiringRate;
 }
 
 /**
