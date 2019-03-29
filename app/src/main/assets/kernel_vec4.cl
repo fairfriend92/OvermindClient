@@ -5,10 +5,8 @@
 #define SYNAPSE_FILTER_ORDER 16
 #define LEARNING_RATE 0.01f
 #define NEURONS_X_POP 8
-#define REFERENCE_RATE 1.00f
-#define MAX_WEIGHT 10.0f
-#define MIN_WEIGHT -MAXFLOAT
 #define CONVERSION_FACTOR 100.0f / 0.05f
+#define CURRENT_THRESHOLD 10.0f
  
 __kernel __attribute__((vec_type_hint(float4)))
 void simulate_dynamics(__constant float* restrict coeff, __global float* restrict weights, // TODO: Coalesce some of the buffers into one?
@@ -53,9 +51,10 @@ void simulate_dynamics(__constant float* restrict coeff, __global float* restric
    */
 
   // Vector whose elements are 1 if the corresponding synapses are inhibitory, otherwise zero.
-  // The nature of the synapse is determined by the sign of its weight
   float4 offset = step(0.0f, - weightsVec);
-  //float4 offset = 0.5f * (fabs(weightsVec) - weightsVec) / fabs(weightsVec);
+  
+  float4 negativeWeights = weightsVec * offset;
+  float4 positiveWeights = weightsVec - negativeWeights;
   
   // Offsets to access the coefficients buffer
   uchar4 synInOffset = convert_uchar4(offset * SYNAPSE_FILTER_ORDER);
@@ -66,47 +65,43 @@ void simulate_dynamics(__constant float* restrict coeff, __global float* restric
 			     coeff[synInput.s8 + synInOffset.z] + coeff[synInput.s9 + synInOffset.z] + coeff[synInput.sa + synInOffset.z] + coeff[synInput.sb + synInOffset.z],
 			     coeff[synInput.sc + synInOffset.w] + coeff[synInput.sd + synInOffset.w] + coeff[synInput.se + synInOffset.w] + coeff[synInput.sf + synInOffset.w]);
 
-  /*
-   * Excitatory and inhibitory currents are computed separately since they must be stored in two different
-   * portions of the same memory buffer 
-   */
-
+  float4 smallCurrents = CURRENT_THRESHOLD * step(0.0f, - (coeffVec - CURRENT_THRESHOLD));
+  
   /* Inhibitory currents */
-  float inhCurrent = dot(coeffVec, weightsVec * offset);
-
-  // Increment the synaptic current
+  
+  float inhCurrent = dot(coeffVec, negativeWeights);
+  //inhCurrent -= dot(positiveWeights,  smallCurrents);
   atomic_add(&current[2 * neuronIndex + 1], convert_int(inhCurrent));
 
   /* Excitatory currents */
 
-  // Switching synapses the offset must be inverted 1 -> 0, 0 -> 1
-  offset = (1.0f - offset);
-  float excCurrent = dot(coeffVec, weightsVec * offset);
+  float excCurrent = dot(coeffVec, positiveWeights);
+  //excCurrent += dot(-negativeWeights, smallCurrents);
   atomic_add(&current[2 * neuronIndex], convert_int(excCurrent));
 
-  // Update the weights
+  /* Update the weights */
+
+  offset = 1.0f - offset;
 
   float maxDw = weightsReservoir[neuronIndex] / (numOfExcWeights[neuronIndex] * CONVERSION_FACTOR);
-
-  // For classic MNIST.
   
   float4 dw = weightsFlagsVec * LEARNING_RATE *
-    (preFiringRatesVec * maxDw / (weightsVec + maxDw) - (1.0f - preFiringRatesVec) * postsynFiringRates[neuronIndex]);
+    (preFiringRatesVec * maxDw / (weightsVec + maxDw) -
+     (1.0f - preFiringRatesVec) * postsynFiringRates[neuronIndex]);
   
-  
-  // For rare events MNIST.
   /*
   float4 dw = weightsFlagsVec * LEARNING_RATE *
     (preFiringRatesVec * maxDw - (1.0f - preFiringRatesVec));
   */
   
-    
   weightsVec += dw;
   
+  // Only changes in the positve weights affect the weights reservoir.
   dw = dw * offset;
   atomic_sub(&weightsReservoir[neuronIndex],
 	     convert_uint(CONVERSION_FACTOR * (dw.x + dw.y + dw.z + dw.w)));
-  
+
+  // Compute how many weights changed sign and became positive. 
   offset = 0.5f * (fabs(weightsVec) + weightsVec) / weightsVec - offset;
   atomic_add(&numOfExcWeights[neuronIndex],
 	     convert_int(offset.x + offset.y + offset.z + offset.w)); 

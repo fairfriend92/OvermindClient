@@ -715,7 +715,7 @@ extern "C" jbyteArray Java_com_example_overmind_SimulationService_simulateDynami
     env->ReleaseByteArrayElements(jSynapseInput, synapseInput, 0);
     env->ReleaseFloatArrayElements(jPresynFiringRates, presynFiringRates, 0);
 
-    //counter = printSynapticMaps(counter, obj, synapseWeightsBufferSize, NUM_SYNAPSES);
+    counter = printSynapticMaps(counter, obj, synapseWeightsBufferSize, NUM_SYNAPSES);
 
     // Release the array storing the simulation parameters
     env->ReleaseFloatArrayElements(jSimulationParameters, simulationParameters, 0);
